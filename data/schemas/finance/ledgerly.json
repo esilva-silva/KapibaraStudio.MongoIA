@@ -1,0 +1,557 @@
+{
+ "schema_id": "ledgerly",
+ "domain": "finance",
+ "holdout": false,
+ "description": "Contabilidade / pagamentos, camelCase",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "accounts",
+   "name": "accounts",
+   "doc_count": 1150,
+   "fields": {
+    "iban": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "BR"
+    },
+    "holder": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "type": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "checking",
+      "savings",
+      "credit",
+      "investment"
+     ],
+     "w": [
+      50,
+      30,
+      15,
+      5
+     ]
+    },
+    "balance": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -5000,
+     "hi": 250000
+    },
+    "currency": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": [
+      80,
+      15,
+      5
+     ]
+    },
+    "openedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2015-01-01",
+     "hi": "2026-06-01"
+    },
+    "limits": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100,
+       "hi": 20000
+      },
+      "monthly": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1000,
+       "hi": 200000
+      }
+     }
+    },
+    "frozen": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.03
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "iban",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "type",
+       1
+      ],
+      [
+       "currency",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "balance",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "transactions",
+   "name": "transactions",
+   "doc_count": 1800,
+   "fields": {
+    "accountId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "txId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 15000
+    },
+    "direction": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "debit",
+      "credit"
+     ],
+     "w": null
+    },
+    "category": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "food",
+      "rent",
+      "salary",
+      "transfer",
+      "fees",
+      "travel",
+      "health"
+     ],
+     "w": null
+    },
+    "bookedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "counterparty": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "bank": {
+       "t": "string",
+       "p": 0.4,
+       "n": 0.0,
+       "g": "title"
+      },
+      "iban": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "BR"
+      }
+     }
+    },
+    "fraudScore": {
+     "t": "double",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 1
+    },
+    "reversed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.02
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "txId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "accountId",
+       1
+      ],
+      [
+       "bookedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "category",
+       1
+      ],
+      [
+       "amount",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "fraudScore",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "fraudScore": {
+       "$gt": 0.8
+      }
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "accountId": {
+       "bsonType": "objectId"
+      },
+      "txId": {
+       "bsonType": "binData"
+      },
+      "amount": {
+       "bsonType": "decimal"
+      },
+      "direction": {
+       "bsonType": "string",
+       "enum": [
+        "debit",
+        "credit"
+       ]
+      },
+      "category": {
+       "bsonType": "string",
+       "enum": [
+        "food",
+        "rent",
+        "salary",
+        "transfer",
+        "fees",
+        "travel",
+        "health"
+       ]
+      },
+      "bookedAt": {
+       "bsonType": "date"
+      },
+      "counterparty": {
+       "bsonType": "object",
+       "properties": {
+        "name": {
+         "bsonType": "string"
+        },
+        "bank": {
+         "bsonType": "string"
+        },
+        "iban": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "name"
+       ]
+      },
+      "fraudScore": {
+       "bsonType": "double"
+      },
+      "reversed": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "accountId",
+      "txId",
+      "amount",
+      "direction",
+      "category",
+      "bookedAt",
+      "reversed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "cards",
+   "name": "cards",
+   "doc_count": 400,
+   "fields": {
+    "accountId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "last4": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": ""
+    },
+    "network": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "visa",
+      "master",
+      "elo"
+     ],
+     "w": null
+    },
+    "expires": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-10-01",
+     "hi": "2031-12-31"
+    },
+    "blocked": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "accountId",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "accountId": {
+       "bsonType": "objectId"
+      },
+      "last4": {
+       "bsonType": "string"
+      },
+      "network": {
+       "bsonType": "string",
+       "enum": [
+        "visa",
+        "master",
+        "elo"
+       ]
+      },
+      "expires": {
+       "bsonType": "date"
+      },
+      "blocked": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "accountId",
+      "last4",
+      "network",
+      "expires",
+      "blocked"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "cards_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "last4": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "network": {
+         "type": "token"
+        },
+        "expires": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "ledger-entries",
+   "name": "ledger-entries",
+   "doc_count": 800,
+   "fields": {
+    "txId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "transactions"
+    },
+    "account": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "L"
+    },
+    "debit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 15000
+    },
+    "credit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 15000
+    },
+    "postedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "dims": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "costCenter": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "CC"
+      },
+      "project": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "slug"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "txId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "account",
+       1
+      ],
+      [
+       "postedAt",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

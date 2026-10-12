@@ -1,0 +1,795 @@
+{
+ "schema_id": "harbor_nrg",
+ "domain": "energy",
+ "holdout": false,
+ "description": "energy procedural EN, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "billing_cycles",
+   "name": "billingCycles",
+   "doc_count": 1800,
+   "fields": {
+    "label": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CY"
+    },
+    "from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "to": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "totalKwh": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000000
+    },
+    "revenue": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90000000.0
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "label",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "closed",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "from",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "outages",
+   "name": "outages",
+   "doc_count": 1900,
+   "fields": {
+    "substationId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "startedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "restoredAt": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "affected": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "substationId",
+       1
+      ],
+      [
+       "startedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "meters",
+   "name": "Meters",
+   "doc_count": 1750,
+   "fields": {
+    "MeterId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "Customer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Tariff": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial",
+      "rural"
+     ],
+     "w": null
+    },
+    "SubstationId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "Smart": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.55
+    },
+    "CapacityKva": {
+     "t": "double",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 500.0
+    },
+    "LegacyId": {
+     "t": "uuid",
+     "p": 0.8,
+     "n": 0.0,
+     "v": 3
+    },
+    "Attrs": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Label": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "word"
+      },
+      "Mode": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "Score": {
+       "t": "double",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "Quota": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "Count": {
+         "t": "int32",
+         "p": 0.95,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "Label": {
+         "t": "string",
+         "p": 0.3,
+         "n": 0.0,
+         "g": "word"
+        },
+        "Limits": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          },
+          "Enabled": {
+           "t": "bool",
+           "p": 0.8,
+           "n": 0.0,
+           "pt": 0.5
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "VersionNo": {
+     "t": "int64",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "AmountTotal": {
+     "t": "decimal128",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "MeterId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Tariff",
+       1
+      ],
+      [
+       "Smart",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "SubstationId",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "MeterId": {
+       "bsonType": "binData"
+      },
+      "Customer": {
+       "bsonType": "string"
+      },
+      "Tariff": {
+       "bsonType": "string",
+       "enum": [
+        "residential",
+        "commercial",
+        "industrial",
+        "rural"
+       ]
+      },
+      "SubstationId": {
+       "bsonType": "objectId"
+      },
+      "Smart": {
+       "bsonType": "bool"
+      },
+      "CapacityKva": {
+       "bsonType": "double"
+      },
+      "LegacyId": {
+       "bsonType": "binData"
+      },
+      "Attrs": {
+       "bsonType": "object",
+       "properties": {
+        "Label": {
+         "bsonType": "string"
+        },
+        "Mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "Score": {
+         "bsonType": "double"
+        },
+        "Quota": {
+         "bsonType": "object",
+         "properties": {
+          "Count": {
+           "bsonType": "int"
+          },
+          "Label": {
+           "bsonType": "string"
+          },
+          "Limits": {
+           "bsonType": "object",
+           "properties": {
+            "Score": {
+             "bsonType": "double"
+            },
+            "Enabled": {
+             "bsonType": "bool"
+            }
+           },
+           "required": [
+            "Score"
+           ]
+          }
+         },
+         "required": [
+          "Limits"
+         ]
+        }
+       },
+       "required": [
+        "Mode"
+       ]
+      },
+      "VersionNo": {
+       "bsonType": "long"
+      },
+      "AmountTotal": {
+       "bsonType": "decimal"
+      },
+      "CreatedAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "MeterId",
+      "Customer",
+      "Tariff",
+      "SubstationId",
+      "Smart",
+      "CreatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "substations",
+   "name": "substations",
+   "doc_count": 1000,
+   "fields": {
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SE"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "voltageKv": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "13.8",
+      "69",
+      "138",
+      "230",
+      "500"
+     ],
+     "w": null
+    },
+    "city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      }
+     }
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "externalId": {
+     "t": "uuid",
+     "p": 0.4,
+     "n": 0.0,
+     "v": 3
+    },
+    "history": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "voltageKv",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "createdAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "consumption",
+   "name": "consumption",
+   "doc_count": 1600,
+   "fields": {
+    "meterId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "meters"
+    },
+    "period": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kwh": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 2500.0
+    },
+    "peakKw": {
+     "t": "double",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90.0
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 2500.0
+    },
+    "estimated": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "label": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "word"
+      },
+      "enabled": {
+       "t": "bool",
+       "p": 0.3,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "extra": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "size": {
+         "t": "int64",
+         "p": 0.6,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "meterId",
+       1
+      ],
+      [
+       "period",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "period",
+       1
+      ],
+      [
+       "kwh",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "meterId": {
+       "bsonType": "objectId"
+      },
+      "period": {
+       "bsonType": "date"
+      },
+      "kwh": {
+       "bsonType": "double"
+      },
+      "peakKw": {
+       "bsonType": "double"
+      },
+      "cost": {
+       "bsonType": "decimal"
+      },
+      "estimated": {
+       "bsonType": "bool"
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "label": {
+         "bsonType": "string"
+        },
+        "enabled": {
+         "bsonType": "bool"
+        },
+        "extra": {
+         "bsonType": "object",
+         "properties": {
+          "size": {
+           "bsonType": "long"
+          },
+          "count": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "count"
+         ]
+        }
+       }
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "meterId",
+      "period",
+      "kwh",
+      "cost",
+      "estimated"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  }
+ ],
+ "language": "en"
+}

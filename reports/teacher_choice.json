@@ -1,0 +1,34 @@
+{
+  "decided_at": "2026-10-09",
+  "job": "J03b",
+  "rule": "Fase 01 §6.6: 14B se (a) pico ≤ 14 GB com micro-batch ≥ 4k sem paginação, (b) ≥ ~250 tok/s, (c) ≥ 3 pp FIM-acc ou exec-valid sobre o 7B; senão 7B",
+  "teacher": {
+    "name": "KapiTeacher-Mongo-7B",
+    "hf_id": "Qwen/Qwen2.5-Coder-7B",
+    "revision": "0396a76181e127dfc13e5c5ec48a8cee09938b02",
+    "base_repo": "BaseRepos/Qwen2.5-Coder-7B"
+  },
+  "criteria": {
+    "a_vram": {
+      "14B": "falhou: OOM a 4k com r=64; a 4k com r=32 pico 13,35 GB / reservado 14,04 GB (no teto de 14,14 GB)",
+      "7B": "ok: 8,22 GB a 4k, 10,52 GB a 8k (r=64)"
+    },
+    "b_throughput": {
+      "14B": "falhou: 75 tok/s a 4k r=32; 245 tok/s só a 2k r=64",
+      "7B": "360 tok/s a 4k, 309 tok/s a 8k"
+    },
+    "c_quality": {
+      "14B_vs_7B": "mongo_valid +3,7 pp (p=0,038), syntax +2,1 pp (p=0,21), chars aceitos +0,36 [IC95 +0,01; +0,71], normalized_match +0,3 pp (p=0,81) — passa, mas (a)/(b) são eliminatórios"
+    }
+  },
+  "fim_bakeoff_report": "bakeoff/reports/2026-10-09-fim/comparison.md + char_metrics.txt",
+  "probe_logs": [
+    "reports/teacher_probe.log",
+    "reports/teacher_probe2.log"
+  ],
+  "notes": [
+    "exec-valid ainda não medido (fixtures Docker da Fase 03 não existem); mongo_valid é validação estática da v1",
+    "7B treina a 309–360 tok/s, abaixo dos 500–560 estimados: horas do professor na Fase 05 §9 sobem ~1,5x",
+    "DeepSeek-6.7B: APT por token maior era artefato do tokenizer; em caracteres empata com o Qwen 14B e perde 12,6 pp de mongo_valid"
+  ]
+}

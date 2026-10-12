@@ -1,0 +1,1517 @@
+{
+ "schema_id": "willow_saas",
+ "domain": "saas",
+ "holdout": false,
+ "description": "saas procedural EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "feature_flags",
+   "name": "FeatureFlags",
+   "doc_count": 550,
+   "fields": {
+    "Key": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Description": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Enabled": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "RolloutPct": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "Rules": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Attr": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Op": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "eq",
+         "in",
+         "gt"
+        ],
+        "w": null
+       },
+       "Value": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "UpdatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "VersionNo": {
+     "t": "int64",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Key",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Enabled",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "UpdatedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "featureflags_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Key": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Description": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "RolloutPct": {
+         "type": "number"
+        },
+        "UpdatedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "support_tickets",
+   "name": "SupportTickets",
+   "doc_count": 1150,
+   "fields": {
+    "TenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "OpenedBy": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "users"
+    },
+    "Subject": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Priority": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "low",
+      "normal",
+      "high",
+      "urgent"
+     ],
+     "w": null
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "pending",
+      "solved"
+     ],
+     "w": null
+    },
+    "Messages": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "From": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "agent",
+         "customer"
+        ],
+        "w": null
+       },
+       "Body": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Csat": {
+     "t": "int32",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": 1,
+     "hi": 5
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "History": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "By": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "From": {
+          "t": "string",
+          "p": 0.3,
+          "n": 0.0,
+          "g": "word"
+         },
+         "To": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TenantId",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Priority",
+       1
+      ],
+      [
+       "OpenedBy",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CreatedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "TenantId": {
+       "bsonType": "objectId"
+      },
+      "OpenedBy": {
+       "bsonType": "objectId"
+      },
+      "Subject": {
+       "bsonType": "string"
+      },
+      "Priority": {
+       "bsonType": "string",
+       "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+       ]
+      },
+      "Status": {
+       "bsonType": "string",
+       "enum": [
+        "open",
+        "pending",
+        "solved"
+       ]
+      },
+      "Messages": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "At": {
+          "bsonType": "date"
+         },
+         "From": {
+          "bsonType": "string",
+          "enum": [
+           "agent",
+           "customer"
+          ]
+         },
+         "Body": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "At",
+         "From",
+         "Body"
+        ]
+       }
+      },
+      "Csat": {
+       "bsonType": [
+        "int",
+        "null"
+       ]
+      },
+      "Tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "History": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "At": {
+          "bsonType": "date"
+         },
+         "By": {
+          "bsonType": "string"
+         },
+         "Change": {
+          "bsonType": "object",
+          "properties": {
+           "Field": {
+            "bsonType": "string"
+           },
+           "From": {
+            "bsonType": "string"
+           },
+           "To": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "Field"
+          ]
+         }
+        },
+        "required": [
+         "At",
+         "By",
+         "Change"
+        ]
+       }
+      },
+      "CreatedAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "TenantId",
+      "OpenedBy",
+      "Subject",
+      "Priority",
+      "Status",
+      "Messages",
+      "CreatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "invoices",
+   "name": "Invoices",
+   "doc_count": 450,
+   "fields": {
+    "TenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "Number": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "INV"
+    },
+    "Period": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 20000.0
+    },
+    "LineItems": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1.0,
+        "hi": 5000.0
+       },
+       "Tax": {
+        "t": "object",
+        "p": 0.5,
+        "n": 0.0,
+        "f": {
+         "Rate": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0.0,
+          "hi": 0.3
+         },
+         "Jurisdiction": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "country"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Uid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Number",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "TenantId",
+       1
+      ],
+      [
+       "Period",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Period",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "Period": {
+       "$exists": true
+      }
+     }
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "users",
+   "name": "Users",
+   "doc_count": 850,
+   "fields": {
+    "TenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "Role": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "owner",
+      "admin",
+      "member",
+      "viewer"
+     ],
+     "w": null
+    },
+    "DisplayName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Mfa": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.35
+    },
+    "LastSeenAt": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Prefs": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "Theme": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "dark",
+        "light"
+       ],
+       "w": null
+      },
+      "Tz": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "Notify": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "AmountTotal": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TenantId",
+       1
+      ],
+      [
+       "Email",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Role",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "LastSeenAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "usage_records",
+   "name": "UsageRecords",
+   "doc_count": 700,
+   "fields": {
+    "TenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "Metric": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "api_calls",
+      "storage",
+      "seats",
+      "jobs"
+     ],
+     "w": null
+    },
+    "Day": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Value": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000
+    },
+    "Cost": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 400.0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TenantId",
+       1
+      ],
+      [
+       "Metric",
+       1
+      ],
+      [
+       "Day",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Day",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "subscriptions",
+   "name": "Subscriptions",
+   "doc_count": 300,
+   "fields": {
+    "TenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "Plan": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "free",
+      "team",
+      "business",
+      "enterprise"
+     ],
+     "w": null
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "past_due",
+      "canceled",
+      "trialing"
+     ],
+     "w": null
+    },
+    "StartedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "RenewsAt": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Price": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 900.0
+    },
+    "Addons": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Code": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "AD"
+       },
+       "Qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 20
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "VersionNo": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "History": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "By": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "From": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         },
+         "To": {
+          "t": "string",
+          "p": 0.3,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TenantId",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "RenewsAt",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "TenantId": {
+       "bsonType": "objectId"
+      },
+      "Plan": {
+       "bsonType": "string",
+       "enum": [
+        "free",
+        "team",
+        "business",
+        "enterprise"
+       ]
+      },
+      "Status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "past_due",
+        "canceled",
+        "trialing"
+       ]
+      },
+      "StartedAt": {
+       "bsonType": "date"
+      },
+      "RenewsAt": {
+       "bsonType": "date"
+      },
+      "Price": {
+       "bsonType": "decimal"
+      },
+      "Addons": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Code": {
+          "bsonType": "string"
+         },
+         "Qty": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "Code",
+         "Qty"
+        ]
+       }
+      },
+      "VersionNo": {
+       "bsonType": "long"
+      },
+      "Tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "History": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "At": {
+          "bsonType": "date"
+         },
+         "By": {
+          "bsonType": "string"
+         },
+         "Change": {
+          "bsonType": "object",
+          "properties": {
+           "Field": {
+            "bsonType": "string"
+           },
+           "From": {
+            "bsonType": "string"
+           },
+           "To": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "Field"
+          ]
+         }
+        },
+        "required": [
+         "At",
+         "By",
+         "Change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "TenantId",
+      "Plan",
+      "Status",
+      "StartedAt",
+      "Price"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "subscriptions_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Plan": {
+         "type": "token"
+        },
+        "Status": {
+         "type": "token"
+        },
+        "StartedAt": {
+         "type": "date"
+        },
+        "RenewsAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "audit_events",
+   "name": "AuditEvents",
+   "doc_count": 900,
+   "fields": {
+    "TenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "Actor": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.0,
+     "ref": "users"
+    },
+    "Action": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "login",
+      "create",
+      "update",
+      "delete",
+      "export",
+      "invite"
+     ],
+     "w": null
+    },
+    "Target": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Kind": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "Id": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      }
+     }
+    },
+    "Ip": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "Details": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Before": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "V": {
+         "t": "string",
+         "p": 0.9,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      },
+      "After": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "V": {
+         "t": "string",
+         "p": 0.4,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "Attrs": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Total": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "Label": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "Quota": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "Label": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "Total": {
+         "t": "decimal128",
+         "p": 0.6,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "Quota": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "Total": {
+           "t": "decimal128",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 5000
+          },
+          "At": {
+           "t": "date",
+           "p": 0.6,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "History": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "By": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "From": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         },
+         "To": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Action",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CreatedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "auditevents_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Ip": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Action": {
+         "type": "token"
+        },
+        "CreatedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "tenants",
+   "name": "Tenants",
+   "doc_count": 1200,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Plan": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "free",
+      "team",
+      "business",
+      "enterprise"
+     ],
+     "w": null
+    },
+    "Seats": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500
+    },
+    "Mrr": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 20000.0
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Settings": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Sso": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.2
+      },
+      "Locale": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "en",
+        "pt-BR",
+        "es"
+       ],
+       "w": null
+      },
+      "Limits": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "ApiRpm": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 60,
+         "hi": 6000
+        },
+        "StorageGb": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 1,
+         "hi": 5000
+        },
+        "Burst": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "WindowS": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 1,
+           "hi": 60
+          },
+          "Cap": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 10,
+           "hi": 900
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Plan",
+       1
+      ],
+      [
+       "Mrr",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  }
+ ],
+ "language": "en"
+}

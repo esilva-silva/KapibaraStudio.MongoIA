@@ -1,0 +1,495 @@
+{
+ "schema_id": "campus",
+ "domain": "education",
+ "holdout": true,
+ "description": "Educação (holdout), camelCase",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "students",
+   "name": "students",
+   "doc_count": 850,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "enrolledAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2019-01-01",
+     "hi": "2026-08-01"
+    },
+    "program": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cs",
+      "law",
+      "med",
+      "arts",
+      "eng"
+     ],
+     "w": null
+    },
+    "gpa": {
+     "t": "double",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 10
+    },
+    "scholarship": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.15
+    },
+    "guardian": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "phone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "phone"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "program",
+       1
+      ],
+      [
+       "gpa",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "students_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "email": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "program": {
+         "type": "token"
+        },
+        "enrolledAt": {
+         "type": "date"
+        },
+        "gpa": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "courses",
+   "name": "courses",
+   "doc_count": 1250,
+   "fields": {
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CRS"
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "credits": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 8
+    },
+    "teacherId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "teachers"
+    },
+    "schedule": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "day": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "mon",
+         "tue",
+         "wed",
+         "thu",
+         "fri"
+        ],
+        "w": null
+       },
+       "start": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "T"
+       },
+       "room": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "R"
+       }
+      }
+     },
+     "min": 1,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "teacherId",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "teachers",
+   "name": "teachers",
+   "doc_count": 200,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "dept": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "math",
+      "physics",
+      "letters",
+      "cs"
+     ],
+     "w": null
+    },
+    "tenured": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "hiredAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2000-01-01",
+     "hi": "2026-01-01"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dept",
+       1
+      ],
+      [
+       "tenured",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "dept": {
+       "bsonType": "string",
+       "enum": [
+        "math",
+        "physics",
+        "letters",
+        "cs"
+       ]
+      },
+      "tenured": {
+       "bsonType": "bool"
+      },
+      "hiredAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "name",
+      "dept",
+      "tenured",
+      "hiredAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "teachers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "dept": {
+         "type": "token"
+        },
+        "hiredAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "enrollments",
+   "name": "enrollments",
+   "doc_count": 1200,
+   "fields": {
+    "studentId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "students"
+    },
+    "courseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "courses"
+    },
+    "term": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "2025-1",
+      "2025-2",
+      "2026-1",
+      "2026-2"
+     ],
+     "w": null
+    },
+    "grade": {
+     "t": "double",
+     "p": 0.7,
+     "n": 0.2,
+     "lo": 0,
+     "hi": 10
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "passed",
+      "failed",
+      "dropped"
+     ],
+     "w": [
+      30,
+      50,
+      12,
+      8
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "studentId",
+       1
+      ],
+      [
+       "term",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "courseId",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "studentId": {
+       "bsonType": "objectId"
+      },
+      "courseId": {
+       "bsonType": "objectId"
+      },
+      "term": {
+       "bsonType": "string",
+       "enum": [
+        "2025-1",
+        "2025-2",
+        "2026-1",
+        "2026-2"
+       ]
+      },
+      "grade": {
+       "bsonType": [
+        "double",
+        "null"
+       ]
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "passed",
+        "failed",
+        "dropped"
+       ]
+      }
+     },
+     "required": [
+      "studentId",
+      "courseId",
+      "term",
+      "status"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "enrollments_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "term": {
+         "type": "token"
+        },
+        "status": {
+         "type": "token"
+        },
+        "grade": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  }
+ ],
+ "language": "en"
+}

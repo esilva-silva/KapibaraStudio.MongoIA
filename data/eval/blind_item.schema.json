@@ -1,0 +1,34 @@
+{
+  "$comment": "Schema do item cego (subconjunto de JSON Schema validado por scripts/data/blind_tool.py; sem dependencias). Documentado em data/eval/blind/README.md.",
+  "title": "KapibaraBlindItem",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "language", "domain", "schema_id", "collection", "references", "author", "reviewed_by", "status"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^blind-(autocomplete|chat|correction)-[0-9]{3,}$"},
+    "kind": {"enum": ["autocomplete", "chat", "correction"]},
+    "language": {"enum": ["pt-BR", "en"]},
+    "domain": {"type": "string", "minLength": 1},
+    "schema_id": {"type": "string", "minLength": 1},
+    "collection": {"type": "string", "minLength": 1},
+    "group": {"type": "string", "minLength": 1},
+    "prefix": {"type": "string"},
+    "suffix": {"type": "string"},
+    "instruction": {"type": "string", "minLength": 1},
+    "context": {"type": "string"},
+    "references": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "author": {"enum": ["human", "draft-agent"]},
+    "reviewed_by": {"type": ["string", "null"]},
+    "status": {"enum": ["draft", "reviewed"]},
+    "notes": {"type": "string"},
+    "validation": {"type": "object"},
+    "created_at": {"type": "string"}
+  },
+  "allOf": [
+    {"if": {"properties": {"kind": {"const": "autocomplete"}}}, "then": {"required": ["prefix", "suffix"]}},
+    {"if": {"properties": {"kind": {"enum": ["chat", "correction"]}}}, "then": {"required": ["instruction"]}},
+    {"if": {"properties": {"kind": {"const": "correction"}}}, "then": {"required": ["context"]}},
+    {"if": {"properties": {"status": {"const": "draft"}}}, "then": {"properties": {"reviewed_by": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"const": "reviewed"}}}, "then": {"properties": {"reviewed_by": {"type": "string", "minLength": 1}}}}
+  ]
+}

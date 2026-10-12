@@ -1,0 +1,1665 @@
+{
+ "schema_id": "vertex_nrg",
+ "domain": "energy",
+ "holdout": false,
+ "description": "energy procedural pt-BR sem acento, snake",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "meters",
+   "name": "medidores",
+   "doc_count": 550,
+   "fields": {
+    "medidor_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "cliente": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "tarifa": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial",
+      "rural"
+     ],
+     "w": null
+    },
+    "installed_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2012-01-01",
+     "hi": "2026-06-01"
+    },
+    "substation_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "smart": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.55
+    },
+    "capacity_kva": {
+     "t": "double",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 500.0
+    },
+    "legacy_id": {
+     "t": "uuid",
+     "p": 0.9,
+     "n": 0.0,
+     "v": 3
+    },
+    "valor_total": {
+     "t": "decimal128",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "medidor_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tarifa",
+       1
+      ],
+      [
+       "smart",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "substation_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "medidor_id": {
+       "bsonType": "binData"
+      },
+      "cliente": {
+       "bsonType": "string"
+      },
+      "tarifa": {
+       "bsonType": "string",
+       "enum": [
+        "residential",
+        "commercial",
+        "industrial",
+        "rural"
+       ]
+      },
+      "installed_em": {
+       "bsonType": "date"
+      },
+      "substation_id": {
+       "bsonType": "objectId"
+      },
+      "smart": {
+       "bsonType": "bool"
+      },
+      "capacity_kva": {
+       "bsonType": "double"
+      },
+      "legacy_id": {
+       "bsonType": "binData"
+      },
+      "valor_total": {
+       "bsonType": "decimal"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "medidor_id",
+      "cliente",
+      "tarifa",
+      "installed_em",
+      "substation_id",
+      "smart"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "contracts",
+   "name": "contratos",
+   "doc_count": 1650,
+   "fields": {
+    "cliente": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "medidor_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "meters"
+    },
+    "tarifa_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tariffs"
+    },
+    "periodo_months": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 60
+    },
+    "green": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.2
+    },
+    "terms": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "penalty": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 9000.0
+      },
+      "notice_days": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 15,
+       "hi": 90
+      }
+     }
+    },
+    "history": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.95,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.95,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "medidor_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tarifa_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "green",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "billing_cycles",
+   "name": "ciclos_faturamento",
+   "doc_count": 650,
+   "fields": {
+    "label": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CY"
+    },
+    "from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "to": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "total_kwh": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000000
+    },
+    "revenue": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90000000.0
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    },
+    "external_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "label",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "closed",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "consumption",
+   "name": "consumo",
+   "doc_count": 450,
+   "fields": {
+    "medidor_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "meters"
+    },
+    "period": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kwh": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 2500.0
+    },
+    "peak_kw": {
+     "t": "double",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90.0
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 2500.0
+    },
+    "estimated": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    },
+    "attrs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "total": {
+       "t": "decimal128",
+       "p": 0.8,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "contagem": {
+       "t": "int32",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "extra": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "label": {
+         "t": "string",
+         "p": 0.3,
+         "n": 0.0,
+         "g": "word"
+        },
+        "em": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    },
+    "valor_total": {
+     "t": "decimal128",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "history": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.7,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.7,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "medidor_id",
+       1
+      ],
+      [
+       "period",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "period",
+       1
+      ],
+      [
+       "kwh",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "substations",
+   "name": "subestacoes",
+   "doc_count": 950,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SE"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "voltage_kv": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "13.8",
+      "69",
+      "138",
+      "230",
+      "500"
+     ],
+     "w": null
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      }
+     }
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "attrs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "contagem": {
+       "t": "int32",
+       "p": 0.5,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 0.7,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "mode": {
+       "t": "string",
+       "p": 0.4,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "extra": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "contagem": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "voltage_kv",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criado_em",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "codigo": {
+       "bsonType": "string"
+      },
+      "nome": {
+       "bsonType": "string"
+      },
+      "voltage_kv": {
+       "bsonType": "string",
+       "enum": [
+        "13.8",
+        "69",
+        "138",
+        "230",
+        "500"
+       ]
+      },
+      "geo": {
+       "bsonType": "object",
+       "properties": {
+        "lat": {
+         "bsonType": "double"
+        },
+        "lng": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "lat",
+        "lng"
+       ]
+      },
+      "online": {
+       "bsonType": "bool"
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "contagem": {
+         "bsonType": "int"
+        },
+        "total": {
+         "bsonType": "decimal"
+        },
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "extra": {
+         "bsonType": "object",
+         "properties": {
+          "contagem": {
+           "bsonType": "int"
+          },
+          "pontuacao": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "contagem",
+          "pontuacao"
+         ]
+        }
+       },
+       "required": [
+        "extra"
+       ]
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "criado_em": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "codigo",
+      "nome",
+      "voltage_kv",
+      "geo",
+      "online",
+      "attrs",
+      "criado_em"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "generation_units",
+   "name": "unidades_geracao",
+   "doc_count": 1800,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hydro",
+      "solar",
+      "wind",
+      "thermal"
+     ],
+     "w": null
+    },
+    "mw": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900.0
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.85
+    },
+    "readings": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "mw": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 900.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "source",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "criado_em",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "tariffs",
+   "name": "Tarifas",
+   "doc_count": 450,
+   "fields": {
+    "Codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TF"
+    },
+    "Class": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial"
+     ],
+     "w": null
+    },
+    "Bands": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "off",
+         "mid",
+         "peak"
+        ],
+        "w": null
+       },
+       "FromH": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 23
+       },
+       "ToH": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 23
+       },
+       "Preco": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.1,
+        "hi": 3.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "ValidFrom": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ValidUntil": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Class",
+       1
+      ],
+      [
+       "ValidFrom",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ValidFrom",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Codigo": {
+       "bsonType": "string"
+      },
+      "Class": {
+       "bsonType": "string",
+       "enum": [
+        "residential",
+        "commercial",
+        "industrial"
+       ]
+      },
+      "Bands": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Nome": {
+          "bsonType": "string",
+          "enum": [
+           "off",
+           "mid",
+           "peak"
+          ]
+         },
+         "FromH": {
+          "bsonType": "int"
+         },
+         "ToH": {
+          "bsonType": "int"
+         },
+         "Preco": {
+          "bsonType": "decimal"
+         }
+        },
+        "required": [
+         "Nome",
+         "FromH",
+         "ToH",
+         "Preco"
+        ]
+       }
+      },
+      "ValidFrom": {
+       "bsonType": "date"
+      },
+      "ValidUntil": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      }
+     },
+     "required": [
+      "Codigo",
+      "Class",
+      "Bands",
+      "ValidFrom"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "tarifas_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Codigo": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Class": {
+         "type": "token"
+        },
+        "ValidFrom": {
+         "type": "date"
+        },
+        "ValidUntil": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "outages",
+   "name": "quedas",
+   "doc_count": 1600,
+   "fields": {
+    "substation_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "iniciado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "restored_em": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "causa": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "storm",
+      "equipment",
+      "planned",
+      "unknown"
+     ],
+     "w": null
+    },
+    "affected": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 0.6,
+     "n": 0.0,
+     "v": 4
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "substation_id",
+       1
+      ],
+      [
+       "iniciado_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "causa",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "substation_id": {
+       "bsonType": "objectId"
+      },
+      "iniciado_em": {
+       "bsonType": "date"
+      },
+      "restored_em": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "causa": {
+       "bsonType": "string",
+       "enum": [
+        "storm",
+        "equipment",
+        "planned",
+        "unknown"
+       ]
+      },
+      "affected": {
+       "bsonType": "int"
+      },
+      "uid": {
+       "bsonType": "binData"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "substation_id",
+      "iniciado_em",
+      "causa",
+      "affected"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "grid_events",
+   "name": "eventos_rede",
+   "doc_count": 1300,
+   "fields": {
+    "substation_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "overload",
+      "fault",
+      "switch",
+      "reclose"
+     ],
+     "w": null
+    },
+    "severity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "details": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "phase": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "A",
+        "B",
+        "C"
+       ],
+       "w": null
+      },
+      "current_a": {
+       "t": "double",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 9000.0
+      }
+     }
+    },
+    "meta": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "mode": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "em": {
+       "t": "date",
+       "p": 0.8,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "quota": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "total": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "mode": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "stats": {
+         "t": "object",
+         "p": 0.8,
+         "n": 0.0,
+         "f": {
+          "label": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          },
+          "habilitado": {
+           "t": "bool",
+           "p": 0.4,
+           "n": 0.0,
+           "pt": 0.5
+          },
+          "total": {
+           "t": "decimal128",
+           "p": 0.4,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 5000
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "legacy_id": {
+     "t": "uuid",
+     "p": 0.5,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "substation_id",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "substation_id": {
+       "bsonType": "objectId"
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "overload",
+        "fault",
+        "switch",
+        "reclose"
+       ]
+      },
+      "severity": {
+       "bsonType": "int"
+      },
+      "details": {
+       "bsonType": "object",
+       "properties": {
+        "phase": {
+         "bsonType": "string",
+         "enum": [
+          "A",
+          "B",
+          "C"
+         ]
+        },
+        "current_a": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "phase"
+       ]
+      },
+      "meta": {
+       "bsonType": "object",
+       "properties": {
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "em": {
+         "bsonType": "date"
+        },
+        "total": {
+         "bsonType": "decimal"
+        },
+        "quota": {
+         "bsonType": "object",
+         "properties": {
+          "total": {
+           "bsonType": "decimal"
+          },
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "stats": {
+           "bsonType": "object",
+           "properties": {
+            "label": {
+             "bsonType": "string"
+            },
+            "habilitado": {
+             "bsonType": "bool"
+            },
+            "total": {
+             "bsonType": "decimal"
+            }
+           },
+           "required": [
+            "label"
+           ]
+          }
+         },
+         "required": [
+          "total",
+          "mode"
+         ]
+        }
+       },
+       "required": [
+        "mode",
+        "total"
+       ]
+      },
+      "legacy_id": {
+       "bsonType": "binData"
+      }
+     },
+     "required": [
+      "substation_id",
+      "em",
+      "tipo",
+      "severity",
+      "meta"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "eventos_rede_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "tipo": {
+         "type": "token"
+        },
+        "em": {
+         "type": "date"
+        },
+        "severity": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4
+  }
+ ],
+ "language": "pt-BR"
+}

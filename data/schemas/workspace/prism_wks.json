@@ -1,0 +1,990 @@
+{
+ "schema_id": "prism_wks",
+ "domain": "workspace",
+ "holdout": false,
+ "description": "workspace procedural EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "calendar_events",
+   "name": "CalendarEvents",
+   "doc_count": 250,
+   "fields": {
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Organizer": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "End": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Attendees": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Member": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "members"
+       },
+       "Status": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "yes",
+         "no",
+         "maybe"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Recurrence": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "Freq": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "daily",
+        "weekly",
+        "monthly"
+       ],
+       "w": null
+      },
+      "Until": {
+       "t": "date",
+       "p": 0.8,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Room": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Organizer",
+       1
+      ],
+      [
+       "Start",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Attendees.Member",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "projects",
+   "name": "Projects",
+   "doc_count": 1000,
+   "fields": {
+    "Key": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PRJ"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Owner": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Budget": {
+     "t": "decimal128",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 900000.0
+    },
+    "Labels": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Settings": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "Visibility": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "private",
+        "team",
+        "public"
+       ],
+       "w": null
+      },
+      "Integrations": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Kind": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "Enabled": {
+          "t": "bool",
+          "p": 1.0,
+          "n": 0.0,
+          "pt": 0.6
+         },
+         "Config": {
+          "t": "object",
+          "p": 1.0,
+          "n": 0.0,
+          "f": {
+           "Url": {
+            "t": "string",
+            "p": 0.7,
+            "n": 0.0,
+            "g": "url"
+           },
+           "Token": {
+            "t": "string",
+            "p": 0.8,
+            "n": 0.0,
+            "g": "hex"
+           }
+          }
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Key",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Labels",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Tags",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "members",
+   "name": "Members",
+   "doc_count": 700,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "Role": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "admin",
+      "editor",
+      "viewer",
+      "guest"
+     ],
+     "w": null
+    },
+    "JoinedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Timezone": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "VersionNo": {
+     "t": "int64",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "AmountTotal": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Role",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "members_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Email": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "Timezone": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Role": {
+         "type": "token"
+        },
+        "JoinedAt": {
+         "type": "date"
+        },
+        "VersionNo": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "files",
+   "name": "Files",
+   "doc_count": 1350,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Mime": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "image/png",
+      "application/pdf",
+      "text/plain",
+      "video/mp4"
+     ],
+     "w": null
+    },
+    "Bytes": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 900000000
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "AmountTotal": {
+     "t": "decimal128",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "At",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "files_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Mime": {
+         "type": "token"
+        },
+        "Bytes": {
+         "type": "number"
+        },
+        "At": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "sprints",
+   "name": "Sprints",
+   "doc_count": 200,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SP"
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "End": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Goal": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Velocity": {
+     "t": "int32",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 5,
+     "hi": 80
+    },
+    "Tasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "tasks"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ],
+      [
+       "Start",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "boards",
+   "name": "Boards",
+   "doc_count": 1300,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Columns": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Limit": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 20
+       },
+       "Cards": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "objectid",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "tasks"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "VersionNo": {
+     "t": "int64",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "History": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "By": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "From": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         },
+         "To": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CreatedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "boards_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "VersionNo": {
+         "type": "number"
+        },
+        "CreatedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "tasks",
+   "name": "Tasks",
+   "doc_count": 1900,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Assignee": {
+     "t": "objectid",
+     "p": 0.6,
+     "n": 0.1,
+     "ref": "members"
+    },
+    "State": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "todo",
+      "doing",
+      "review",
+      "done"
+     ],
+     "w": null
+    },
+    "EstimateH": {
+     "t": "double",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 40.0
+    },
+    "Due": {
+     "t": "date",
+     "p": 0.95,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Checklist": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "AmountTotal": {
+     "t": "decimal128",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ],
+      [
+       "State",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Assignee",
+       1
+      ],
+      [
+       "Due",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CreatedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ProjectId": {
+       "bsonType": "objectId"
+      },
+      "Title": {
+       "bsonType": "string"
+      },
+      "Assignee": {
+       "bsonType": [
+        "objectId",
+        "null"
+       ]
+      },
+      "State": {
+       "bsonType": "string",
+       "enum": [
+        "todo",
+        "doing",
+        "review",
+        "done"
+       ]
+      },
+      "EstimateH": {
+       "bsonType": "double"
+      },
+      "Due": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "CreatedAt": {
+       "bsonType": "date"
+      },
+      "Checklist": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Item": {
+          "bsonType": "string"
+         },
+         "Done": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "Item",
+         "Done"
+        ]
+       }
+      },
+      "AmountTotal": {
+       "bsonType": "decimal"
+      }
+     },
+     "required": [
+      "ProjectId",
+      "Title",
+      "State",
+      "CreatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "tasks_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Title": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "State": {
+         "type": "token"
+        },
+        "EstimateH": {
+         "type": "number"
+        },
+        "Due": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

@@ -1,0 +1,678 @@
+{
+ "schema_id": "teamboard",
+ "domain": "workspace",
+ "holdout": false,
+ "description": "Gestão de tarefas / docs, snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "workspaces",
+   "name": "workspaces",
+   "doc_count": 900,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "members": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "user_id": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "people"
+       },
+       "role": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "owner",
+         "editor",
+         "viewer"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 1,
+     "max": 6
+    },
+    "archived": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "members.user_id",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "created_at": {
+       "bsonType": "date"
+      },
+      "members": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "user_id": {
+          "bsonType": "objectId"
+         },
+         "role": {
+          "bsonType": "string",
+          "enum": [
+           "owner",
+           "editor",
+           "viewer"
+          ]
+         }
+        },
+        "required": [
+         "user_id",
+         "role"
+        ]
+       }
+      },
+      "archived": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "name",
+      "created_at",
+      "members",
+      "archived"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "people",
+   "name": "people",
+   "doc_count": 1350,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "avatar_url": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.2,
+     "g": "url"
+    },
+    "timezone": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "UTC",
+      "America/Sao_Paulo",
+      "Europe/Lisbon",
+      "Asia/Tokyo"
+     ],
+     "w": null
+    },
+    "joined_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "avatar_url": {
+       "bsonType": [
+        "string",
+        "null"
+       ]
+      },
+      "timezone": {
+       "bsonType": "string",
+       "enum": [
+        "UTC",
+        "America/Sao_Paulo",
+        "Europe/Lisbon",
+        "Asia/Tokyo"
+       ]
+      },
+      "joined_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "name",
+      "email",
+      "timezone",
+      "joined_at"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "tasks",
+   "name": "tasks",
+   "doc_count": 1450,
+   "fields": {
+    "workspace_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "workspaces"
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "assignee_id": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.15,
+     "ref": "people"
+    },
+    "state": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "todo",
+      "doing",
+      "review",
+      "done"
+     ],
+     "w": [
+      30,
+      25,
+      15,
+      30
+     ]
+    },
+    "priority": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "estimate_h": {
+     "t": "double",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 80
+    },
+    "due_at": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": "2026-09-01",
+     "hi": "2026-12-31"
+    },
+    "labels": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "checklist": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.5
+       }
+      }
+     },
+     "min": 0,
+     "max": 5
+    },
+    "parent": {
+     "t": "objectid",
+     "p": 0.9,
+     "n": 0.0,
+     "ref": "tasks"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "workspace_id",
+       1
+      ],
+      [
+       "state",
+       1
+      ],
+      [
+       "priority",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "assignee_id",
+       1
+      ],
+      [
+       "due_at",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "labels",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "tasks_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "title": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "state": {
+         "type": "token"
+        },
+        "priority": {
+         "type": "number"
+        },
+        "estimate_h": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "documents",
+   "name": "documents",
+   "doc_count": 400,
+   "fields": {
+    "workspace_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "workspaces"
+    },
+    "doc_uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "revision": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 200
+    },
+    "blocks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "type": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "h1",
+         "p",
+         "code",
+         "list"
+        ],
+        "w": null
+       },
+       "text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "style": {
+        "t": "object",
+        "p": 0.3,
+        "n": 0.0,
+        "f": {
+         "bold": {
+          "t": "bool",
+          "p": 1.0,
+          "n": 0.0,
+          "pt": 0.1
+         },
+         "color": {
+          "t": "string",
+          "p": 0.3,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 6
+    },
+    "updated_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "doc_uuid",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "workspace_id",
+       1
+      ],
+      [
+       "updated_at",
+       -1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "documents_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "title": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "revision": {
+         "type": "number"
+        },
+        "updated_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "activity",
+   "name": "activity",
+   "doc_count": 1650,
+   "fields": {
+    "workspace_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "workspaces"
+    },
+    "who": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "people"
+    },
+    "verb": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "created",
+      "commented",
+      "moved",
+      "closed"
+     ],
+     "w": null
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "payload": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "task_id": {
+       "t": "objectid",
+       "p": 0.6,
+       "n": 0.0,
+       "ref": "tasks"
+      },
+      "from_state": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "word"
+      },
+      "to_state": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "workspace_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "workspace_id": {
+       "bsonType": "objectId"
+      },
+      "who": {
+       "bsonType": "objectId"
+      },
+      "verb": {
+       "bsonType": "string",
+       "enum": [
+        "created",
+        "commented",
+        "moved",
+        "closed"
+       ]
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "payload": {
+       "bsonType": "object",
+       "properties": {
+        "task_id": {
+         "bsonType": "objectId"
+        },
+        "from_state": {
+         "bsonType": "string"
+        },
+        "to_state": {
+         "bsonType": "string"
+        }
+       }
+      }
+     },
+     "required": [
+      "workspace_id",
+      "who",
+      "verb",
+      "at"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

@@ -1,0 +1,1805 @@
+{
+ "schema_id": "meridian_fin",
+ "domain": "finance",
+ "holdout": false,
+ "description": "finance procedural pt-BR sem acento, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "customers",
+   "name": "clientes",
+   "doc_count": 2000,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "impostoId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "segment": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "premium",
+      "corporate"
+     ],
+     "w": null
+    },
+    "onboardedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "riscoPontuacao": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "impostoId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "segment",
+       1
+      ],
+      [
+       "riscoPontuacao",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "transactions",
+   "name": "transacoes",
+   "doc_count": 1300,
+   "fields": {
+    "contaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "debit",
+      "credit",
+      "pix",
+      "transfer",
+      "fee"
+     ],
+     "w": null
+    },
+    "valor": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9000.0
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "counterparty": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "nome": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "banco": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "BK"
+      },
+      "conta": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "AC"
+      }
+     }
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "posted",
+      "pending",
+      "reversed"
+     ],
+     "w": null
+    },
+    "memo": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ref": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "contaId",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "contaId": {
+       "bsonType": "objectId"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "debit",
+        "credit",
+        "pix",
+        "transfer",
+        "fee"
+       ]
+      },
+      "valor": {
+       "bsonType": "decimal"
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "counterparty": {
+       "bsonType": "object",
+       "properties": {
+        "nome": {
+         "bsonType": "string"
+        },
+        "banco": {
+         "bsonType": "string"
+        },
+        "conta": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "nome",
+        "banco",
+        "conta"
+       ]
+      },
+      "situacao": {
+       "bsonType": "string",
+       "enum": [
+        "posted",
+        "pending",
+        "reversed"
+       ]
+      },
+      "memo": {
+       "bsonType": "string"
+      },
+      "ref": {
+       "bsonType": "binData"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "contaId",
+      "tipo",
+      "valor",
+      "em",
+      "situacao",
+      "ref"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "positions",
+   "name": "posicoes",
+   "doc_count": 1800,
+   "fields": {
+    "contaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "ticker": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TK"
+    },
+    "qtd": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100000
+    },
+    "avgPreco": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0
+    },
+    "openedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "total": {
+       "t": "decimal128",
+       "p": 0.5,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "label": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "stats": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "total": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 0.7,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "mode": {
+         "t": "string",
+         "p": 0.9,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "quota": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "em": {
+           "t": "date",
+           "p": 0.3,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          },
+          "habilitado": {
+           "t": "bool",
+           "p": 1.0,
+           "n": 0.0,
+           "pt": 0.5
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "contaId",
+       1
+      ],
+      [
+       "ticker",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ticker",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "contaId": {
+       "bsonType": "objectId"
+      },
+      "ticker": {
+       "bsonType": "string"
+      },
+      "qtd": {
+       "bsonType": "long"
+      },
+      "avgPreco": {
+       "bsonType": "decimal"
+      },
+      "openedEm": {
+       "bsonType": "date"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "extra": {
+       "bsonType": "object",
+       "properties": {
+        "total": {
+         "bsonType": "decimal"
+        },
+        "em": {
+         "bsonType": "date"
+        },
+        "label": {
+         "bsonType": "string"
+        },
+        "stats": {
+         "bsonType": "object",
+         "properties": {
+          "total": {
+           "bsonType": "decimal"
+          },
+          "pontuacao": {
+           "bsonType": "double"
+          },
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "quota": {
+           "bsonType": "object",
+           "properties": {
+            "em": {
+             "bsonType": "date"
+            },
+            "habilitado": {
+             "bsonType": "bool"
+            }
+           },
+           "required": [
+            "habilitado"
+           ]
+          }
+         },
+         "required": [
+          "total"
+         ]
+        }
+       },
+       "required": [
+        "em",
+        "label"
+       ]
+      }
+     },
+     "required": [
+      "contaId",
+      "ticker",
+      "qtd",
+      "avgPreco",
+      "openedEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "payments",
+   "name": "pagamentos",
+   "doc_count": 450,
+   "fields": {
+    "contaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "metodo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "boleto",
+      "pix",
+      "card"
+     ],
+     "w": null
+    },
+    "valor": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5000.0
+    },
+    "vencimento": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "pagoEm": {
+     "t": "date",
+     "p": 0.95,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "barcode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "barcode",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "contaId",
+       1
+      ],
+      [
+       "vencimento",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "contaId": {
+       "bsonType": "objectId"
+      },
+      "metodo": {
+       "bsonType": "string",
+       "enum": [
+        "boleto",
+        "pix",
+        "card"
+       ]
+      },
+      "valor": {
+       "bsonType": "decimal"
+      },
+      "vencimento": {
+       "bsonType": "date"
+      },
+      "pagoEm": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "barcode": {
+       "bsonType": "string"
+      },
+      "uid": {
+       "bsonType": "binData"
+      }
+     },
+     "required": [
+      "contaId",
+      "metodo",
+      "valor",
+      "vencimento",
+      "barcode",
+      "uid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "loans",
+   "name": "emprestimos",
+   "doc_count": 850,
+   "fields": {
+    "clienteId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "principal": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 500.0,
+     "hi": 200000.0
+    },
+    "taxaPct": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9.0
+    },
+    "periodoMonths": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 120
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "paid",
+      "default"
+     ],
+     "w": null
+    },
+    "schedule": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "n": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 120
+       },
+       "vencimento": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "valor": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 50.0,
+        "hi": 9000.0
+       },
+       "pago": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.5
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "meta": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "contagem": {
+       "t": "int32",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "pontuacao": {
+       "t": "double",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "configuracoes": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "contagem": {
+         "t": "int32",
+         "p": 0.9,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "habilitado": {
+         "t": "bool",
+         "p": 0.95,
+         "n": 0.0,
+         "pt": 0.5
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 0.7,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        }
+       }
+      }
+     }
+    },
+    "legacyId": {
+     "t": "uuid",
+     "p": 0.7,
+     "n": 0.0,
+     "v": 3
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "clienteId",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "schedule.pago",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "clienteId": {
+       "bsonType": "objectId"
+      },
+      "principal": {
+       "bsonType": "decimal"
+      },
+      "taxaPct": {
+       "bsonType": "double"
+      },
+      "periodoMonths": {
+       "bsonType": "int"
+      },
+      "situacao": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "paid",
+        "default"
+       ]
+      },
+      "schedule": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "n": {
+          "bsonType": "int"
+         },
+         "vencimento": {
+          "bsonType": "date"
+         },
+         "valor": {
+          "bsonType": "decimal"
+         },
+         "pago": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "n",
+         "vencimento",
+         "valor",
+         "pago"
+        ]
+       }
+      },
+      "meta": {
+       "bsonType": "object",
+       "properties": {
+        "contagem": {
+         "bsonType": "int"
+        },
+        "pontuacao": {
+         "bsonType": "double"
+        },
+        "total": {
+         "bsonType": "decimal"
+        },
+        "configuracoes": {
+         "bsonType": "object",
+         "properties": {
+          "contagem": {
+           "bsonType": "int"
+          },
+          "habilitado": {
+           "bsonType": "bool"
+          },
+          "pontuacao": {
+           "bsonType": "double"
+          }
+         }
+        }
+       }
+      },
+      "legacyId": {
+       "bsonType": "binData"
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "clienteId",
+      "principal",
+      "taxaPct",
+      "periodoMonths",
+      "situacao",
+      "schedule",
+      "meta",
+      "criadoEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "ledger_entries",
+   "name": "lancamentos",
+   "doc_count": 400,
+   "fields": {
+    "journal": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "J"
+    },
+    "conta": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "debit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0
+    },
+    "credit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "journal",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "conta",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "accounts",
+   "name": "contas",
+   "doc_count": 1200,
+   "fields": {
+    "clienteId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "checking",
+      "savings",
+      "investment"
+     ],
+     "w": null
+    },
+    "saldo": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "moeda": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": null
+    },
+    "openedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "history": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.3,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "numero",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "clienteId",
+       1
+      ],
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "saldo",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "closed": true
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "clienteId": {
+       "bsonType": "objectId"
+      },
+      "numero": {
+       "bsonType": "string"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "checking",
+        "savings",
+        "investment"
+       ]
+      },
+      "saldo": {
+       "bsonType": "decimal"
+      },
+      "moeda": {
+       "bsonType": "string",
+       "enum": [
+        "BRL",
+        "USD",
+        "EUR"
+       ]
+      },
+      "openedEm": {
+       "bsonType": "date"
+      },
+      "closed": {
+       "bsonType": "bool"
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "em": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "em",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "clienteId",
+      "numero",
+      "tipo",
+      "saldo",
+      "moeda",
+      "openedEm",
+      "closed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "budgets",
+   "name": "orcamentos",
+   "doc_count": 1450,
+   "fields": {
+    "dono": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "categoria": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "food",
+      "rent",
+      "travel",
+      "health",
+      "fun"
+     ],
+     "w": null
+    },
+    "month": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "limite": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50.0,
+     "hi": 9000.0
+    },
+    "spent": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dono",
+       1
+      ],
+      [
+       "month",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "categoria",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "dono": {
+       "bsonType": "objectId"
+      },
+      "categoria": {
+       "bsonType": "string",
+       "enum": [
+        "food",
+        "rent",
+        "travel",
+        "health",
+        "fun"
+       ]
+      },
+      "month": {
+       "bsonType": "date"
+      },
+      "limite": {
+       "bsonType": "decimal"
+      },
+      "spent": {
+       "bsonType": "decimal"
+      },
+      "uid": {
+       "bsonType": "binData"
+      },
+      "valorTotal": {
+       "bsonType": "decimal"
+      }
+     },
+     "required": [
+      "dono",
+      "categoria",
+      "month",
+      "limite",
+      "spent",
+      "uid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "cards",
+   "name": "cartoes",
+   "doc_count": 450,
+   "fields": {
+    "contaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "last4": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": ""
+    },
+    "marca": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "visa",
+      "master",
+      "elo",
+      "amex"
+     ],
+     "w": null
+    },
+    "limite": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 300.0,
+     "hi": 30000.0
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "blocked",
+      "expired"
+     ],
+     "w": null
+    },
+    "contactless": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "contagem": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "tamanho": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "window": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "habilitado": {
+         "t": "bool",
+         "p": 0.6,
+         "n": 0.0,
+         "pt": 0.5
+        },
+        "tamanho": {
+         "t": "int64",
+         "p": 0.6,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "label": {
+         "t": "string",
+         "p": 0.5,
+         "n": 0.0,
+         "g": "word"
+        },
+        "window": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "pontuacao": {
+           "t": "double",
+           "p": 0.7,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          },
+          "tamanho": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 9000000000
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "contaId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "marca",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "cartoes_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "last4": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "marca": {
+         "type": "token"
+        },
+        "situacao": {
+         "type": "token"
+        },
+        "limite": {
+         "type": "number"
+        },
+        "criadoEm": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "fx_rates",
+   "name": "Cotacoes",
+   "doc_count": 1700,
+   "fields": {
+    "Pair": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "USD/BRL",
+      "EUR/BRL",
+      "GBP/USD",
+      "JPY/USD"
+     ],
+     "w": null
+    },
+    "Em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Bid": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 6.0
+    },
+    "Ask": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 6.0
+    },
+    "Source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "VersionNo": {
+     "t": "int64",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "ValorTotal": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Pair",
+       1
+      ],
+      [
+       "Em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Pair": {
+       "bsonType": "string",
+       "enum": [
+        "USD/BRL",
+        "EUR/BRL",
+        "GBP/USD",
+        "JPY/USD"
+       ]
+      },
+      "Em": {
+       "bsonType": "date"
+      },
+      "Bid": {
+       "bsonType": "double"
+      },
+      "Ask": {
+       "bsonType": "double"
+      },
+      "Source": {
+       "bsonType": "string"
+      },
+      "VersionNo": {
+       "bsonType": "long"
+      },
+      "ValorTotal": {
+       "bsonType": "decimal"
+      }
+     },
+     "required": [
+      "Pair",
+      "Em",
+      "Bid",
+      "Ask",
+      "Source"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  }
+ ],
+ "language": "pt-BR"
+}

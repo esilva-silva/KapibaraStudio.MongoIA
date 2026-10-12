@@ -1,0 +1,902 @@
+{
+ "schema_id": "quasar_saas",
+ "domain": "saas",
+ "holdout": false,
+ "description": "saas procedural pt-BR sem acento, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "support_tickets",
+   "name": "chamados",
+   "doc_count": 1800,
+   "fields": {
+    "tenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "openedBy": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "users"
+    },
+    "subject": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "prioridade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "low",
+      "normal",
+      "high",
+      "urgent"
+     ],
+     "w": null
+    },
+    "messages": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "from": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "agent",
+         "customer"
+        ],
+        "w": null
+       },
+       "body": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "csat": {
+     "t": "int32",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": 1,
+     "hi": 5
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "prioridade",
+       1
+      ],
+      [
+       "openedBy",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "tenantId": {
+       "bsonType": "objectId"
+      },
+      "openedBy": {
+       "bsonType": "objectId"
+      },
+      "subject": {
+       "bsonType": "string"
+      },
+      "prioridade": {
+       "bsonType": "string",
+       "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+       ]
+      },
+      "messages": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "em": {
+          "bsonType": "date"
+         },
+         "from": {
+          "bsonType": "string",
+          "enum": [
+           "agent",
+           "customer"
+          ]
+         },
+         "body": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "em",
+         "from",
+         "body"
+        ]
+       }
+      },
+      "csat": {
+       "bsonType": [
+        "int",
+        "null"
+       ]
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      },
+      "embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "tenantId",
+      "openedBy",
+      "subject",
+      "prioridade",
+      "messages",
+      "criadoEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "chamados_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "subject": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "prioridade": {
+         "type": "token"
+        },
+        "csat": {
+         "type": "number"
+        },
+        "criadoEm": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "chamados_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "cosine"
+       },
+       {
+        "type": "filter",
+        "path": "prioridade"
+       },
+       {
+        "type": "filter",
+        "path": "csat"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "feature_flags",
+   "name": "flagsRecurso",
+   "doc_count": 1450,
+   "fields": {
+    "key": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "descricao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "habilitado": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "rolloutPct": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "rules": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "attr": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "op": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "eq",
+         "in",
+         "gt"
+        ],
+        "w": null
+       },
+       "valor": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "atualizadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "key",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "habilitado",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "api_keys",
+   "name": "chavesApi",
+   "doc_count": 1200,
+   "fields": {
+    "tenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "keyId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "prefix": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "scopes": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "read",
+       "write",
+       "admin"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "revoked": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    },
+    "ultimoUsed": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "history": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.3,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.7,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "keyId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tenantId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "scopes",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "chavesapi_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "prefix": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "ultimoUsed": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "users",
+   "name": "usuarios",
+   "doc_count": 1500,
+   "fields": {
+    "tenantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "papel": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "owner",
+      "admin",
+      "member",
+      "viewer"
+     ],
+     "w": null
+    },
+    "mfa": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.35
+    },
+    "ultimoVistoEm": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tenantId",
+       1
+      ],
+      [
+       "email",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "papel",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ultimoVistoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "tenantId": {
+       "bsonType": "objectId"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "papel": {
+       "bsonType": "string",
+       "enum": [
+        "owner",
+        "admin",
+        "member",
+        "viewer"
+       ]
+      },
+      "mfa": {
+       "bsonType": "bool"
+      },
+      "ultimoVistoEm": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "uid": {
+       "bsonType": "binData"
+      },
+      "versionNo": {
+       "bsonType": "long"
+      }
+     },
+     "required": [
+      "tenantId",
+      "email",
+      "papel",
+      "mfa",
+      "uid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "tenants",
+   "name": "inquilinos",
+   "doc_count": 1050,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "plano": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "free",
+      "team",
+      "business",
+      "enterprise"
+     ],
+     "w": null
+    },
+    "seats": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500
+    },
+    "mrr": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 20000.0
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "pontuacao": {
+       "t": "double",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "label": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "window": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "tamanho": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "total": {
+         "t": "decimal128",
+         "p": 0.7,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "em": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    },
+    "externalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "plano",
+       1
+      ],
+      [
+       "mrr",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "plano": {
+       "bsonType": "string",
+       "enum": [
+        "free",
+        "team",
+        "business",
+        "enterprise"
+       ]
+      },
+      "seats": {
+       "bsonType": "int"
+      },
+      "mrr": {
+       "bsonType": "decimal"
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      },
+      "extra": {
+       "bsonType": "object",
+       "properties": {
+        "em": {
+         "bsonType": "date"
+        },
+        "pontuacao": {
+         "bsonType": "double"
+        },
+        "label": {
+         "bsonType": "string"
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "tamanho": {
+           "bsonType": "long"
+          },
+          "total": {
+           "bsonType": "decimal"
+          },
+          "em": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "tamanho",
+          "em"
+         ]
+        }
+       },
+       "required": [
+        "em",
+        "label"
+       ]
+      },
+      "externalId": {
+       "bsonType": "binData"
+      }
+     },
+     "required": [
+      "nome",
+      "plano",
+      "seats",
+      "mrr",
+      "criadoEm",
+      "externalId"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  }
+ ],
+ "language": "pt-BR"
+}

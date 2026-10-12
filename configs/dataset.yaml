@@ -1,0 +1,98 @@
+# dataset.yaml - parametros dos geradores de snippets/FIM (spec fase-03 §4.3-4.6)
+# Lido por scripts/data/gen_snippets.py, gen_fim.py e validate_snippets.py.
+version: v1
+seed: 20261008
+schemas_dir: data/schemas
+out_dir: data/generated
+
+# Dominios holdout: seus grupos vao so para test/bench (nunca train/val).
+holdout_domains: [education, legal]
+
+snippets:
+  count: 20000
+  max_chars: 1800            # descarta snippets longos demais
+  kinds:                     # proporcao por tipo de statement
+    find: 0.40
+    aggregate: 0.34
+    countDocuments: 0.05
+    distinct: 0.04
+    findOne: 0.03
+    update: 0.10             # updateOne/updateMany (escrita: nunca executada)
+    delete: 0.04             # deleteOne/deleteMany (escrita: nunca executada)
+  layouts: {compact: 0.25, lines: 0.40, pretty: 0.35}
+  quotes: {double: 0.55, single: 0.45}
+  indent: {2: 0.55, 4: 0.45}
+  crlf_ratio: 0.55           # fracao de snippets com CRLF (spec: 40-70%)
+  unquoted_keys: 0.6         # chaves sem aspas quando identificador valido
+  semicolon: 0.3
+  to_array: 0.45             # acrescenta .toArray() em find/aggregate
+  root_forms: {auto: 0.72, getCollection: 0.10, bracket: 0.06, pool: 0.07, var: 0.05}
+  const_extract: 0.12        # filtro/pipeline extraido para `const x = ...;`
+  date_forms: {isodate: 0.6, new_date: 0.4}
+
+fim:
+  count: 60000
+  max_tokens: 96             # limite de resposta (spec §4.3)
+  chars_per_token: 3.0       # aproximacao (sem tokenizer Qwen aqui)
+  cut_targets:               # alvo de distribuicao no train, +-2 p.p.
+    key: 0.16
+    value: 0.14
+    operator: 0.14
+    stage: 0.12
+    member: 0.10
+    partial: 0.10
+    rest: 0.12
+    multiline: 0.08
+    stmt_start: 0.04
+
+splits:                      # por grupo (domain/schema::template), nunca por exemplo
+  train: 0.88
+  val: 0.06
+  test: 0.03
+  bench: 0.03
+  reserved_template_fraction: 0.10   # templates reservados -> test
+  holdout_bench_fraction: 0.40       # holdout: 40% bench / 60% test
+
+validation:
+  uri: mongodb://127.0.0.1:27017
+  db_prefix: kapi_fx_
+  max_time_ms: 2000
+  workers: 8
+  result_cap: 101
+
+# --- chat curto / correcao / negativos / explain (gen_chat.py; spec §4.3, §4.6) ---
+chat:
+  count: 6000
+  kinds: {chat: 0.62, correction: 0.22, negative: 0.11, explain: 0.05}   # explain <= 5%
+  languages: {pt-BR: 0.5, en: 0.5}
+  register: {n: 0.45, i: 0.30, t: 0.25}   # neutro / informal / tecnico
+  pt_deaccent: 0.30          # fracao das instrucoes pt-BR escritas sem acento
+  typo: 0.04                 # erro de digitacao (troca de letras) em palavras de template
+  ambiguous_collection: 0.10 # "nesta colecao"/"aqui" em vez do nome (resolvido pelo contexto)
+  modify_fraction: 0.35      # dos chat elegiveis (find com sort/limit/proj; aggregate com $sort/$limit finais): editor ja tem a consulta base
+  correction_error_message: 0.5
+  max_instruction_chars: 520
+  preview_in_write_refusal: 0.35   # recusa de escrita + find de leitura equivalente (executado)
+  negative_types: {write: 0.45, out_of_scope: 0.25, no_collection: 0.15, ambiguous: 0.15}
+  defects:                   # familias de defeito injetado (correction)
+    wrong_field: 0.20
+    wrong_operator: 0.15
+    missing_dollar: 0.15
+    syntax_comma: 0.10
+    syntax_quote: 0.06
+    syntax_bracket: 0.06
+    wrong_type: 0.15
+    invalid_api: 0.13
+  style:                     # estilo de renderizacao dos outputs (sobrepoe snippets.*)
+    layouts: {compact: 0.45, lines: 0.40, pretty: 0.15}
+    crlf_ratio: 0.10
+    root_forms: {auto: 0.80, getCollection: 0.09, bracket: 0.05, pool: 0.06}
+    const_extract: 0.05
+    to_array: 0.30
+    semicolon: 0.15
+  # fracao do treino TOTAL por componente (chat+correcao <= 25%; negativos pequenos)
+  mixture:
+    autocomplete: 0.76       # fim + completion
+    chat: 0.15               # chat + explain
+    correction: 0.06
+    negative: 0.03

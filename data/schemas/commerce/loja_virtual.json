@@ -1,0 +1,473 @@
+{
+ "schema_id": "loja_virtual",
+ "domain": "commerce",
+ "holdout": false,
+ "description": "Loja pt-BR sem acento, snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "clientes",
+   "name": "clientes",
+   "doc_count": 1600,
+   "fields": {
+    "nome_completo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "telefone": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "phone"
+    },
+    "endereco": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "rua": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "title"
+      },
+      "cidade": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "estado": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "SP",
+        "RJ",
+        "MG",
+        "BA",
+        "RS",
+        "PR"
+       ],
+       "w": null
+      },
+      "cep": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "CEP"
+      }
+     }
+    },
+    "data_cadastro": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ativo": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.9
+    },
+    "preferencias": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "endereco.estado",
+       1
+      ],
+      [
+       "ativo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "data_cadastro",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "produtos",
+   "name": "produtos",
+   "doc_count": 1450,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "descricao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "preco": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 3,
+     "hi": 1500
+    },
+    "estoque": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 800
+    },
+    "categoria": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "eletronicos",
+      "casa",
+      "moda",
+      "esporte",
+      "livros"
+     ],
+     "w": null
+    },
+    "peso_kg": {
+     "t": "double",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 0.05,
+     "hi": 30
+    },
+    "variacoes": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "cor": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "tamanho": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "P",
+         "M",
+         "G"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "categoria",
+       1
+      ],
+      [
+       "preco",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "estoque",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "estoque": {
+       "$gt": 0
+      }
+     }
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "pedidos",
+   "name": "pedidos",
+   "doc_count": 1450,
+   "fields": {
+    "cliente_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clientes"
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "aberto",
+      "pago",
+      "enviado",
+      "entregue",
+      "cancelado"
+     ],
+     "w": [
+      10,
+      25,
+      25,
+      30,
+      10
+     ]
+    },
+    "valor_total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 5000
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "itens": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "produto_id": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "produtos"
+       },
+       "quantidade": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 5
+       },
+       "preco_unitario": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 3,
+        "hi": 1500
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "pagamento": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "forma": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "pix",
+        "cartao",
+        "boleto"
+       ],
+       "w": [
+        50,
+        40,
+        10
+       ]
+      },
+      "parcelas": {
+       "t": "int32",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 12
+      },
+      "aprovado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.9
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cliente_id",
+       1
+      ],
+      [
+       "criado_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "itens.produto_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "pagamento.forma",
+       1
+      ],
+      [
+       "pagamento.aprovado",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "Avaliacoes",
+   "name": "Avaliacoes",
+   "doc_count": 250,
+   "fields": {
+    "produto_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "produtos"
+    },
+    "cliente_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clientes"
+    },
+    "nota": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "comentario": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.1,
+     "g": "sentence"
+    },
+    "data": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "produto_id",
+       1
+      ],
+      [
+       "nota",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  }
+ ],
+ "language": "pt-BR"
+}

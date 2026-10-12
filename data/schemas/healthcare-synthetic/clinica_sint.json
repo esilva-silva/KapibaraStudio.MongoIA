@@ -1,0 +1,619 @@
+{
+ "schema_id": "clinica_sint",
+ "domain": "healthcare-synthetic",
+ "holdout": false,
+ "description": "Clínica SINTÉTICA (dados fictícios), snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "pacientes",
+   "name": "pacientes",
+   "doc_count": 500,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PX"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "nascimento": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "1935-01-01",
+     "hi": "2024-12-31"
+    },
+    "sexo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "F",
+      "M",
+      "O"
+     ],
+     "w": [
+      48,
+      48,
+      4
+     ]
+    },
+    "convenio": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "particular",
+      "plano_a",
+      "plano_b",
+      "sus"
+     ],
+     "w": [
+      10,
+      30,
+      20,
+      40
+     ]
+    },
+    "alergias": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 3
+    },
+    "contato": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "telefone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "phone"
+      },
+      "email": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "email"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "convenio",
+       1
+      ],
+      [
+       "sexo",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "codigo": {
+       "bsonType": "string"
+      },
+      "nome": {
+       "bsonType": "string"
+      },
+      "nascimento": {
+       "bsonType": "date"
+      },
+      "sexo": {
+       "bsonType": "string",
+       "enum": [
+        "F",
+        "M",
+        "O"
+       ]
+      },
+      "convenio": {
+       "bsonType": "string",
+       "enum": [
+        "particular",
+        "plano_a",
+        "plano_b",
+        "sus"
+       ]
+      },
+      "alergias": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "contato": {
+       "bsonType": "object",
+       "properties": {
+        "telefone": {
+         "bsonType": "string"
+        },
+        "email": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "telefone"
+       ]
+      }
+     },
+     "required": [
+      "codigo",
+      "nome",
+      "nascimento",
+      "sexo"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "medicos",
+   "name": "medicos",
+   "doc_count": 1050,
+   "fields": {
+    "crm_sint": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CRM"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "especialidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "clinica",
+      "cardio",
+      "pediatria",
+      "orto",
+      "derma"
+     ],
+     "w": null
+    },
+    "agenda_aberta": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "crm_sint",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "especialidade",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "consultas",
+   "name": "consultas",
+   "doc_count": 1500,
+   "fields": {
+    "paciente_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "pacientes"
+    },
+    "medico_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "medicos"
+    },
+    "inicio": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-01-01",
+     "hi": "2026-12-31"
+    },
+    "duracao_min": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 90
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "rotina",
+      "retorno",
+      "urgencia"
+     ],
+     "w": [
+      60,
+      30,
+      10
+     ]
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "marcada",
+      "realizada",
+      "faltou",
+      "cancelada"
+     ],
+     "w": [
+      20,
+      60,
+      10,
+      10
+     ]
+    },
+    "notas": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "sinais": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "pa_sis": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 90,
+       "hi": 180
+      },
+      "pa_dia": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 110
+      },
+      "temp_c": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 35,
+       "hi": 40
+      },
+      "peso_kg": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 3,
+       "hi": 140
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "paciente_id",
+       1
+      ],
+      [
+       "inicio",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "medico_id",
+       1
+      ],
+      [
+       "inicio",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "situacao",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "paciente_id": {
+       "bsonType": "objectId"
+      },
+      "medico_id": {
+       "bsonType": "objectId"
+      },
+      "inicio": {
+       "bsonType": "date"
+      },
+      "duracao_min": {
+       "bsonType": "int"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "rotina",
+        "retorno",
+        "urgencia"
+       ]
+      },
+      "situacao": {
+       "bsonType": "string",
+       "enum": [
+        "marcada",
+        "realizada",
+        "faltou",
+        "cancelada"
+       ]
+      },
+      "notas": {
+       "bsonType": "string"
+      },
+      "sinais": {
+       "bsonType": "object",
+       "properties": {
+        "pa_sis": {
+         "bsonType": "int"
+        },
+        "pa_dia": {
+         "bsonType": "int"
+        },
+        "temp_c": {
+         "bsonType": "double"
+        },
+        "peso_kg": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "pa_sis",
+        "pa_dia",
+        "temp_c",
+        "peso_kg"
+       ]
+      }
+     },
+     "required": [
+      "paciente_id",
+      "medico_id",
+      "inicio",
+      "duracao_min",
+      "tipo",
+      "situacao"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "consultas_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "notas": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "tipo": {
+         "type": "token"
+        },
+        "situacao": {
+         "type": "token"
+        },
+        "inicio": {
+         "type": "date"
+        },
+        "duracao_min": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "exames",
+   "name": "exames",
+   "doc_count": 1850,
+   "fields": {
+    "consulta_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "consultas"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hemograma",
+      "glicemia",
+      "raio_x",
+      "ecg",
+      "ultrassom"
+     ],
+     "w": null
+    },
+    "solicitado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "resultado": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "valor": {
+       "t": "double",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 500
+      },
+      "unidade": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "word"
+      },
+      "laudo": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "consulta_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ],
+      [
+       "solicitado_em",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "consulta_id": {
+       "bsonType": "objectId"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "hemograma",
+        "glicemia",
+        "raio_x",
+        "ecg",
+        "ultrassom"
+       ]
+      },
+      "solicitado_em": {
+       "bsonType": "date"
+      },
+      "resultado": {
+       "bsonType": "object",
+       "properties": {
+        "valor": {
+         "bsonType": "double"
+        },
+        "unidade": {
+         "bsonType": "string"
+        },
+        "laudo": {
+         "bsonType": "string"
+        }
+       }
+      }
+     },
+     "required": [
+      "consulta_id",
+      "tipo",
+      "solicitado_em"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

@@ -1,0 +1,1918 @@
+{
+ "schema_id": "saffron_iot",
+ "domain": "iot",
+ "holdout": false,
+ "description": "iot procedural pt-BR sem acento, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "telemetry_batches",
+   "name": "lotesTelemetria",
+   "doc_count": 1850,
+   "fields": {
+    "gatewayId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "gateways"
+    },
+    "receivedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "contagem": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500
+    },
+    "points": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "dispositivo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "hex"
+       },
+       "t": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "v": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 100.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "compressed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "gatewayId",
+       1
+      ],
+      [
+       "receivedEm",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "receivedEm",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "lotestelemetria_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "receivedEm": {
+         "type": "date"
+        },
+        "contagem": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "commands",
+   "name": "comandos",
+   "doc_count": 1800,
+   "fields": {
+    "dispositivoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "reboot",
+      "calibrate",
+      "update",
+      "sample_rate"
+     ],
+     "w": null
+    },
+    "params": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "taxaHz": {
+       "t": "int32",
+       "p": 0.7,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 100
+      },
+      "force": {
+       "t": "bool",
+       "p": 0.8,
+       "n": 0.0,
+       "pt": 0.2
+      }
+     }
+    },
+    "issuedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "queued",
+      "sent",
+      "ack",
+      "failed"
+     ],
+     "w": null
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 0.95,
+     "n": 0.0,
+     "v": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dispositivoId",
+       1
+      ],
+      [
+       "issuedEm",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "situacao",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "dispositivoId": {
+       "bsonType": "objectId"
+      },
+      "nome": {
+       "bsonType": "string",
+       "enum": [
+        "reboot",
+        "calibrate",
+        "update",
+        "sample_rate"
+       ]
+      },
+      "params": {
+       "bsonType": "object",
+       "properties": {
+        "taxaHz": {
+         "bsonType": "int"
+        },
+        "force": {
+         "bsonType": "bool"
+        }
+       }
+      },
+      "issuedEm": {
+       "bsonType": "date"
+      },
+      "situacao": {
+       "bsonType": "string",
+       "enum": [
+        "queued",
+        "sent",
+        "ack",
+        "failed"
+       ]
+      },
+      "uid": {
+       "bsonType": "binData"
+      }
+     },
+     "required": [
+      "dispositivoId",
+      "nome",
+      "params",
+      "issuedEm",
+      "situacao"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "readings",
+   "name": "leituras",
+   "doc_count": 1100,
+   "fields": {
+    "sensorId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sensors"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "valor": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -20.0,
+     "hi": 120.0
+    },
+    "quality": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "raw": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 65535
+    },
+    "flags": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "spike",
+       "stale",
+       "interpolated"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "history": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sensorId",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "sites",
+   "name": "locais",
+   "doc_count": 700,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "cidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      }
+     }
+    },
+    "timezone": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "devicesExpected": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 300
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "label": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "word"
+      },
+      "habilitado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "configuracoes": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "label": {
+         "t": "string",
+         "p": 0.95,
+         "n": 0.0,
+         "g": "word"
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "habilitado": {
+         "t": "bool",
+         "p": 0.95,
+         "n": 0.0,
+         "pt": 0.5
+        }
+       }
+      }
+     }
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cidade",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "maintenance",
+   "name": "manutencoes",
+   "doc_count": 2000,
+   "fields": {
+    "dispositivoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "technician": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "performedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 3000.0
+    },
+    "parts": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "codigo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "PT"
+       },
+       "qtd": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 5
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "observacoes": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "info": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "habilitado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "pontuacao": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "limits": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "tamanho": {
+         "t": "int64",
+         "p": 0.6,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "label": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "limits": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "pontuacao": {
+           "t": "double",
+           "p": 0.8,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          },
+          "label": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dispositivoId",
+       1
+      ],
+      [
+       "performedEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "sensors",
+   "name": "sensores",
+   "doc_count": 700,
+   "fields": {
+    "dispositivoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "temperature",
+      "humidity",
+      "pressure",
+      "vibration",
+      "co2"
+     ],
+     "w": null
+    },
+    "unidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "C",
+      "%",
+      "hPa",
+      "mm_s",
+      "ppm"
+     ],
+     "w": null
+    },
+    "calibratedEm": {
+     "t": "date",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "range": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "min": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -50.0,
+       "hi": 0.0
+      },
+      "max": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10.0,
+       "hi": 200.0
+      }
+     }
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "habilitado": {
+       "t": "bool",
+       "p": 0.3,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "tamanho": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "audit": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "habilitado": {
+         "t": "bool",
+         "p": 0.7,
+         "n": 0.0,
+         "pt": 0.5
+        },
+        "total": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "contagem": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "attrs": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "tamanho": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 9000000000
+          },
+          "label": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          },
+          "mode": {
+           "t": "string",
+           "p": 0.9,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "a",
+            "b",
+            "c"
+           ],
+           "w": null
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dispositivoId",
+       1
+      ],
+      [
+       "tipo",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "dispositivoId": {
+       "bsonType": "objectId"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "temperature",
+        "humidity",
+        "pressure",
+        "vibration",
+        "co2"
+       ]
+      },
+      "unidade": {
+       "bsonType": "string",
+       "enum": [
+        "C",
+        "%",
+        "hPa",
+        "mm_s",
+        "ppm"
+       ]
+      },
+      "calibratedEm": {
+       "bsonType": "date"
+      },
+      "range": {
+       "bsonType": "object",
+       "properties": {
+        "min": {
+         "bsonType": "double"
+        },
+        "max": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "min",
+        "max"
+       ]
+      },
+      "meta": {
+       "bsonType": "object",
+       "properties": {
+        "habilitado": {
+         "bsonType": "bool"
+        },
+        "tamanho": {
+         "bsonType": "long"
+        },
+        "total": {
+         "bsonType": "decimal"
+        },
+        "audit": {
+         "bsonType": "object",
+         "properties": {
+          "habilitado": {
+           "bsonType": "bool"
+          },
+          "total": {
+           "bsonType": "decimal"
+          },
+          "contagem": {
+           "bsonType": "int"
+          },
+          "attrs": {
+           "bsonType": "object",
+           "properties": {
+            "tamanho": {
+             "bsonType": "long"
+            },
+            "label": {
+             "bsonType": "string"
+            },
+            "mode": {
+             "bsonType": "string",
+             "enum": [
+              "a",
+              "b",
+              "c"
+             ]
+            }
+           },
+           "required": [
+            "tamanho",
+            "label"
+           ]
+          }
+         },
+         "required": [
+          "total",
+          "contagem"
+         ]
+        }
+       },
+       "required": [
+        "tamanho",
+        "total"
+       ]
+      }
+     },
+     "required": [
+      "dispositivoId",
+      "tipo",
+      "unidade",
+      "range"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "alerts",
+   "name": "alertas",
+   "doc_count": 1250,
+   "fields": {
+    "dispositivoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "rule": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "severity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "info",
+      "warn",
+      "crit"
+     ],
+     "w": null
+    },
+    "closedEm": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ack": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "context": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "valor": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 200.0
+      },
+      "threshold": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 200.0
+      },
+      "window": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "from": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "to": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    },
+    "history": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.95,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dispositivoId",
+       1
+      ],
+      [
+       "severity",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "dispositivoId": {
+       "bsonType": "objectId"
+      },
+      "rule": {
+       "bsonType": "string"
+      },
+      "severity": {
+       "bsonType": "string",
+       "enum": [
+        "info",
+        "warn",
+        "crit"
+       ]
+      },
+      "closedEm": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "ack": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "em": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "em"
+       ]
+      },
+      "context": {
+       "bsonType": "object",
+       "properties": {
+        "valor": {
+         "bsonType": "double"
+        },
+        "threshold": {
+         "bsonType": "double"
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "from": {
+           "bsonType": "date"
+          },
+          "to": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "from",
+          "to"
+         ]
+        }
+       },
+       "required": [
+        "valor",
+        "threshold",
+        "window"
+       ]
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "em": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "em",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "dispositivoId",
+      "rule",
+      "severity"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "gateways",
+   "name": "gateways",
+   "doc_count": 950,
+   "fields": {
+    "mac": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "localId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sites"
+    },
+    "ip": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "uplink": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "lte",
+      "wifi",
+      "eth"
+     ],
+     "w": null
+    },
+    "connected": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "devices"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "legacyId": {
+     "t": "uuid",
+     "p": 0.6,
+     "n": 0.0,
+     "v": 3
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "mac",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "localId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "uplink",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "mac": {
+       "bsonType": "string"
+      },
+      "localId": {
+       "bsonType": "objectId"
+      },
+      "ip": {
+       "bsonType": "string"
+      },
+      "uplink": {
+       "bsonType": "string",
+       "enum": [
+        "lte",
+        "wifi",
+        "eth"
+       ]
+      },
+      "connected": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "legacyId": {
+       "bsonType": "binData"
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "em": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "em",
+         "by",
+         "change"
+        ]
+       }
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "mac",
+      "localId",
+      "ip",
+      "uplink",
+      "criadoEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "gateways_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "mac": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "ip": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "uplink": {
+         "type": "token"
+        },
+        "versionNo": {
+         "type": "number"
+        },
+        "criadoEm": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "devices",
+   "name": "dispositivos",
+   "doc_count": 1800,
+   "fields": {
+    "serial": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "th-100",
+      "pm-200",
+      "gw-300",
+      "cam-9"
+     ],
+     "w": null
+    },
+    "localId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sites"
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.85
+    },
+    "installedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "batteryPct": {
+     "t": "int32",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "labels": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "env": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "prod",
+        "test"
+       ],
+       "w": null
+      },
+      "zone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "dono": {
+       "t": "string",
+       "p": 0.3,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "tamanho": {
+       "t": "int64",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "contagem": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "window": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "mode": {
+         "t": "string",
+         "p": 0.5,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "tamanho": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "serial",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "localId",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "model",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "serial": {
+       "bsonType": "string"
+      },
+      "model": {
+       "bsonType": "string",
+       "enum": [
+        "th-100",
+        "pm-200",
+        "gw-300",
+        "cam-9"
+       ]
+      },
+      "localId": {
+       "bsonType": "objectId"
+      },
+      "online": {
+       "bsonType": "bool"
+      },
+      "installedEm": {
+       "bsonType": "date"
+      },
+      "batteryPct": {
+       "bsonType": "int"
+      },
+      "uuid": {
+       "bsonType": "binData"
+      },
+      "labels": {
+       "bsonType": "object",
+       "properties": {
+        "env": {
+         "bsonType": "string",
+         "enum": [
+          "prod",
+          "test"
+         ]
+        },
+        "zone": {
+         "bsonType": "string"
+        },
+        "dono": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "env",
+        "zone"
+       ]
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "tamanho": {
+         "bsonType": "long"
+        },
+        "contagem": {
+         "bsonType": "int"
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "pontuacao": {
+           "bsonType": "double"
+          },
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "tamanho": {
+           "bsonType": "long"
+          }
+         },
+         "required": [
+          "pontuacao",
+          "tamanho"
+         ]
+        }
+       },
+       "required": [
+        "contagem"
+       ]
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "serial",
+      "model",
+      "localId",
+      "online",
+      "installedEm",
+      "uuid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  }
+ ],
+ "language": "pt-BR"
+}

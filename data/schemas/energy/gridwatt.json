@@ -1,0 +1,541 @@
+{
+ "schema_id": "gridwatt",
+ "domain": "energy",
+ "holdout": false,
+ "description": "Energia / medidores, snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "meters",
+   "name": "meters",
+   "doc_count": 1100,
+   "fields": {
+    "meter_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "customer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "tariff": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial",
+      "rural"
+     ],
+     "w": [
+      60,
+      20,
+      10,
+      10
+     ]
+    },
+    "installed_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2012-01-01",
+     "hi": "2026-06-01"
+    },
+    "location": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "city": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "substation": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "SE"
+      },
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34,
+       "hi": 5
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74,
+       "hi": -35
+      }
+     }
+    },
+    "smart": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.55
+    },
+    "capacity_kva": {
+     "t": "double",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "meter_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tariff",
+       1
+      ],
+      [
+       "smart",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "location.substation",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "consumption",
+   "name": "consumption",
+   "doc_count": 1100,
+   "fields": {
+    "meter_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "meters"
+    },
+    "period": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-01-01",
+     "hi": "2026-09-30"
+    },
+    "kwh": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 2500
+    },
+    "peak_kw": {
+     "t": "double",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 2500
+    },
+    "estimated": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "meter_id",
+       1
+      ],
+      [
+       "period",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "period",
+       1
+      ],
+      [
+       "kwh",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "outages",
+   "name": "outages",
+   "doc_count": 450,
+   "fields": {
+    "substation": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SE"
+    },
+    "started_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "restored_at": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "cause": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "storm",
+      "equipment",
+      "planned",
+      "unknown"
+     ],
+     "w": [
+      20,
+      40,
+      30,
+      10
+     ]
+    },
+    "affected": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000
+    },
+    "crews": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "crew_id": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "CR"
+       },
+       "eta_min": {
+        "t": "int32",
+        "p": 0.8,
+        "n": 0.0,
+        "lo": 5,
+        "hi": 240
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "substation",
+       1
+      ],
+      [
+       "started_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "cause",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "substation": {
+       "bsonType": "string"
+      },
+      "started_at": {
+       "bsonType": "date"
+      },
+      "restored_at": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "cause": {
+       "bsonType": "string",
+       "enum": [
+        "storm",
+        "equipment",
+        "planned",
+        "unknown"
+       ]
+      },
+      "affected": {
+       "bsonType": "int"
+      },
+      "crews": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "crew_id": {
+          "bsonType": "string"
+         },
+         "eta_min": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "crew_id"
+        ]
+       }
+      }
+     },
+     "required": [
+      "substation",
+      "started_at",
+      "cause",
+      "affected"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "outages_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "substation": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "cause": {
+         "type": "token"
+        },
+        "started_at": {
+         "type": "date"
+        },
+        "restored_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "generation-units",
+   "name": "generation-units",
+   "doc_count": 1500,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hydro",
+      "solar",
+      "wind",
+      "thermal"
+     ],
+     "w": [
+      40,
+      25,
+      25,
+      10
+     ]
+    },
+    "mw": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.85
+    },
+    "readings": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2026-09-01",
+        "hi": "2026-09-30"
+       },
+       "mw": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 900
+       }
+      }
+     },
+     "min": 0,
+     "max": 5
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "source",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "source": {
+       "bsonType": "string",
+       "enum": [
+        "hydro",
+        "solar",
+        "wind",
+        "thermal"
+       ]
+      },
+      "mw": {
+       "bsonType": "double"
+      },
+      "online": {
+       "bsonType": "bool"
+      },
+      "readings": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "mw": {
+          "bsonType": "double"
+         }
+        },
+        "required": [
+         "at",
+         "mw"
+        ]
+       }
+      }
+     },
+     "required": [
+      "name",
+      "source",
+      "mw",
+      "online"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

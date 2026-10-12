@@ -1,0 +1,1254 @@
+{
+ "schema_id": "lumen_nrg",
+ "domain": "energy",
+ "holdout": false,
+ "description": "energy procedural EN, snake",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "consumption",
+   "name": "consumption",
+   "doc_count": 800,
+   "fields": {
+    "meter_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "meters"
+    },
+    "period": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kwh": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 2500.0
+    },
+    "peak_kw": {
+     "t": "double",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90.0
+    },
+    "estimated": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 0.5,
+     "n": 0.0,
+     "v": 3
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "meter_id",
+       1
+      ],
+      [
+       "period",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "period",
+       1
+      ],
+      [
+       "kwh",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "meter_id": {
+       "bsonType": "objectId"
+      },
+      "period": {
+       "bsonType": "date"
+      },
+      "kwh": {
+       "bsonType": "double"
+      },
+      "peak_kw": {
+       "bsonType": "double"
+      },
+      "estimated": {
+       "bsonType": "bool"
+      },
+      "uid": {
+       "bsonType": "binData"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "meter_id",
+      "period",
+      "kwh",
+      "estimated"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "grid_events",
+   "name": "grid_events",
+   "doc_count": 1100,
+   "fields": {
+    "substation_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "overload",
+      "fault",
+      "switch",
+      "reclose"
+     ],
+     "w": null
+    },
+    "severity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "details": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "phase": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "A",
+        "B",
+        "C"
+       ],
+       "w": null
+      },
+      "current_a": {
+       "t": "double",
+       "p": 0.4,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 9000.0
+      }
+     }
+    },
+    "attrs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "size": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "label": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "word"
+      },
+      "attrs": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "count": {
+         "t": "int32",
+         "p": 0.7,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "total": {
+         "t": "decimal128",
+         "p": 0.6,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "substation_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "substation_id": {
+       "bsonType": "objectId"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "overload",
+        "fault",
+        "switch",
+        "reclose"
+       ]
+      },
+      "severity": {
+       "bsonType": "int"
+      },
+      "details": {
+       "bsonType": "object",
+       "properties": {
+        "phase": {
+         "bsonType": "string",
+         "enum": [
+          "A",
+          "B",
+          "C"
+         ]
+        },
+        "current_a": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "phase"
+       ]
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "size": {
+         "bsonType": "long"
+        },
+        "label": {
+         "bsonType": "string"
+        },
+        "attrs": {
+         "bsonType": "object",
+         "properties": {
+          "count": {
+           "bsonType": "int"
+          },
+          "total": {
+           "bsonType": "decimal"
+          }
+         }
+        }
+       },
+       "required": [
+        "size"
+       ]
+      }
+     },
+     "required": [
+      "substation_id",
+      "at",
+      "kind",
+      "severity",
+      "attrs"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "grid_events_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "kind": {
+         "type": "token"
+        },
+        "at": {
+         "type": "date"
+        },
+        "severity": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "maintenance_orders",
+   "name": "maintenance orders",
+   "doc_count": 1750,
+   "fields": {
+    "asset": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "generation_units"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "preventive",
+      "corrective",
+      "inspection"
+     ],
+     "w": null
+    },
+    "opened_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed_at": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "crew": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "name"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "tasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.6
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "history": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "asset",
+       1
+      ],
+      [
+       "opened_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "asset": {
+       "bsonType": "objectId"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "preventive",
+        "corrective",
+        "inspection"
+       ]
+      },
+      "opened_at": {
+       "bsonType": "date"
+      },
+      "closed_at": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "crew": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "tasks": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "desc": {
+          "bsonType": "string"
+         },
+         "done": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "desc",
+         "done"
+        ]
+       }
+      },
+      "version_no": {
+       "bsonType": "long"
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "at",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "asset",
+      "kind",
+      "opened_at",
+      "crew",
+      "tasks"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "maintenance_orders_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "kind": {
+         "type": "token"
+        },
+        "opened_at": {
+         "type": "date"
+        },
+        "closed_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "contracts",
+   "name": "contracts",
+   "doc_count": 650,
+   "fields": {
+    "customer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "meter_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "meters"
+    },
+    "tariff_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tariffs"
+    },
+    "term_months": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 60
+    },
+    "amount_total": {
+     "t": "decimal128",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "meter_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tariff_id",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "generation_units",
+   "name": "generation_units",
+   "doc_count": 1050,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hydro",
+      "solar",
+      "wind",
+      "thermal"
+     ],
+     "w": null
+    },
+    "mw": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900.0
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.85
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "source",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "generation_units_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "source": {
+         "type": "token"
+        },
+        "mw": {
+         "type": "number"
+        },
+        "version_no": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "meters",
+   "name": "meters",
+   "doc_count": 1800,
+   "fields": {
+    "meter_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "customer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "tariff": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial",
+      "rural"
+     ],
+     "w": null
+    },
+    "installed_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2012-01-01",
+     "hi": "2026-06-01"
+    },
+    "substation_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "substations"
+    },
+    "smart": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.55
+    },
+    "capacity_kva": {
+     "t": "double",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 500.0
+    },
+    "legacy_id": {
+     "t": "uuid",
+     "p": 0.9,
+     "n": 0.0,
+     "v": 3
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "meter_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tariff",
+       1
+      ],
+      [
+       "smart",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "substation_id",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "substations",
+   "name": "substations",
+   "doc_count": 1550,
+   "fields": {
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SE"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "voltage_kv": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "13.8",
+      "69",
+      "138",
+      "230",
+      "500"
+     ],
+     "w": null
+    },
+    "city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      }
+     }
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "voltage_kv",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "code": {
+       "bsonType": "string"
+      },
+      "name": {
+       "bsonType": "string"
+      },
+      "voltage_kv": {
+       "bsonType": "string",
+       "enum": [
+        "13.8",
+        "69",
+        "138",
+        "230",
+        "500"
+       ]
+      },
+      "city": {
+       "bsonType": "string"
+      },
+      "geo": {
+       "bsonType": "object",
+       "properties": {
+        "lat": {
+         "bsonType": "double"
+        },
+        "lng": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "lat",
+        "lng"
+       ]
+      },
+      "online": {
+       "bsonType": "bool"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "created_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "code",
+      "name",
+      "voltage_kv",
+      "city",
+      "geo",
+      "online",
+      "created_at"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "tariffs",
+   "name": "tariffs",
+   "doc_count": 1550,
+   "fields": {
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TF"
+    },
+    "class": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial"
+     ],
+     "w": null
+    },
+    "bands": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "off",
+         "mid",
+         "peak"
+        ],
+        "w": null
+       },
+       "from_h": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 23
+       },
+       "to_h": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 23
+       },
+       "price": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.1,
+        "hi": 3.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "valid_from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "valid_until": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "amount_total": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "class",
+       1
+      ],
+      [
+       "valid_from",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "tariffs_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "code": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "class": {
+         "type": "token"
+        },
+        "valid_from": {
+         "type": "date"
+        },
+        "valid_until": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

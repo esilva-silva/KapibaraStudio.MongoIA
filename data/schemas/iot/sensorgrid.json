@@ -1,0 +1,572 @@
+{
+ "schema_id": "sensorgrid",
+ "domain": "iot",
+ "holdout": false,
+ "description": "IoT sensores e leituras, snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "devices",
+   "name": "devices",
+   "doc_count": 700,
+   "fields": {
+    "device_uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "TX-100",
+      "TX-200",
+      "HX-9",
+      "ZX-Mini"
+     ],
+     "w": null
+    },
+    "firmware": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "v"
+    },
+    "site": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "installed_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "battery_pct": {
+     "t": "double",
+     "p": 0.3,
+     "n": 0.1,
+     "lo": 0,
+     "hi": 100
+    },
+    "labels": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "floor": {
+       "t": "int32",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 20
+      },
+      "zone": {
+       "t": "string",
+       "p": 0.4,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "device_uuid",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "model",
+       1
+      ],
+      [
+       "online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "site",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "devices_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "firmware": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "site": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "model": {
+         "type": "token"
+        },
+        "installed_at": {
+         "type": "date"
+        },
+        "battery_pct": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "readings",
+   "name": "readings",
+   "doc_count": 300,
+   "fields": {
+    "device_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "ts": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-08-01",
+     "hi": "2026-09-30"
+    },
+    "metric": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "temp",
+      "humidity",
+      "pressure",
+      "co2",
+      "vibration"
+     ],
+     "w": null
+    },
+    "value": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -10,
+     "hi": 400
+    },
+    "unit": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "C",
+      "pct",
+      "hPa",
+      "ppm",
+      "mm_s"
+     ],
+     "w": null
+    },
+    "quality": {
+     "t": "int32",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "tags": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "batch": {
+       "t": "int32",
+       "p": 0.5,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 50
+      },
+      "calibrated": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.9
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "device_id",
+       1
+      ],
+      [
+       "ts",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "metric",
+       1
+      ],
+      [
+       "ts",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ts",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "value",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "quality": {
+       "$gte": 90
+      }
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "device_id": {
+       "bsonType": "objectId"
+      },
+      "ts": {
+       "bsonType": "date"
+      },
+      "metric": {
+       "bsonType": "string",
+       "enum": [
+        "temp",
+        "humidity",
+        "pressure",
+        "co2",
+        "vibration"
+       ]
+      },
+      "value": {
+       "bsonType": "double"
+      },
+      "unit": {
+       "bsonType": "string",
+       "enum": [
+        "C",
+        "pct",
+        "hPa",
+        "ppm",
+        "mm_s"
+       ]
+      },
+      "quality": {
+       "bsonType": "int"
+      },
+      "tags": {
+       "bsonType": "object",
+       "properties": {
+        "batch": {
+         "bsonType": "int"
+        },
+        "calibrated": {
+         "bsonType": "bool"
+        }
+       },
+       "required": [
+        "calibrated"
+       ]
+      }
+     },
+     "required": [
+      "device_id",
+      "ts",
+      "metric",
+      "value",
+      "unit"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "alerts",
+   "name": "alerts",
+   "doc_count": 300,
+   "fields": {
+    "device_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "severity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "info",
+      "warn",
+      "critical"
+     ],
+     "w": [
+      60,
+      30,
+      10
+     ]
+    },
+    "raised_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "cleared_at": {
+     "t": "date",
+     "p": 0.95,
+     "n": 0.4,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "rule": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "ack_by": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.3,
+     "g": "name"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "device_id",
+       1
+      ],
+      [
+       "raised_at",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "severity",
+       1
+      ],
+      [
+       "cleared_at",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "device_id": {
+       "bsonType": "objectId"
+      },
+      "severity": {
+       "bsonType": "string",
+       "enum": [
+        "info",
+        "warn",
+        "critical"
+       ]
+      },
+      "raised_at": {
+       "bsonType": "date"
+      },
+      "cleared_at": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "rule": {
+       "bsonType": "string"
+      },
+      "ack_by": {
+       "bsonType": [
+        "string",
+        "null"
+       ]
+      }
+     },
+     "required": [
+      "device_id",
+      "severity",
+      "raised_at",
+      "rule"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "firmware releases",
+   "name": "firmware releases",
+   "doc_count": 1450,
+   "fields": {
+    "version": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "fw"
+    },
+    "released_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.95,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "checksums": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "algo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "sha256",
+         "md5"
+        ],
+        "w": null
+       },
+       "hex": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "hex"
+       }
+      }
+     },
+     "min": 1,
+     "max": 2
+    },
+    "mandatory": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "version",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "firmware_releases_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "version": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "notes": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "released_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

@@ -1,0 +1,1387 @@
+{
+ "schema_id": "juniper_gam",
+ "domain": "gaming",
+ "holdout": false,
+ "description": "gaming procedural pt-BR sem acento, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "matches",
+   "name": "partidas",
+   "doc_count": 1750,
+   "fields": {
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ranked",
+      "casual",
+      "custom"
+     ],
+     "w": null
+    },
+    "map": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "iniciadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "durationS": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 60,
+     "hi": 3600
+    },
+    "players": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "jogadorId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "players"
+       },
+       "equipe": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "red",
+         "blue"
+        ],
+        "w": null
+       },
+       "kills": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       },
+       "deaths": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       },
+       "pontuacao": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 9999
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "mode",
+       1
+      ],
+      [
+       "iniciadoEm",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "players.jogadorId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "map",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "mode": {
+       "bsonType": "string",
+       "enum": [
+        "ranked",
+        "casual",
+        "custom"
+       ]
+      },
+      "map": {
+       "bsonType": "string"
+      },
+      "iniciadoEm": {
+       "bsonType": "date"
+      },
+      "durationS": {
+       "bsonType": "int"
+      },
+      "players": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "jogadorId": {
+          "bsonType": "objectId"
+         },
+         "equipe": {
+          "bsonType": "string",
+          "enum": [
+           "red",
+           "blue"
+          ]
+         },
+         "kills": {
+          "bsonType": "int"
+         },
+         "deaths": {
+          "bsonType": "int"
+         },
+         "pontuacao": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "jogadorId",
+         "equipe",
+         "kills",
+         "deaths",
+         "pontuacao"
+        ]
+       }
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "mode",
+      "map",
+      "iniciadoEm",
+      "durationS",
+      "players"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "partidas_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "map": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "mode": {
+         "type": "token"
+        },
+        "iniciadoEm": {
+         "type": "date"
+        },
+        "durationS": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "quests",
+   "name": "missoes",
+   "doc_count": 1200,
+   "fields": {
+    "titulo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "minNivel": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100
+    },
+    "rewards": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "xp": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10,
+       "hi": 9000
+      },
+      "itens": {
+       "t": "array",
+       "p": 0.7,
+       "n": 0.0,
+       "item": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "items"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "gold": {
+       "t": "int32",
+       "p": 0.4,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000
+      }
+     }
+    },
+    "steps": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "pedido": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 8
+       },
+       "text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "contagem": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 30
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "tamanho": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "contagem": {
+       "t": "int32",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "mode": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "limits": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "habilitado": {
+         "t": "bool",
+         "p": 0.5,
+         "n": 0.0,
+         "pt": 0.5
+        },
+        "em": {
+         "t": "date",
+         "p": 0.4,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 0.7,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "quota": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "mode": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "a",
+            "b",
+            "c"
+           ],
+           "w": null
+          },
+          "total": {
+           "t": "decimal128",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 5000
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "minNivel",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "guilds",
+   "name": "guildas",
+   "doc_count": 450,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "tag": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "G"
+    },
+    "leader": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players"
+    },
+    "members": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "players"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "nivel": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 30
+    },
+    "founded": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "legacyId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "nivel",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "members",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "sessions",
+   "name": "sessoes",
+   "doc_count": 1250,
+   "fields": {
+    "jogadorId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players"
+    },
+    "iniciadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "encerradoEm": {
+     "t": "date",
+     "p": 0.95,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "dispositivo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "os": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "ios",
+        "android",
+        "win",
+        "mac"
+       ],
+       "w": null
+      },
+      "model": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "ver": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "V"
+      }
+     }
+    },
+    "ip": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "events": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "t": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "tipo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "login",
+         "spawn",
+         "death",
+         "buy",
+         "quit"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "attrs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "habilitado": {
+       "t": "bool",
+       "p": 0.6,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "pontuacao": {
+       "t": "double",
+       "p": 0.5,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "contagem": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "audit": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "em": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "jogadorId",
+       1
+      ],
+      [
+       "iniciadoEm",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "iniciadoEm",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "inventories",
+   "name": "inventarios",
+   "doc_count": 550,
+   "fields": {
+    "jogadorId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players"
+    },
+    "slots": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "itemId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "items"
+       },
+       "qtd": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 99
+       },
+       "equipped": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.2
+       },
+       "meta": {
+        "t": "object",
+        "p": 0.95,
+        "n": 0.0,
+        "f": {
+         "enchant": {
+          "t": "int32",
+          "p": 0.7,
+          "n": 0.0,
+          "lo": 0,
+          "hi": 10
+         },
+         "bound": {
+          "t": "bool",
+          "p": 0.6,
+          "n": 0.0,
+          "pt": 0.3
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "gold": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000000
+    },
+    "capacity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20,
+     "hi": 300
+    },
+    "legacyId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "jogadorId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "slots.itemId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "purchases",
+   "name": "compras",
+   "doc_count": 1950,
+   "fields": {
+    "jogadorId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players"
+    },
+    "itemId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "items"
+    },
+    "pagoReal": {
+     "t": "decimal128",
+     "p": 0.9,
+     "n": 0.1,
+     "lo": 1.0,
+     "hi": 200.0
+    },
+    "pagoCoins": {
+     "t": "int32",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 50000
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "platform": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ios",
+      "android",
+      "pc",
+      "console"
+     ],
+     "w": null
+    },
+    "recibo": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "jogadorId",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "platform",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "players",
+   "name": "jogadores",
+   "doc_count": 350,
+   "fields": {
+    "handle": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "nivel": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 120
+    },
+    "xp": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000
+    },
+    "region": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "sa",
+      "na",
+      "eu",
+      "ap"
+     ],
+     "w": null
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "banned": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "until": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "friends": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "players"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "pontuacao": {
+       "t": "double",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "habilitado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "quota": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "contagem": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "handle",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "region",
+       1
+      ],
+      [
+       "nivel",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "items",
+   "name": "itens",
+   "doc_count": 1300,
+   "fields": {
+    "sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "rarity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "common",
+      "rare",
+      "epic",
+      "legendary"
+     ],
+     "w": null
+    },
+    "slot": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "head",
+      "body",
+      "weapon",
+      "pet"
+     ],
+     "w": null
+    },
+    "precoCoins": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 90000
+    },
+    "stats": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "atk": {
+       "t": "int32",
+       "p": 0.5,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300
+      },
+      "def": {
+       "t": "int32",
+       "p": 0.7,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300
+      },
+      "spd": {
+       "t": "int32",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      }
+     }
+    },
+    "tradable": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sku",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "rarity",
+       1
+      ],
+      [
+       "slot",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "precoCoins",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "sku": {
+       "bsonType": "string"
+      },
+      "nome": {
+       "bsonType": "string"
+      },
+      "rarity": {
+       "bsonType": "string",
+       "enum": [
+        "common",
+        "rare",
+        "epic",
+        "legendary"
+       ]
+      },
+      "slot": {
+       "bsonType": "string",
+       "enum": [
+        "head",
+        "body",
+        "weapon",
+        "pet"
+       ]
+      },
+      "precoCoins": {
+       "bsonType": "int"
+      },
+      "stats": {
+       "bsonType": "object",
+       "properties": {
+        "atk": {
+         "bsonType": "int"
+        },
+        "def": {
+         "bsonType": "int"
+        },
+        "spd": {
+         "bsonType": "int"
+        }
+       }
+      },
+      "tradable": {
+       "bsonType": "bool"
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "sku",
+      "nome",
+      "rarity",
+      "slot",
+      "precoCoins",
+      "stats",
+      "tradable",
+      "criadoEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "itens_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "sku": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "nome": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "rarity": {
+         "type": "token"
+        },
+        "slot": {
+         "type": "token"
+        },
+        "precoCoins": {
+         "type": "number"
+        },
+        "versionNo": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  }
+ ],
+ "language": "pt-BR"
+}

@@ -1,0 +1,2057 @@
+{
+ "schema_id": "meridian_log",
+ "domain": "logistics",
+ "holdout": false,
+ "description": "logistics procedural pt-BR sem acento, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "tracking_events",
+   "name": "eventos rastreio",
+   "doc_count": 550,
+   "fields": {
+    "shipmentId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "shipments"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "scan",
+      "load",
+      "unload",
+      "delay",
+      "deliver"
+     ],
+     "w": null
+    },
+    "place": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "details": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "operator": {
+       "t": "string",
+       "p": 0.4,
+       "n": 0.0,
+       "g": "name"
+      },
+      "dispositivo": {
+       "t": "uuid",
+       "p": 0.5,
+       "n": 0.0,
+       "v": 3
+      }
+     }
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "habilitado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "mode": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "audit": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "em": {
+         "t": "date",
+         "p": 0.3,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "habilitado": {
+         "t": "bool",
+         "p": 0.7,
+         "n": 0.0,
+         "pt": 0.5
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "shipmentId",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "shipmentId": {
+       "bsonType": "objectId"
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "scan",
+        "load",
+        "unload",
+        "delay",
+        "deliver"
+       ]
+      },
+      "place": {
+       "bsonType": "string"
+      },
+      "details": {
+       "bsonType": "object",
+       "properties": {
+        "operator": {
+         "bsonType": "string"
+        },
+        "dispositivo": {
+         "bsonType": "binData"
+        }
+       }
+      },
+      "meta": {
+       "bsonType": "object",
+       "properties": {
+        "em": {
+         "bsonType": "date"
+        },
+        "habilitado": {
+         "bsonType": "bool"
+        },
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "audit": {
+         "bsonType": "object",
+         "properties": {
+          "pontuacao": {
+           "bsonType": "double"
+          },
+          "em": {
+           "bsonType": "date"
+          },
+          "habilitado": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "pontuacao"
+         ]
+        }
+       },
+       "required": [
+        "em",
+        "habilitado"
+       ]
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "shipmentId",
+      "em",
+      "tipo",
+      "place"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "stock_moves",
+   "name": "movimentosEstoque",
+   "doc_count": 800,
+   "fields": {
+    "warehouseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "warehouses"
+    },
+    "sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "delta": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -200,
+     "hi": 200
+    },
+    "reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "inbound",
+      "outbound",
+      "adjust",
+      "transfer"
+     ],
+     "w": null
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "valorTotal": {
+     "t": "decimal128",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "warehouseId",
+       1
+      ],
+      [
+       "sku",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reason",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "warehouseId": {
+       "bsonType": "objectId"
+      },
+      "sku": {
+       "bsonType": "string"
+      },
+      "delta": {
+       "bsonType": "int"
+      },
+      "reason": {
+       "bsonType": "string",
+       "enum": [
+        "inbound",
+        "outbound",
+        "adjust",
+        "transfer"
+       ]
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "valorTotal": {
+       "bsonType": "decimal"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "em": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "em",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "warehouseId",
+      "sku",
+      "delta",
+      "reason",
+      "em"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "manifests",
+   "name": "manifestos",
+   "doc_count": 550,
+   "fields": {
+    "numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MF"
+    },
+    "rotaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "routes"
+    },
+    "issuedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "shipments": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "shipments"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "signed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "totalPeso": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 20000.0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "numero",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "rotaId",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "numero": {
+       "bsonType": "string"
+      },
+      "rotaId": {
+       "bsonType": "objectId"
+      },
+      "issuedEm": {
+       "bsonType": "date"
+      },
+      "shipments": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "signed": {
+       "bsonType": "bool"
+      },
+      "totalPeso": {
+       "bsonType": "double"
+      }
+     },
+     "required": [
+      "numero",
+      "rotaId",
+      "issuedEm",
+      "shipments",
+      "signed",
+      "totalPeso"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "carriers",
+   "name": "transportadoras",
+   "doc_count": 1450,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "scac": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SC"
+    },
+    "services": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "express",
+       "economy",
+       "freight"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "contract": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "inicio": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "fim": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "taxa": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 80.0
+      }
+     }
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "contagem": {
+       "t": "int32",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "mode": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "window": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "mode": {
+         "t": "string",
+         "p": 0.5,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "quota": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "em": {
+           "t": "date",
+           "p": 0.9,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          },
+          "label": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          },
+          "total": {
+           "t": "decimal128",
+           "p": 0.6,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 5000
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "externalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "scac",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "services",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "criadoEm",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "scac": {
+       "bsonType": "string"
+      },
+      "services": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "contract": {
+       "bsonType": "object",
+       "properties": {
+        "inicio": {
+         "bsonType": "date"
+        },
+        "fim": {
+         "bsonType": "date"
+        },
+        "taxa": {
+         "bsonType": "decimal"
+        }
+       },
+       "required": [
+        "inicio",
+        "fim",
+        "taxa"
+       ]
+      },
+      "meta": {
+       "bsonType": "object",
+       "properties": {
+        "contagem": {
+         "bsonType": "int"
+        },
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "pontuacao": {
+           "bsonType": "double"
+          },
+          "quota": {
+           "bsonType": "object",
+           "properties": {
+            "em": {
+             "bsonType": "date"
+            },
+            "label": {
+             "bsonType": "string"
+            },
+            "total": {
+             "bsonType": "decimal"
+            }
+           },
+           "required": [
+            "label"
+           ]
+          }
+         },
+         "required": [
+          "pontuacao"
+         ]
+        }
+       },
+       "required": [
+        "mode"
+       ]
+      },
+      "externalId": {
+       "bsonType": "binData"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "nome",
+      "scac",
+      "services",
+      "externalId",
+      "criadoEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "vehicles",
+   "name": "veiculos",
+   "doc_count": 1900,
+   "fields": {
+    "placa": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PL"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "van",
+      "truck",
+      "bike",
+      "ship"
+     ],
+     "w": null
+    },
+    "capacityKg": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50,
+     "hi": 30000
+    },
+    "odometer": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000
+    },
+    "gps": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      },
+      "em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "inService": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.85
+    },
+    "vin": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "pontuacao": {
+       "t": "double",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "habilitado": {
+       "t": "bool",
+       "p": 0.5,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "configuracoes": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "tamanho": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "label": {
+         "t": "string",
+         "p": 0.6,
+         "n": 0.0,
+         "g": "word"
+        },
+        "mode": {
+         "t": "string",
+         "p": 0.6,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "configuracoes": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "tamanho": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 9000000000
+          },
+          "label": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          },
+          "em": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "placa",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ],
+      [
+       "inService",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "placa": {
+       "bsonType": "string"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "van",
+        "truck",
+        "bike",
+        "ship"
+       ]
+      },
+      "capacityKg": {
+       "bsonType": "int"
+      },
+      "odometer": {
+       "bsonType": "long"
+      },
+      "gps": {
+       "bsonType": "object",
+       "properties": {
+        "lat": {
+         "bsonType": "double"
+        },
+        "lng": {
+         "bsonType": "double"
+        },
+        "em": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "lat",
+        "lng",
+        "em"
+       ]
+      },
+      "inService": {
+       "bsonType": "bool"
+      },
+      "vin": {
+       "bsonType": "binData"
+      },
+      "extra": {
+       "bsonType": "object",
+       "properties": {
+        "pontuacao": {
+         "bsonType": "double"
+        },
+        "habilitado": {
+         "bsonType": "bool"
+        },
+        "configuracoes": {
+         "bsonType": "object",
+         "properties": {
+          "tamanho": {
+           "bsonType": "long"
+          },
+          "label": {
+           "bsonType": "string"
+          },
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "configuracoes": {
+           "bsonType": "object",
+           "properties": {
+            "tamanho": {
+             "bsonType": "long"
+            },
+            "label": {
+             "bsonType": "string"
+            },
+            "em": {
+             "bsonType": "date"
+            }
+           },
+           "required": [
+            "tamanho",
+            "label",
+            "em"
+           ]
+          }
+         },
+         "required": [
+          "tamanho"
+         ]
+        }
+       }
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "criadoEm": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "placa",
+      "tipo",
+      "capacityKg",
+      "odometer",
+      "inService",
+      "vin",
+      "criadoEm"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "veiculos_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "placa": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "tipo": {
+         "type": "token"
+        },
+        "capacityKg": {
+         "type": "number"
+        },
+        "odometer": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "shipments",
+   "name": "remessas",
+   "doc_count": 1350,
+   "fields": {
+    "tracking": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SHP"
+    },
+    "origem": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "warehouses"
+    },
+    "destino": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "cidade": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "pais": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      },
+      "cep": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "Z"
+      }
+     }
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "booked",
+      "picked",
+      "in_transit",
+      "delivered",
+      "exception"
+     ],
+     "w": null
+    },
+    "pesoKg": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.1,
+     "hi": 900.0
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "carrierId": {
+     "t": "objectid",
+     "p": 0.4,
+     "n": 0.0,
+     "ref": "carriers"
+    },
+    "legs": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "from": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "city"
+       },
+       "to": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "city"
+       },
+       "mode": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "road",
+         "air",
+         "sea",
+         "rail"
+        ],
+        "w": null
+       },
+       "eta": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "meta": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "habilitado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "tamanho": {
+       "t": "int64",
+       "p": 0.4,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "audit": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "label": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "contagem": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "total": {
+         "t": "decimal128",
+         "p": 0.95,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "window": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "em": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          },
+          "mode": {
+           "t": "string",
+           "p": 0.4,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "a",
+            "b",
+            "c"
+           ],
+           "w": null
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "history": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tracking",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "origem",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "legs.mode",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "drivers",
+   "name": "motoristas",
+   "doc_count": 650,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "license": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CNH"
+    },
+    "telefone": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "phone"
+    },
+    "veiculoId": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.0,
+     "ref": "vehicles"
+    },
+    "nota": {
+     "t": "double",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5.0
+    },
+    "admitidoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "meta": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "contagem": {
+       "t": "int32",
+       "p": 0.8,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "habilitado": {
+       "t": "bool",
+       "p": 0.95,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "tamanho": {
+       "t": "int64",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "configuracoes": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "pontuacao": {
+         "t": "double",
+         "p": 0.95,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "total": {
+         "t": "decimal128",
+         "p": 0.3,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "em": {
+         "t": "date",
+         "p": 0.9,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "stats": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "habilitado": {
+           "t": "bool",
+           "p": 1.0,
+           "n": 0.0,
+           "pt": 0.5
+          },
+          "tamanho": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 9000000000
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "externalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "license",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "warehouses",
+   "name": "armazens",
+   "doc_count": 1400,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "WH"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "cidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "capacityM3": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 500,
+     "hi": 90000
+    },
+    "docks": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 60
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      }
+     }
+    },
+    "open": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.9
+    },
+    "criadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cidade",
+       1
+      ],
+      [
+       "open",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "routes",
+   "name": "rotas",
+   "doc_count": 250,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "RT"
+    },
+    "motoristaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "drivers"
+    },
+    "veiculoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "vehicles"
+    },
+    "data": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "stops": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "seq": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 40
+       },
+       "endereco": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "window": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "from": {
+          "t": "date",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": "2025-01-01",
+          "hi": "2026-09-30"
+         },
+         "to": {
+          "t": "date",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": "2025-01-01",
+          "hi": "2026-09-30"
+         }
+        }
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.6
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "km": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 2.0,
+     "hi": 900.0
+    },
+    "info": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "total": {
+       "t": "decimal128",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "mode": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "extra": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "total": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "habilitado": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.5
+        },
+        "audit": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "mode": {
+           "t": "string",
+           "p": 0.95,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "a",
+            "b",
+            "c"
+           ],
+           "w": null
+          },
+          "contagem": {
+           "t": "int32",
+           "p": 0.8,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          },
+          "em": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "legacyId": {
+     "t": "uuid",
+     "p": 0.5,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "motoristaId",
+       1
+      ],
+      [
+       "data",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "stops.done",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  }
+ ],
+ "language": "pt-BR"
+}

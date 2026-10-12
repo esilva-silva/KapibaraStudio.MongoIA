@@ -1,0 +1,401 @@
+{
+ "schema_id": "pessoas",
+ "domain": "hr",
+ "holdout": false,
+ "description": "RH pt-BR sem acento, snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "funcionarios",
+   "name": "funcionarios",
+   "doc_count": 800,
+   "fields": {
+    "matricula": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "M"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email_corporativo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "cargo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "analista",
+      "gerente",
+      "diretor",
+      "estagiario",
+      "coordenador"
+     ],
+     "w": [
+      40,
+      15,
+      3,
+      12,
+      30
+     ]
+    },
+    "departamento_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "departamentos"
+    },
+    "salario": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1800,
+     "hi": 40000
+    },
+    "admissao": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2015-01-01",
+     "hi": "2026-09-01"
+    },
+    "desligamento": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.5,
+     "lo": "2024-01-01",
+     "hi": "2026-09-30"
+    },
+    "ferias": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "inicio": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "dias": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 5,
+        "hi": 30
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "dependentes": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "parentesco": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "filho",
+         "conjuge",
+         "pai",
+         "mae"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "matricula",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "departamento_id",
+       1
+      ],
+      [
+       "cargo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "admissao",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "departamentos",
+   "name": "departamentos",
+   "doc_count": 1750,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "centro_custo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CC"
+    },
+    "orcamento": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10000,
+     "hi": 5000000
+    },
+    "gestor_id": {
+     "t": "objectid",
+     "p": 0.6,
+     "n": 0.0,
+     "ref": "funcionarios"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "centro_custo",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "centro_custo": {
+       "bsonType": "string"
+      },
+      "orcamento": {
+       "bsonType": "decimal"
+      },
+      "gestor_id": {
+       "bsonType": "objectId"
+      }
+     },
+     "required": [
+      "nome",
+      "centro_custo",
+      "orcamento"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "vagas",
+   "name": "vagas",
+   "doc_count": 1600,
+   "fields": {
+    "titulo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "departamento_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "departamentos"
+    },
+    "aberta": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.6
+    },
+    "requisitos": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 1,
+     "max": 5
+    },
+    "faixa": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "min": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1500,
+       "hi": 10000
+      },
+      "max": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10000,
+       "hi": 30000
+      }
+     }
+    },
+    "publicada_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "aberta",
+       1
+      ],
+      [
+       "publicada_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "requisitos",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "ponto",
+   "name": "ponto",
+   "doc_count": 1200,
+   "fields": {
+    "funcionario_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "funcionarios"
+    },
+    "dia": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-07-01",
+     "hi": "2026-09-30"
+    },
+    "entrada": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "0"
+    },
+    "horas": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 12
+    },
+    "justificativa": {
+     "t": "string",
+     "p": 0.3,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "funcionario_id",
+       1
+      ],
+      [
+       "dia",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "dia",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 1
+  }
+ ],
+ "language": "pt-BR"
+}

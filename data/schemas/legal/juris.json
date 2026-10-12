@@ -1,0 +1,313 @@
+{
+ "schema_id": "juris",
+ "domain": "legal",
+ "holdout": true,
+ "description": "Jurídico (holdout), PascalCase",
+ "name_style": "pascal",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "Cases",
+   "name": "Cases",
+   "doc_count": 1300,
+   "fields": {
+    "Number": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CNJ"
+    },
+    "Court": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "TJSP",
+      "TRF3",
+      "STJ",
+      "TRT2"
+     ],
+     "w": null
+    },
+    "Subject": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "FiledAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2018-01-01",
+     "hi": "2026-09-01"
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "stayed",
+      "closed"
+     ],
+     "w": [
+      50,
+      10,
+      40
+     ]
+    },
+    "Value": {
+     "t": "decimal128",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 5000000
+    },
+    "Parties": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Role": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "plaintiff",
+         "defendant",
+         "witness"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 2,
+     "max": 5
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Number",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Court",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Parties.Name",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "Lawyers",
+   "name": "Lawyers",
+   "doc_count": 450,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Bar": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "OAB"
+    },
+    "Firm": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.9
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Bar",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "Hearings",
+   "name": "Hearings",
+   "doc_count": 1450,
+   "fields": {
+    "CaseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "Cases"
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-01-01",
+     "hi": "2027-03-31"
+    },
+    "Room": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "Judge": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CaseId",
+       1
+      ],
+      [
+       "At",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "Documents",
+   "name": "Documents",
+   "doc_count": 300,
+   "fields": {
+    "CaseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "Cases"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "petition",
+      "motion",
+      "ruling",
+      "evidence"
+     ],
+     "w": null
+    },
+    "Pages": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 400
+    },
+    "Hash": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Filed": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2018-01-01",
+     "hi": "2026-09-01"
+    },
+    "Confidential": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CaseId",
+       1
+      ],
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Hash",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "max_depth": 1
+  }
+ ],
+ "language": "en"
+}

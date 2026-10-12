@@ -1,0 +1,487 @@
+{
+ "schema_id": "newsroom",
+ "domain": "content",
+ "holdout": false,
+ "description": "CMS / portal de notícias, PascalCase",
+ "name_style": "pascal",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "Articles",
+   "name": "Articles",
+   "doc_count": 600,
+   "fields": {
+    "Slug": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Body": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "AuthorId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "Authors"
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "draft",
+      "review",
+      "published",
+      "archived"
+     ],
+     "w": [
+      15,
+      10,
+      65,
+      10
+     ]
+    },
+    "PublishedAt": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Tags": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 5
+    },
+    "Stats": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Views": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000000
+      },
+      "Likes": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 20000
+      },
+      "ShareCount": {
+       "t": "int32",
+       "p": 0.4,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      }
+     }
+    },
+    "Seo": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "Description": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "Keywords": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 5
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Slug",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Status",
+       1
+      ],
+      [
+       "PublishedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "AuthorId",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "articles_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Slug": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Title": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "Body": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "Status": {
+         "type": "token"
+        },
+        "PublishedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "Authors",
+   "name": "Authors",
+   "doc_count": 1050,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "Bio": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Verified": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.4
+    },
+    "Social": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Twitter": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "slug"
+      },
+      "Site": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "url"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Email",
+       1
+      ]
+     ],
+     "unique": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "Comments",
+   "name": "Comments",
+   "doc_count": 650,
+   "fields": {
+    "ArticleId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "Articles"
+    },
+    "UserName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Text": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Score": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -5,
+     "hi": 50
+    },
+    "Replies": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "UserName": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "CreatedAt": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "Flagged": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ArticleId",
+       1
+      ],
+      [
+       "CreatedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Flagged",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "Flagged": true
+     }
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "Media Library",
+   "name": "Media Library",
+   "doc_count": 1250,
+   "fields": {
+    "FileName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "MimeType": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "image/jpeg",
+      "image/png",
+      "video/mp4",
+      "application/pdf"
+     ],
+     "w": null
+    },
+    "SizeBytes": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1000,
+     "hi": 900000000
+    },
+    "Uploaded": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Meta": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "Width": {
+       "t": "int32",
+       "p": 0.7,
+       "n": 0.0,
+       "lo": 100,
+       "hi": 8000
+      },
+      "Height": {
+       "t": "int32",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 100,
+       "hi": 8000
+      },
+      "DurationSec": {
+       "t": "double",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 3600
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "MimeType",
+       1
+      ],
+      [
+       "Uploaded",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "media_library_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "FileName": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "MimeType": {
+         "type": "token"
+        },
+        "SizeBytes": {
+         "type": "number"
+        },
+        "Uploaded": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

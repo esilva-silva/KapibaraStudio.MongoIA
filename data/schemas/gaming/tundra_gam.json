@@ -1,0 +1,993 @@
+{
+ "schema_id": "tundra_gam",
+ "domain": "gaming",
+ "holdout": false,
+ "description": "gaming procedural EN, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "matches",
+   "name": "matches",
+   "doc_count": 1850,
+   "fields": {
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ranked",
+      "casual",
+      "custom"
+     ],
+     "w": null
+    },
+    "map": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "startedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "durationS": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 60,
+     "hi": 3600
+    },
+    "players": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "playerId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "players"
+       },
+       "team": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "red",
+         "blue"
+        ],
+        "w": null
+       },
+       "kills": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       },
+       "deaths": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       },
+       "score": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 9999
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "winner": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "red",
+      "blue",
+      "draw"
+     ],
+     "w": null
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "mode",
+       1
+      ],
+      [
+       "startedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "players.playerId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "map",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "mode": {
+       "bsonType": "string",
+       "enum": [
+        "ranked",
+        "casual",
+        "custom"
+       ]
+      },
+      "map": {
+       "bsonType": "string"
+      },
+      "startedAt": {
+       "bsonType": "date"
+      },
+      "durationS": {
+       "bsonType": "int"
+      },
+      "players": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "playerId": {
+          "bsonType": "objectId"
+         },
+         "team": {
+          "bsonType": "string",
+          "enum": [
+           "red",
+           "blue"
+          ]
+         },
+         "kills": {
+          "bsonType": "int"
+         },
+         "deaths": {
+          "bsonType": "int"
+         },
+         "score": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "playerId",
+         "team",
+         "kills",
+         "deaths",
+         "score"
+        ]
+       }
+      },
+      "winner": {
+       "bsonType": "string",
+       "enum": [
+        "red",
+        "blue",
+        "draw"
+       ]
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "mode",
+      "map",
+      "startedAt",
+      "durationS",
+      "players",
+      "winner"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "players",
+   "name": "Players",
+   "doc_count": 1250,
+   "fields": {
+    "Handle": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "Level": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 120
+    },
+    "Xp": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000
+    },
+    "Region": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "sa",
+      "na",
+      "eu",
+      "ap"
+     ],
+     "w": null
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Banned": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "Until": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "Friends": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "players"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "AmountTotal": {
+     "t": "decimal128",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Handle",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Region",
+       1
+      ],
+      [
+       "Level",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Handle": {
+       "bsonType": "string"
+      },
+      "Email": {
+       "bsonType": "string"
+      },
+      "Level": {
+       "bsonType": "int"
+      },
+      "Xp": {
+       "bsonType": "long"
+      },
+      "Region": {
+       "bsonType": "string",
+       "enum": [
+        "sa",
+        "na",
+        "eu",
+        "ap"
+       ]
+      },
+      "CreatedAt": {
+       "bsonType": "date"
+      },
+      "Banned": {
+       "bsonType": "object",
+       "properties": {
+        "Reason": {
+         "bsonType": "string"
+        },
+        "Until": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "Reason",
+        "Until"
+       ]
+      },
+      "Uuid": {
+       "bsonType": "binData"
+      },
+      "Friends": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "AmountTotal": {
+       "bsonType": "decimal"
+      }
+     },
+     "required": [
+      "Handle",
+      "Email",
+      "Level",
+      "Xp",
+      "Region",
+      "CreatedAt",
+      "Uuid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "inventories",
+   "name": "inventories",
+   "doc_count": 2000,
+   "fields": {
+    "playerId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players"
+    },
+    "slots": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "itemId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "items"
+       },
+       "qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 99
+       },
+       "equipped": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.2
+       },
+       "meta": {
+        "t": "object",
+        "p": 0.4,
+        "n": 0.0,
+        "f": {
+         "enchant": {
+          "t": "int32",
+          "p": 0.7,
+          "n": 0.0,
+          "lo": 0,
+          "hi": 10
+         },
+         "bound": {
+          "t": "bool",
+          "p": 0.6,
+          "n": 0.0,
+          "pt": 0.3
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "gold": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000000
+    },
+    "capacity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20,
+     "hi": 300
+    },
+    "info": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "enabled": {
+       "t": "bool",
+       "p": 0.3,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "window": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "score": {
+         "t": "double",
+         "p": 0.9,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "at": {
+         "t": "date",
+         "p": 0.4,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "limits": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "total": {
+           "t": "decimal128",
+           "p": 0.7,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 5000
+          },
+          "at": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "playerId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "slots.itemId",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "inventories_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "gold": {
+         "type": "number"
+        },
+        "capacity": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "leaderboards",
+   "name": "leaderboards",
+   "doc_count": 1800,
+   "fields": {
+    "season": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "S"
+    },
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ranked",
+      "casual"
+     ],
+     "w": null
+    },
+    "entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "playerId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "players"
+       },
+       "rank": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 1000
+       },
+       "rating": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 800,
+        "hi": 3500
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "size": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "label": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "score": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "stats": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "total": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "size": {
+         "t": "int64",
+         "p": 0.6,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "label": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "extra": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "at": {
+           "t": "date",
+           "p": 0.5,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          },
+          "score": {
+           "t": "double",
+           "p": 0.9,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "season",
+       1
+      ],
+      [
+       "mode",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "entries.playerId",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "items",
+   "name": "items",
+   "doc_count": 800,
+   "fields": {
+    "sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "rarity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "common",
+      "rare",
+      "epic",
+      "legendary"
+     ],
+     "w": null
+    },
+    "slot": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "head",
+      "body",
+      "weapon",
+      "pet"
+     ],
+     "w": null
+    },
+    "stats": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "atk": {
+       "t": "int32",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300
+      },
+      "def": {
+       "t": "int32",
+       "p": 0.9,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300
+      },
+      "spd": {
+       "t": "int32",
+       "p": 0.8,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      }
+     }
+    },
+    "tradable": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sku",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "rarity",
+       1
+      ],
+      [
+       "slot",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "createdAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "sku": {
+       "bsonType": "string"
+      },
+      "name": {
+       "bsonType": "string"
+      },
+      "rarity": {
+       "bsonType": "string",
+       "enum": [
+        "common",
+        "rare",
+        "epic",
+        "legendary"
+       ]
+      },
+      "slot": {
+       "bsonType": "string",
+       "enum": [
+        "head",
+        "body",
+        "weapon",
+        "pet"
+       ]
+      },
+      "stats": {
+       "bsonType": "object",
+       "properties": {
+        "atk": {
+         "bsonType": "int"
+        },
+        "def": {
+         "bsonType": "int"
+        },
+        "spd": {
+         "bsonType": "int"
+        }
+       }
+      },
+      "tradable": {
+       "bsonType": "bool"
+      },
+      "createdAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "sku",
+      "name",
+      "rarity",
+      "slot",
+      "stats",
+      "tradable",
+      "createdAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

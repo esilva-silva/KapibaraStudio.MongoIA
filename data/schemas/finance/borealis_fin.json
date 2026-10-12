@@ -1,0 +1,1846 @@
+{
+ "schema_id": "borealis_fin",
+ "domain": "finance",
+ "holdout": false,
+ "description": "finance procedural EN, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "cards",
+   "name": "cards",
+   "doc_count": 1900,
+   "fields": {
+    "accountId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "last4": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": ""
+    },
+    "brand": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "visa",
+      "master",
+      "elo",
+      "amex"
+     ],
+     "w": null
+    },
+    "limit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 300.0,
+     "hi": 30000.0
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "blocked",
+      "expired"
+     ],
+     "w": null
+    },
+    "expires": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "contactless": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "accountId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "brand",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "accountId": {
+       "bsonType": "objectId"
+      },
+      "last4": {
+       "bsonType": "string"
+      },
+      "brand": {
+       "bsonType": "string",
+       "enum": [
+        "visa",
+        "master",
+        "elo",
+        "amex"
+       ]
+      },
+      "limit": {
+       "bsonType": "decimal"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "blocked",
+        "expired"
+       ]
+      },
+      "expires": {
+       "bsonType": "date"
+      },
+      "contactless": {
+       "bsonType": "bool"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "accountId",
+      "last4",
+      "brand",
+      "limit",
+      "status",
+      "expires",
+      "contactless"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "loans",
+   "name": "loans",
+   "doc_count": 1300,
+   "fields": {
+    "customerId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "principal": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 500.0,
+     "hi": 200000.0
+    },
+    "ratePct": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9.0
+    },
+    "termMonths": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 120
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "paid",
+      "default"
+     ],
+     "w": null
+    },
+    "schedule": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "n": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 120
+       },
+       "due": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 50.0,
+        "hi": 9000.0
+       },
+       "paid": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.5
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "enabled": {
+       "t": "bool",
+       "p": 0.3,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "mode": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "label": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "word"
+      },
+      "audit": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "mode": {
+         "t": "string",
+         "p": 0.8,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "at": {
+         "t": "date",
+         "p": 0.8,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "history": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "customerId",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "schedule.paid",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "customerId": {
+       "bsonType": "objectId"
+      },
+      "principal": {
+       "bsonType": "decimal"
+      },
+      "ratePct": {
+       "bsonType": "double"
+      },
+      "termMonths": {
+       "bsonType": "int"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "paid",
+        "default"
+       ]
+      },
+      "schedule": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "n": {
+          "bsonType": "int"
+         },
+         "due": {
+          "bsonType": "date"
+         },
+         "amount": {
+          "bsonType": "decimal"
+         },
+         "paid": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "n",
+         "due",
+         "amount",
+         "paid"
+        ]
+       }
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "enabled": {
+         "bsonType": "bool"
+        },
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "label": {
+         "bsonType": "string"
+        },
+        "audit": {
+         "bsonType": "object",
+         "properties": {
+          "score": {
+           "bsonType": "double"
+          },
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "at": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "score"
+         ]
+        }
+       },
+       "required": [
+        "mode"
+       ]
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "at",
+         "by",
+         "change"
+        ]
+       }
+      },
+      "createdAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "customerId",
+      "principal",
+      "ratePct",
+      "termMonths",
+      "status",
+      "schedule",
+      "createdAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "positions",
+   "name": "positions",
+   "doc_count": 850,
+   "fields": {
+    "accountId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "ticker": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TK"
+    },
+    "qty": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100000
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "accountId",
+       1
+      ],
+      [
+       "ticker",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ticker",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "createdAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "ledger_entries",
+   "name": "ledgerEntries",
+   "doc_count": 1650,
+   "fields": {
+    "journal": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "J"
+    },
+    "account": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "debit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0
+    },
+    "credit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "batch": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 99999
+    },
+    "externalId": {
+     "t": "uuid",
+     "p": 0.95,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "journal",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "account",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "accounts",
+   "name": "accounts",
+   "doc_count": 1750,
+   "fields": {
+    "customerId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "number": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "type": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "checking",
+      "savings",
+      "investment"
+     ],
+     "w": null
+    },
+    "balance": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "currency": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": null
+    },
+    "openedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "limits": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100.0,
+       "hi": 9000.0
+      },
+      "overdraft": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 5000.0
+      }
+     }
+    },
+    "history": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.7,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "number",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "customerId",
+       1
+      ],
+      [
+       "type",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "balance",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "closed": true
+     }
+    },
+    {
+     "keys": [
+      [
+       "openedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "customerId": {
+       "bsonType": "objectId"
+      },
+      "number": {
+       "bsonType": "string"
+      },
+      "type": {
+       "bsonType": "string",
+       "enum": [
+        "checking",
+        "savings",
+        "investment"
+       ]
+      },
+      "balance": {
+       "bsonType": "decimal"
+      },
+      "currency": {
+       "bsonType": "string",
+       "enum": [
+        "BRL",
+        "USD",
+        "EUR"
+       ]
+      },
+      "openedAt": {
+       "bsonType": "date"
+      },
+      "closed": {
+       "bsonType": "bool"
+      },
+      "limits": {
+       "bsonType": "object",
+       "properties": {
+        "daily": {
+         "bsonType": "decimal"
+        },
+        "overdraft": {
+         "bsonType": "decimal"
+        }
+       },
+       "required": [
+        "daily",
+        "overdraft"
+       ]
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "at",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "customerId",
+      "number",
+      "type",
+      "balance",
+      "currency",
+      "openedAt",
+      "closed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "budgets",
+   "name": "budgets",
+   "doc_count": 1600,
+   "fields": {
+    "owner": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "category": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "food",
+      "rent",
+      "travel",
+      "health",
+      "fun"
+     ],
+     "w": null
+    },
+    "month": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "limit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50.0,
+     "hi": 9000.0
+    },
+    "spent": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "owner",
+       1
+      ],
+      [
+       "month",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "category",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "month",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "owner": {
+       "bsonType": "objectId"
+      },
+      "category": {
+       "bsonType": "string",
+       "enum": [
+        "food",
+        "rent",
+        "travel",
+        "health",
+        "fun"
+       ]
+      },
+      "month": {
+       "bsonType": "date"
+      },
+      "limit": {
+       "bsonType": "decimal"
+      },
+      "spent": {
+       "bsonType": "decimal"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "owner",
+      "category",
+      "month",
+      "limit",
+      "spent"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "customers",
+   "name": "customers",
+   "doc_count": 250,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "tax_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "segment": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "premium",
+      "corporate"
+     ],
+     "w": null
+    },
+    "onboarded_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kyc": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "status": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "ok",
+        "pending",
+        "review"
+       ],
+       "w": null
+      },
+      "checked_at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "docs": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "risk_score": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "amount_total": {
+     "t": "decimal128",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tax_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "segment",
+       1
+      ],
+      [
+       "risk_score",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "customers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "tax_id": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "segment": {
+         "type": "token"
+        },
+        "onboarded_at": {
+         "type": "date"
+        },
+        "risk_score": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "fx_rates",
+   "name": "fxRates",
+   "doc_count": 1550,
+   "fields": {
+    "pair": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "USD/BRL",
+      "EUR/BRL",
+      "GBP/USD",
+      "JPY/USD"
+     ],
+     "w": null
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "bid": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 6.0
+    },
+    "ask": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 6.0
+    },
+    "source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "meta": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "count": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "label": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "window": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "label": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "size": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        }
+       }
+      }
+     }
+    },
+    "legacyId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "pair",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "transactions",
+   "name": "transactions",
+   "doc_count": 850,
+   "fields": {
+    "accountId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "debit",
+      "credit",
+      "pix",
+      "transfer",
+      "fee"
+     ],
+     "w": null
+    },
+    "amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9000.0
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "counterparty": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "bank": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "BK"
+      },
+      "account": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "AC"
+      }
+     }
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "posted",
+      "pending",
+      "reversed"
+     ],
+     "w": null
+    },
+    "memo": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "accountId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "accountId": {
+       "bsonType": "objectId"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "debit",
+        "credit",
+        "pix",
+        "transfer",
+        "fee"
+       ]
+      },
+      "amount": {
+       "bsonType": "decimal"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "counterparty": {
+       "bsonType": "object",
+       "properties": {
+        "name": {
+         "bsonType": "string"
+        },
+        "bank": {
+         "bsonType": "string"
+        },
+        "account": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "name",
+        "bank",
+        "account"
+       ]
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "posted",
+        "pending",
+        "reversed"
+       ]
+      },
+      "memo": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "accountId",
+      "kind",
+      "amount",
+      "at",
+      "status"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "transactions_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "memo": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "kind": {
+         "type": "token"
+        },
+        "status": {
+         "type": "token"
+        },
+        "amount": {
+         "type": "number"
+        },
+        "at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "payments",
+   "name": "payments",
+   "doc_count": 500,
+   "fields": {
+    "accountId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "method": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "boleto",
+      "pix",
+      "card"
+     ],
+     "w": null
+    },
+    "amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5000.0
+    },
+    "due": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "barcode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 0.95,
+     "n": 0.0,
+     "v": 3
+    },
+    "history": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.3,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "barcode",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "accountId",
+       1
+      ],
+      [
+       "due",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "accountId": {
+       "bsonType": "objectId"
+      },
+      "method": {
+       "bsonType": "string",
+       "enum": [
+        "boleto",
+        "pix",
+        "card"
+       ]
+      },
+      "amount": {
+       "bsonType": "decimal"
+      },
+      "due": {
+       "bsonType": "date"
+      },
+      "barcode": {
+       "bsonType": "string"
+      },
+      "uid": {
+       "bsonType": "binData"
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "at",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "accountId",
+      "method",
+      "amount",
+      "due",
+      "barcode"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  }
+ ],
+ "language": "en"
+}

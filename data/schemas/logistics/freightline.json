@@ -1,0 +1,783 @@
+{
+ "schema_id": "freightline",
+ "domain": "logistics",
+ "holdout": false,
+ "description": "Logística / frete, camelCase",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "warehouses",
+   "name": "warehouses",
+   "doc_count": 350,
+   "fields": {
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "WH"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "capacityPallets": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 20000
+    },
+    "location": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "Point"
+       ],
+       "w": null
+      },
+      "coordinates": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -74,
+        "hi": -35
+       },
+       "min": 2,
+       "max": 2
+      }
+     }
+    },
+    "docks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "id": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 30
+       },
+       "kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "inbound",
+         "outbound",
+         "cross"
+        ],
+        "w": null
+       },
+       "busy": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.3
+       }
+      }
+     },
+     "min": 1,
+     "max": 6
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "city",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "shipments",
+   "name": "shipments",
+   "doc_count": 850,
+   "fields": {
+    "trackingCode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TRK"
+    },
+    "origin": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "warehouses"
+    },
+    "destination": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "city": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "country": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      },
+      "zip": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "Z"
+      }
+     }
+    },
+    "weightKg": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.1,
+     "hi": 2000
+    },
+    "volumeM3": {
+     "t": "decimal128",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 30
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "created",
+      "in_transit",
+      "customs",
+      "delivered",
+      "returned"
+     ],
+     "w": [
+      10,
+      40,
+      10,
+      35,
+      5
+     ]
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "deliveredAt": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.2,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "carrierId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "carriers"
+    },
+    "events": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "type": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "scan",
+         "depart",
+         "arrive",
+         "exception"
+        ],
+        "w": null
+       },
+       "note": {
+        "t": "string",
+        "p": 0.95,
+        "n": 0.0,
+        "g": "sentence"
+       }
+      }
+     },
+     "min": 1,
+     "max": 6
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "trackingCode",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "status",
+       1
+      ],
+      [
+       "createdAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "carrierId",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "destination.country",
+       1
+      ],
+      [
+       "destination.city",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "trackingCode": {
+       "bsonType": "string"
+      },
+      "origin": {
+       "bsonType": "objectId"
+      },
+      "destination": {
+       "bsonType": "object",
+       "properties": {
+        "city": {
+         "bsonType": "string"
+        },
+        "country": {
+         "bsonType": "string"
+        },
+        "zip": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "city",
+        "country"
+       ]
+      },
+      "weightKg": {
+       "bsonType": "double"
+      },
+      "volumeM3": {
+       "bsonType": "decimal"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "created",
+        "in_transit",
+        "customs",
+        "delivered",
+        "returned"
+       ]
+      },
+      "createdAt": {
+       "bsonType": "date"
+      },
+      "deliveredAt": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "carrierId": {
+       "bsonType": "objectId"
+      },
+      "events": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "type": {
+          "bsonType": "string",
+          "enum": [
+           "scan",
+           "depart",
+           "arrive",
+           "exception"
+          ]
+         },
+         "note": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "at",
+         "type"
+        ]
+       }
+      }
+     },
+     "required": [
+      "trackingCode",
+      "origin",
+      "destination",
+      "weightKg",
+      "status",
+      "createdAt",
+      "carrierId",
+      "events"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "carriers",
+   "name": "carriers",
+   "doc_count": 600,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "scac": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "C"
+    },
+    "modes": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "road",
+       "air",
+       "sea",
+       "rail"
+      ],
+      "w": null
+     },
+     "min": 1,
+     "max": 3
+    },
+    "onTimeRate": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 1
+    },
+    "active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.9
+    },
+    "contracts": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "lane": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "ratePerKg": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.1,
+        "hi": 12
+       }
+      }
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "scac",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "modes",
+       1
+      ],
+      [
+       "onTimeRate",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "routes",
+   "name": "routes",
+   "doc_count": 1450,
+   "fields": {
+    "fromWh": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "warehouses"
+    },
+    "toWh": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "warehouses"
+    },
+    "distanceKm": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 4000
+    },
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "road",
+      "air",
+      "sea",
+      "rail"
+     ],
+     "w": [
+      60,
+      15,
+      15,
+      10
+     ]
+    },
+    "transitHours": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 2,
+     "hi": 400
+    },
+    "restricted": {
+     "t": "bool",
+     "p": 0.9,
+     "n": 0.0,
+     "pt": 0.1
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "fromWh",
+       1
+      ],
+      [
+       "toWh",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "mode",
+       1
+      ],
+      [
+       "distanceKm",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "fromWh": {
+       "bsonType": "objectId"
+      },
+      "toWh": {
+       "bsonType": "objectId"
+      },
+      "distanceKm": {
+       "bsonType": "int"
+      },
+      "mode": {
+       "bsonType": "string",
+       "enum": [
+        "road",
+        "air",
+        "sea",
+        "rail"
+       ]
+      },
+      "transitHours": {
+       "bsonType": "double"
+      },
+      "restricted": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "fromWh",
+      "toWh",
+      "distanceKm",
+      "mode",
+      "transitHours"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "routes_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "mode": {
+         "type": "token"
+        },
+        "distanceKm": {
+         "type": "number"
+        },
+        "transitHours": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "vehicles",
+   "name": "vehicles",
+   "doc_count": 1850,
+   "fields": {
+    "plate": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "VX"
+    },
+    "carrierId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "carriers"
+    },
+    "type": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "truck",
+      "van",
+      "bike",
+      "cargo-plane"
+     ],
+     "w": null
+    },
+    "odometerKm": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000
+    },
+    "lastService": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "telemetry": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "fuelPct": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "engineTempC": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 60,
+       "hi": 120
+      },
+      "gps": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "lat": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -34,
+         "hi": 5
+        },
+        "lng": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -74,
+         "hi": -35
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "plate",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "carrierId",
+       1
+      ],
+      [
+       "type",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  }
+ ],
+ "language": "en"
+}

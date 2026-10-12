@@ -1,0 +1,73 @@
+# Cópia da v1 (SlopStudio.MongoAI-Compact) usada só pelo bake-off da Fase 01; workspace = bakeoff/v1.
+# Configuração central do pipeline Teacher → Student (SlopStudio.MongoAI-Compact).
+# Caminhos abaixo são os padrões desta máquina; cada um aceita sobrescrita por variável de ambiente (${VAR:-padrão}).
+# Nenhum script deve conter caminhos absolutos: todos leem este arquivo (scripts/compact/common.py:Pipeline).
+version: compact-v1
+seed: 20260912
+
+workspace: ${KAPI_BAKEOFF_ROOT:-C:/IA/models/KapibaraStudio.MongoIA/bakeoff/v1}
+
+# Fonte principal do professor (somente leitura). Nomes de arquivos não são assumidos: scan_teacher_artifacts.py identifica
+# modelos, adapters, datasets, benchmarks e completions pelo conteúdo.
+teacher_artifacts: ${MONGOAI_TEACHER_ARTIFACTS:-C:/SlopStudio.MongoAI-artifacts}
+teacher_extra_roots:            # repositório da v1 (relatórios de benchmark, predições, fontes curadas) — somente leitura
+  - ${MONGOAI_TEACHER_REPO:-F:/models/deep/SlopStudio.MongoAI}
+teacher_scan_exclude: [.venv, cache, tmp, __pycache__, node_modules, .git, torchinductor_chuke]
+ide_source: ${SLOPSTUDIO_SOURCE:-F:/source/SlopDataAdimin}   # contratos e documentação da IDE (somente leitura)
+
+environment:
+  # Venv ROCm já validado da v1, usado somente como runtime (nenhum pacote é instalado nele por este pipeline).
+  # Para um venv dedicado: scripts/setup_env.ps1 -Dedicated (instala o mesmo lock em {workspace}/.venv).
+  python: ${MONGOAI_PYTHON:-C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe}
+  gpu_expect_device: "7800 XT"
+  allow_cpu_training: false     # nunca: treino e geração do professor exigem GPU validada
+
+paths:
+  teacher: "{workspace}/teacher"
+  student: "{workspace}/student"
+  datasets: "{workspace}/datasets"
+  checkpoints: "{workspace}/checkpoints"
+  adapters: "{workspace}/adapters"
+  merged: "{workspace}/merged"
+  exports: "{workspace}/exports"
+  reports: "{workspace}/reports"
+  logs: "{workspace}/logs"
+  cache: "{workspace}/cache"
+  tmp: "{workspace}/tmp"
+
+configs:
+  dataset: configs/dataset.yaml
+  teacher: configs/teacher.yaml
+  benchmark: configs/benchmark.yaml
+  export: configs/export.yaml
+  selection: configs/selection.yaml
+
+students:
+  - id: 0.5b
+    name: SlopCoder-Mongo-0.5B
+    hf_repo: Qwen/Qwen2.5-Coder-0.5B
+    revision: 8123ea2e9354afb7ffcc6c8641d1b2f5ecf18301
+    license: apache-2.0
+    config: configs/student-0.5b.yaml
+  - id: 1.5b
+    name: SlopCoder-Mongo-1.5B
+    hf_repo: Qwen/Qwen2.5-Coder-1.5B
+    revision: df3ce67c0e24480f20468b6ef2894622d69eb73b
+    license: apache-2.0
+    config: configs/student-1.5b.yaml
+  # 1.5B com orçamento de dados completo (continuação sobre 100 mil exemplos): mesmo base do 1.5B, pacotes próprios
+  # (SlopCoder-Mongo-1.5B-full-ONNX-*). Use sempre --student explícito nos scripts que aceitam lista de students.
+  - id: 1.5b-full
+    name: SlopCoder-Mongo-1.5B-full
+    hf_repo: Qwen/Qwen2.5-Coder-1.5B
+    revision: df3ce67c0e24480f20468b6ef2894622d69eb73b
+    license: apache-2.0
+    config: configs/student-1.5b-full.yaml
+
+languages: [pt-BR, en]
+domains: [mongodb, json, extended-json, atlas-search, slop-studio]
+
+export:
+  onnx: true
+  int8: true
+  int4: true

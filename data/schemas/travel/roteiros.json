@@ -1,0 +1,574 @@
+{
+ "schema_id": "roteiros",
+ "domain": "travel",
+ "holdout": false,
+ "description": "Viagens pt-BR, camelCase",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "viajantes",
+   "name": "viajantes",
+   "doc_count": 1200,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "nacionalidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "nascimento": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "1950-01-01",
+     "hi": "2006-01-01"
+    },
+    "milhas": {
+     "t": "int64",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 2000000
+    },
+    "documentos": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "tipo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "passaporte",
+         "rg",
+         "cnh"
+        ],
+        "w": null
+       },
+       "numero": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "D"
+       },
+       "validade": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2026-10-01",
+        "hi": "2034-12-31"
+       }
+      }
+     },
+     "min": 1,
+     "max": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "nacionalidade",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "voos",
+   "name": "voos",
+   "doc_count": 450,
+   "fields": {
+    "numeroVoo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "KP"
+    },
+    "origem": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "destino": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "partida": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-10-01",
+     "hi": "2027-03-31"
+    },
+    "duracaoMin": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 40,
+     "hi": 900
+    },
+    "assentos": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "economica": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300
+      },
+      "executiva": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 40
+      }
+     }
+    },
+    "preco": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 120,
+     "hi": 9000
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "agendado",
+      "embarque",
+      "atrasado",
+      "cancelado"
+     ],
+     "w": [
+      70,
+      10,
+      15,
+      5
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "numeroVoo",
+       1
+      ],
+      [
+       "partida",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "origem",
+       1
+      ],
+      [
+       "destino",
+       1
+      ],
+      [
+       "partida",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "status",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "numeroVoo": {
+       "bsonType": "string"
+      },
+      "origem": {
+       "bsonType": "string"
+      },
+      "destino": {
+       "bsonType": "string"
+      },
+      "partida": {
+       "bsonType": "date"
+      },
+      "duracaoMin": {
+       "bsonType": "int"
+      },
+      "assentos": {
+       "bsonType": "object",
+       "properties": {
+        "economica": {
+         "bsonType": "int"
+        },
+        "executiva": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "economica",
+        "executiva"
+       ]
+      },
+      "preco": {
+       "bsonType": "decimal"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "agendado",
+        "embarque",
+        "atrasado",
+        "cancelado"
+       ]
+      }
+     },
+     "required": [
+      "numeroVoo",
+      "origem",
+      "destino",
+      "partida",
+      "duracaoMin",
+      "assentos",
+      "preco",
+      "status"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "reservas",
+   "name": "reservas",
+   "doc_count": 200,
+   "fields": {
+    "viajanteId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "viajantes"
+    },
+    "vooId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "voos"
+    },
+    "criadaEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "confirmada",
+      "pendente",
+      "cancelada"
+     ],
+     "w": [
+      70,
+      20,
+      10
+     ]
+    },
+    "passageiros": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "assento": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "S"
+       },
+       "bagagemKg": {
+        "t": "int32",
+        "p": 0.3,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 120,
+     "hi": 30000
+    },
+    "extras": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "viajanteId",
+       1
+      ],
+      [
+       "criadaEm",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "vooId",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "hoteis",
+   "name": "hoteis",
+   "doc_count": 1800,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "cidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "estrelas": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "diaria": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 80,
+     "hi": 4000
+    },
+    "comodidades": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "wifi",
+       "piscina",
+       "cafe",
+       "academia",
+       "spa",
+       "pet"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "avaliacoes": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nota": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 5
+       },
+       "texto": {
+        "t": "string",
+        "p": 0.9,
+        "n": 0.0,
+        "g": "sentence"
+       }
+      }
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cidade",
+       1
+      ],
+      [
+       "estrelas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "comodidades",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "cidade": {
+       "bsonType": "string"
+      },
+      "estrelas": {
+       "bsonType": "int"
+      },
+      "diaria": {
+       "bsonType": "decimal"
+      },
+      "comodidades": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "avaliacoes": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "nota": {
+          "bsonType": "double"
+         },
+         "texto": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "nota"
+        ]
+       }
+      }
+     },
+     "required": [
+      "nome",
+      "cidade",
+      "estrelas",
+      "diaria",
+      "comodidades"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "pt-BR"
+}

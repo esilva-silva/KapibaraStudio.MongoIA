@@ -1,0 +1,798 @@
+{
+ "schema_id": "onyx_nrg",
+ "domain": "energy",
+ "holdout": false,
+ "description": "energy procedural EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "billing_cycles",
+   "name": "billingCycles",
+   "doc_count": 1350,
+   "fields": {
+    "label": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CY"
+    },
+    "from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "to": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "revenue": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90000000.0
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    },
+    "externalId": {
+     "t": "uuid",
+     "p": 0.7,
+     "n": 0.0,
+     "v": 3
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "amountTotal": {
+     "t": "decimal128",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "label",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "closed",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "billingcycles_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "label": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "from": {
+         "type": "date"
+        },
+        "to": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "substations",
+   "name": "Substations",
+   "doc_count": 550,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SE"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "VoltageKv": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "13.8",
+      "69",
+      "138",
+      "230",
+      "500"
+     ],
+     "w": null
+    },
+    "City": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "Geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "Lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0
+      }
+     }
+    },
+    "Online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "ExternalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "VoltageKv",
+       1
+      ],
+      [
+       "Online",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Code": {
+       "bsonType": "string"
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "VoltageKv": {
+       "bsonType": "string",
+       "enum": [
+        "13.8",
+        "69",
+        "138",
+        "230",
+        "500"
+       ]
+      },
+      "City": {
+       "bsonType": "string"
+      },
+      "Geo": {
+       "bsonType": "object",
+       "properties": {
+        "Lat": {
+         "bsonType": "double"
+        },
+        "Lng": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "Lat",
+        "Lng"
+       ]
+      },
+      "Online": {
+       "bsonType": "bool"
+      },
+      "ExternalId": {
+       "bsonType": "binData"
+      },
+      "Tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "CreatedAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "Code",
+      "Name",
+      "VoltageKv",
+      "City",
+      "Geo",
+      "Online",
+      "ExternalId",
+      "CreatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "substations_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Code": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "City": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "VoltageKv": {
+         "type": "token"
+        },
+        "CreatedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "tariffs",
+   "name": "Tariffs",
+   "doc_count": 1050,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TF"
+    },
+    "Class": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "residential",
+      "commercial",
+      "industrial"
+     ],
+     "w": null
+    },
+    "Bands": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "off",
+         "mid",
+         "peak"
+        ],
+        "w": null
+       },
+       "FromH": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 23
+       },
+       "ToH": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 23
+       },
+       "Price": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.1,
+        "hi": 3.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "ValidFrom": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ValidUntil": {
+     "t": "date",
+     "p": 0.9,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "History": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "By": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "From": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         },
+         "To": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Class",
+       1
+      ],
+      [
+       "ValidFrom",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "maintenance_orders",
+   "name": "Maintenance Orders",
+   "doc_count": 450,
+   "fields": {
+    "asset": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "generation_units"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "preventive",
+      "corrective",
+      "inspection"
+     ],
+     "w": null
+    },
+    "opened_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed_at": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 90000.0
+    },
+    "crew": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "name"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "tasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.6
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "asset",
+       1
+      ],
+      [
+       "opened_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "generation_units",
+   "name": "GenerationUnits",
+   "doc_count": 850,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hydro",
+      "solar",
+      "wind",
+      "thermal"
+     ],
+     "w": null
+    },
+    "Mw": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900.0
+    },
+    "Online": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.85
+    },
+    "Readings": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "At": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "Mw": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 900.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Source",
+       1
+      ],
+      [
+       "Online",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CreatedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Name": {
+       "bsonType": "string"
+      },
+      "Source": {
+       "bsonType": "string",
+       "enum": [
+        "hydro",
+        "solar",
+        "wind",
+        "thermal"
+       ]
+      },
+      "Mw": {
+       "bsonType": "double"
+      },
+      "Online": {
+       "bsonType": "bool"
+      },
+      "Readings": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "At": {
+          "bsonType": "date"
+         },
+         "Mw": {
+          "bsonType": "double"
+         }
+        },
+        "required": [
+         "At",
+         "Mw"
+        ]
+       }
+      },
+      "Tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "CreatedAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "Name",
+      "Source",
+      "Mw",
+      "Online",
+      "CreatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}

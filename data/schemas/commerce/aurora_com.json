@@ -1,0 +1,1583 @@
+{
+ "schema_id": "aurora_com",
+ "domain": "commerce",
+ "holdout": false,
+ "description": "commerce procedural EN, camel",
+ "name_style": "camel",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "invoices",
+   "name": "invoices",
+   "doc_count": 700,
+   "fields": {
+    "order_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "orders"
+    },
+    "number": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "NF"
+    },
+    "issued_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 3000.0
+    },
+    "tax": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 600.0
+    },
+    "xml_hash": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "canceled": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.04
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "number",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "order_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "issued_at",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "order_id": {
+       "bsonType": "objectId"
+      },
+      "number": {
+       "bsonType": "string"
+      },
+      "issued_at": {
+       "bsonType": "date"
+      },
+      "total": {
+       "bsonType": "decimal"
+      },
+      "tax": {
+       "bsonType": "decimal"
+      },
+      "xml_hash": {
+       "bsonType": "string"
+      },
+      "canceled": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "order_id",
+      "number",
+      "issued_at",
+      "total",
+      "tax",
+      "xml_hash",
+      "canceled"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "orders",
+   "name": "orders",
+   "doc_count": 700,
+   "fields": {
+    "customerId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "paid",
+      "shipped",
+      "delivered",
+      "cancelled"
+     ],
+     "w": null
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 3000.0
+    },
+    "currency": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": null
+    },
+    "placedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "lines": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "productId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "products"
+       },
+       "qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 6
+       },
+       "unitPrice": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 3.0,
+        "hi": 900.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "payment": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "method": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "pix",
+        "card",
+        "boleto"
+       ],
+       "w": null
+      },
+      "installments": {
+       "t": "int32",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 12
+      },
+      "approved": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.9
+      },
+      "gateway": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "provider": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "txRef": {
+         "t": "uuid",
+         "p": 1.0,
+         "n": 0.0,
+         "v": 4
+        },
+        "raw": {
+         "t": "object",
+         "p": 0.8,
+         "n": 0.0,
+         "f": {
+          "code": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 99
+          },
+          "msg": {
+           "t": "string",
+           "p": 0.5,
+           "n": 0.0,
+           "g": "sentence"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "amountTotal": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "customerId",
+       1
+      ],
+      [
+       "placedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "lines.productId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "payment.method",
+       1
+      ],
+      [
+       "payment.approved",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "customerId": {
+       "bsonType": "objectId"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "paid",
+        "shipped",
+        "delivered",
+        "cancelled"
+       ]
+      },
+      "total": {
+       "bsonType": "decimal"
+      },
+      "currency": {
+       "bsonType": "string",
+       "enum": [
+        "BRL",
+        "USD",
+        "EUR"
+       ]
+      },
+      "placedAt": {
+       "bsonType": "date"
+      },
+      "lines": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "productId": {
+          "bsonType": "objectId"
+         },
+         "qty": {
+          "bsonType": "int"
+         },
+         "unitPrice": {
+          "bsonType": "decimal"
+         }
+        },
+        "required": [
+         "productId",
+         "qty",
+         "unitPrice"
+        ]
+       }
+      },
+      "payment": {
+       "bsonType": "object",
+       "properties": {
+        "method": {
+         "bsonType": "string",
+         "enum": [
+          "pix",
+          "card",
+          "boleto"
+         ]
+        },
+        "installments": {
+         "bsonType": "int"
+        },
+        "approved": {
+         "bsonType": "bool"
+        },
+        "gateway": {
+         "bsonType": "object",
+         "properties": {
+          "provider": {
+           "bsonType": "string"
+          },
+          "txRef": {
+           "bsonType": "binData"
+          },
+          "raw": {
+           "bsonType": "object",
+           "properties": {
+            "code": {
+             "bsonType": "int"
+            },
+            "msg": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "code"
+           ]
+          }
+         },
+         "required": [
+          "provider",
+          "txRef"
+         ]
+        }
+       },
+       "required": [
+        "method",
+        "approved"
+       ]
+      },
+      "versionNo": {
+       "bsonType": "long"
+      },
+      "amountTotal": {
+       "bsonType": "decimal"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      }
+     },
+     "required": [
+      "customerId",
+      "status",
+      "total",
+      "currency",
+      "placedAt",
+      "lines"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "carts",
+   "name": "carts",
+   "doc_count": 300,
+   "fields": {
+    "customerId": {
+     "t": "objectid",
+     "p": 0.4,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "session": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "items": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "productId": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "products"
+       },
+       "qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "updatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "coupon": {
+     "t": "string",
+     "p": 0.3,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CP"
+    },
+    "info": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "size": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "at": {
+       "t": "date",
+       "p": 0.8,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "label": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "word"
+      },
+      "attrs": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "at": {
+         "t": "date",
+         "p": 0.3,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "count": {
+         "t": "int32",
+         "p": 0.3,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "quota": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "count": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          },
+          "at": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "amountTotal": {
+     "t": "decimal128",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "session",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "updatedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "customerId",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "products",
+   "name": "products",
+   "doc_count": 850,
+   "fields": {
+    "sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "category": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "audio",
+      "video",
+      "home",
+      "toys",
+      "books",
+      "garden",
+      "sport"
+     ],
+     "w": null
+    },
+    "price": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5.0,
+     "hi": 900.0
+    },
+    "stock": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 500
+    },
+    "attributes": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "k": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "v": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "dimensions": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "w": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 90.0
+      },
+      "h": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 90.0
+      },
+      "d": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 90.0
+      },
+      "unit": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "cm",
+        "in"
+       ],
+       "w": null
+      }
+     }
+    },
+    "supplierId": {
+     "t": "objectid",
+     "p": 0.9,
+     "n": 0.0,
+     "ref": "suppliers"
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "amountTotal": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sku",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "category",
+       1
+      ],
+      [
+       "price",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "stock",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "stock": {
+       "$exists": true
+      }
+     }
+    },
+    {
+     "keys": [
+      [
+       "title",
+       "text"
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "sku": {
+       "bsonType": "string"
+      },
+      "title": {
+       "bsonType": "string"
+      },
+      "category": {
+       "bsonType": "string",
+       "enum": [
+        "audio",
+        "video",
+        "home",
+        "toys",
+        "books",
+        "garden",
+        "sport"
+       ]
+      },
+      "price": {
+       "bsonType": "decimal"
+      },
+      "stock": {
+       "bsonType": "int"
+      },
+      "attributes": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "k": {
+          "bsonType": "string"
+         },
+         "v": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "k",
+         "v"
+        ]
+       }
+      },
+      "dimensions": {
+       "bsonType": "object",
+       "properties": {
+        "w": {
+         "bsonType": "double"
+        },
+        "h": {
+         "bsonType": "double"
+        },
+        "d": {
+         "bsonType": "double"
+        },
+        "unit": {
+         "bsonType": "string",
+         "enum": [
+          "cm",
+          "in"
+         ]
+        }
+       },
+       "required": [
+        "w",
+        "h",
+        "d",
+        "unit"
+       ]
+      },
+      "supplierId": {
+       "bsonType": "objectId"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "amountTotal": {
+       "bsonType": "decimal"
+      },
+      "createdAt": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "sku",
+      "title",
+      "category",
+      "price",
+      "stock",
+      "createdAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "categories",
+   "name": "categories",
+   "doc_count": 1400,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "slug": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "parent": {
+     "t": "objectid",
+     "p": 0.95,
+     "n": 0.0,
+     "ref": "categories"
+    },
+    "position": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 40
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "slug",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "parent",
+       1
+      ],
+      [
+       "position",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "createdAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "customers",
+   "name": "customers",
+   "doc_count": 350,
+   "fields": {
+    "fullName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "phone": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.0,
+     "g": "phone"
+    },
+    "birthDate": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": "1950-01-01",
+     "hi": "2005-12-31"
+    },
+    "loyalty": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "bronze",
+      "silver",
+      "gold",
+      "platinum"
+     ],
+     "w": null
+    },
+    "address": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "street": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "title"
+      },
+      "city": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "country": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      },
+      "geo": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "lat": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -34.0,
+         "hi": 5.0
+        },
+        "lng": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -74.0,
+         "hi": -35.0
+        }
+       }
+      }
+     }
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "label": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "word"
+      },
+      "size": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "stats": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "at": {
+         "t": "date",
+         "p": 0.3,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "settings": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          },
+          "label": {
+           "t": "string",
+           "p": 0.5,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "versionNo": {
+     "t": "int64",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "address.country",
+       1
+      ],
+      [
+       "loyalty",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "createdAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "fullName": {
+       "bsonType": "string"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "phone": {
+       "bsonType": "string"
+      },
+      "birthDate": {
+       "bsonType": "date"
+      },
+      "loyalty": {
+       "bsonType": "string",
+       "enum": [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum"
+       ]
+      },
+      "address": {
+       "bsonType": "object",
+       "properties": {
+        "street": {
+         "bsonType": "string"
+        },
+        "city": {
+         "bsonType": "string"
+        },
+        "country": {
+         "bsonType": "string"
+        },
+        "geo": {
+         "bsonType": "object",
+         "properties": {
+          "lat": {
+           "bsonType": "double"
+          },
+          "lng": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "lat",
+          "lng"
+         ]
+        }
+       },
+       "required": [
+        "street",
+        "city",
+        "country"
+       ]
+      },
+      "createdAt": {
+       "bsonType": "date"
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "label": {
+         "bsonType": "string"
+        },
+        "size": {
+         "bsonType": "long"
+        },
+        "total": {
+         "bsonType": "decimal"
+        },
+        "stats": {
+         "bsonType": "object",
+         "properties": {
+          "score": {
+           "bsonType": "double"
+          },
+          "at": {
+           "bsonType": "date"
+          },
+          "count": {
+           "bsonType": "int"
+          },
+          "settings": {
+           "bsonType": "object",
+           "properties": {
+            "score": {
+             "bsonType": "double"
+            },
+            "label": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "score"
+           ]
+          }
+         },
+         "required": [
+          "score",
+          "count"
+         ]
+        }
+       },
+       "required": [
+        "size",
+        "stats"
+       ]
+      },
+      "versionNo": {
+       "bsonType": "long"
+      }
+     },
+     "required": [
+      "fullName",
+      "email",
+      "createdAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "suppliers",
+   "name": "suppliers",
+   "doc_count": 300,
+   "fields": {
+    "legalName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "taxId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "country": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "rating": {
+     "t": "double",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5.0
+    },
+    "contact": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "email": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "email"
+      },
+      "phone": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "phone"
+      }
+     }
+    },
+    "info": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "size": {
+       "t": "int64",
+       "p": 0.7,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "score": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "extra": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "total": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    },
+    "amountTotal": {
+     "t": "decimal128",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "taxId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "createdAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "suppliers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "legalName": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "taxId": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "country": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "rating": {
+         "type": "number"
+        },
+        "amountTotal": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  }
+ ],
+ "language": "en"
+}

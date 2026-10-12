@@ -1,0 +1,1389 @@
+{
+ "schema_id": "cinder_wks",
+ "domain": "workspace",
+ "holdout": false,
+ "description": "workspace procedural pt-BR sem acento, snake",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "comments",
+   "name": "comentarios",
+   "doc_count": 450,
+   "fields": {
+    "tarefa_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tasks"
+    },
+    "autor": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "text": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "reactions": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "emoji": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "+1",
+         "heart",
+         "eyes"
+        ],
+        "w": null
+       },
+       "by": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "members"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "edited": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.1
+    },
+    "history": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "criado_em",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "files",
+   "name": "arquivos",
+   "doc_count": 450,
+   "fields": {
+    "projeto_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "mime": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "image/png",
+      "application/pdf",
+      "text/plain",
+      "video/mp4"
+     ],
+     "w": null
+    },
+    "bytes": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 900000000
+    },
+    "uploaded_by": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "projeto_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "uploaded_by",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "projeto_id": {
+       "bsonType": "objectId"
+      },
+      "nome": {
+       "bsonType": "string"
+      },
+      "mime": {
+       "bsonType": "string",
+       "enum": [
+        "image/png",
+        "application/pdf",
+        "text/plain",
+        "video/mp4"
+       ]
+      },
+      "bytes": {
+       "bsonType": "long"
+      },
+      "uploaded_by": {
+       "bsonType": "objectId"
+      },
+      "em": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "projeto_id",
+      "nome",
+      "mime",
+      "bytes",
+      "uploaded_by",
+      "em"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1
+  },
+  {
+   "key": "members",
+   "name": "membros",
+   "doc_count": 1150,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "papel": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "admin",
+      "editor",
+      "viewer",
+      "guest"
+     ],
+     "w": null
+    },
+    "avatar": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "url"
+    },
+    "timezone": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "word"
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "info": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "tamanho": {
+       "t": "int64",
+       "p": 0.5,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "total": {
+       "t": "decimal128",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "pontuacao": {
+       "t": "double",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "extra": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "contagem": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "quota": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "contagem": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          },
+          "em": {
+           "t": "date",
+           "p": 0.8,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          },
+          "habilitado": {
+           "t": "bool",
+           "p": 0.95,
+           "n": 0.0,
+           "pt": 0.5
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "papel",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "calendar_events",
+   "name": "eventos agenda",
+   "doc_count": 1000,
+   "fields": {
+    "titulo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "organizer": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "inicio": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "fim": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "attendees": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "membro": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "members"
+       },
+       "situacao": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "yes",
+         "no",
+         "maybe"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.8,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "organizer",
+       1
+      ],
+      [
+       "inicio",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "attendees.membro",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "sprints",
+   "name": "sprints",
+   "doc_count": 1850,
+   "fields": {
+    "projeto_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SP"
+    },
+    "inicio": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "fim": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "goal": {
+     "t": "string",
+     "p": 0.3,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "velocity": {
+     "t": "int32",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 5,
+     "hi": 80
+    },
+    "valor_total": {
+     "t": "decimal128",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "projeto_id",
+       1
+      ],
+      [
+       "inicio",
+       -1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "projects",
+   "name": "projetos",
+   "doc_count": 700,
+   "fields": {
+    "key": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PRJ"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "dono": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "planned",
+      "active",
+      "paused",
+      "done"
+     ],
+     "w": null
+    },
+    "inicio": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "budget": {
+     "t": "decimal128",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 900000.0
+    },
+    "labels": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "configuracoes": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "visibility": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "private",
+        "team",
+        "public"
+       ],
+       "w": null
+      },
+      "integrations": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "tipo": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "habilitado": {
+          "t": "bool",
+          "p": 1.0,
+          "n": 0.0,
+          "pt": 0.6
+         },
+         "configuracao": {
+          "t": "object",
+          "p": 1.0,
+          "n": 0.0,
+          "f": {
+           "url": {
+            "t": "string",
+            "p": 0.7,
+            "n": 0.0,
+            "g": "url"
+           },
+           "token": {
+            "t": "string",
+            "p": 0.6,
+            "n": 0.0,
+            "g": "hex"
+           }
+          }
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.95,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.95,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "key",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "dono",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "labels",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "key": {
+       "bsonType": "string"
+      },
+      "nome": {
+       "bsonType": "string"
+      },
+      "dono": {
+       "bsonType": "objectId"
+      },
+      "situacao": {
+       "bsonType": "string",
+       "enum": [
+        "planned",
+        "active",
+        "paused",
+        "done"
+       ]
+      },
+      "inicio": {
+       "bsonType": "date"
+      },
+      "budget": {
+       "bsonType": "decimal"
+      },
+      "labels": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "configuracoes": {
+       "bsonType": "object",
+       "properties": {
+        "visibility": {
+         "bsonType": "string",
+         "enum": [
+          "private",
+          "team",
+          "public"
+         ]
+        },
+        "integrations": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "tipo": {
+            "bsonType": "string"
+           },
+           "habilitado": {
+            "bsonType": "bool"
+           },
+           "configuracao": {
+            "bsonType": "object",
+            "properties": {
+             "url": {
+              "bsonType": "string"
+             },
+             "token": {
+              "bsonType": "string"
+             }
+            }
+           }
+          },
+          "required": [
+           "tipo",
+           "habilitado",
+           "configuracao"
+          ]
+         }
+        }
+       },
+       "required": [
+        "visibility",
+        "integrations"
+       ]
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "em": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "em",
+         "by",
+         "change"
+        ]
+       }
+      }
+     },
+     "required": [
+      "key",
+      "nome",
+      "dono",
+      "situacao",
+      "inicio"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "notifications",
+   "name": "notificacoes",
+   "doc_count": 350,
+   "fields": {
+    "membro_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "mention",
+      "assign",
+      "due",
+      "comment"
+     ],
+     "w": null
+    },
+    "read": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "payload": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "tarefa": {
+       "t": "objectid",
+       "p": 0.95,
+       "n": 0.0,
+       "ref": "tasks"
+      },
+      "by": {
+       "t": "objectid",
+       "p": 0.9,
+       "n": 0.0,
+       "ref": "members"
+      },
+      "preview": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 0.4,
+     "n": 0.0,
+     "v": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "membro_id",
+       1
+      ],
+      [
+       "read",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "membro_id": {
+       "bsonType": "objectId"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "mention",
+        "assign",
+        "due",
+        "comment"
+       ]
+      },
+      "read": {
+       "bsonType": "bool"
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "payload": {
+       "bsonType": "object",
+       "properties": {
+        "tarefa": {
+         "bsonType": "objectId"
+        },
+        "by": {
+         "bsonType": "objectId"
+        },
+        "preview": {
+         "bsonType": "string"
+        }
+       }
+      },
+      "uid": {
+       "bsonType": "binData"
+      }
+     },
+     "required": [
+      "membro_id",
+      "tipo",
+      "read",
+      "em",
+      "payload"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "notificacoes_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "tipo": {
+         "type": "token"
+        },
+        "em": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "tasks",
+   "name": "tarefas",
+   "doc_count": 450,
+   "fields": {
+    "projeto_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "titulo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "responsavel": {
+     "t": "objectid",
+     "p": 0.95,
+     "n": 0.1,
+     "ref": "members"
+    },
+    "prioridade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "low",
+      "medium",
+      "high",
+      "urgent"
+     ],
+     "w": null
+    },
+    "estimate_h": {
+     "t": "double",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 40.0
+    },
+    "vencimento": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "subtasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "titulo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.5
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "criado_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "checklist": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "tamanho": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "pontuacao": {
+       "t": "double",
+       "p": 0.7,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "limits": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "mode": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "tamanho": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "pontuacao": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "extra": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "contagem": {
+           "t": "int32",
+           "p": 0.4,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          },
+          "pontuacao": {
+           "t": "double",
+           "p": 0.6,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "responsavel",
+       1
+      ],
+      [
+       "vencimento",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "prioridade",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "etiquetas",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  }
+ ],
+ "language": "pt-BR"
+}

@@ -1,0 +1,19 @@
+# Benchmark compacto: mesmo contrato de prompt da IDE (autocomplete FIM e chat) para students, professor e exportações ONNX.
+dataset: C:/IA/models/KapibaraStudio.MongoIA/bakeoff/data/v1_benchmark.jsonl
+report_dir: C:/IA/models/KapibaraStudio.MongoIA/bakeoff/reports/2026-10-09-fim
+context_tokens: 2048          # AutocompleteSettings.ContextTokens
+max_new_tokens: 64            # autocomplete; métricas @IDE recalculadas com 32 tokens (MaximumCompletionTokens)
+ide_max_new_tokens: 32
+chat_max_new_tokens: 256      # LocalModelAiChatService (RequireComplete)
+warmup_examples: 3
+run_limits:                   # limites por execução (orçamento de GPU desta rodada); comparações usam os mesmos exemplos
+  student-1.5b-base: 1000
+  student-1.5b-merged: 1000
+  student-1.5b-full-merged: 1000   # mesmos 1.000 exemplos do 1.5B original (rounds.1.5b_full)
+  teacher-v1: 300
+hf:
+  load: bf16
+  attn_implementation: sdpa
+ortgenai:
+  provider: cpu
+  intra_op_num_threads: null  # null = padrão do runtime (a IDE usa 0 = núcleos físicos)

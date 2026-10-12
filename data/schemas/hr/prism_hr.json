@@ -1,0 +1,1573 @@
+{
+ "schema_id": "prism_hr",
+ "domain": "hr",
+ "holdout": false,
+ "description": "hr procedural EN, snake",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "leave_requests",
+   "name": "leave_requests",
+   "doc_count": 1100,
+   "fields": {
+    "employee_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "vacation",
+      "sick",
+      "parental",
+      "unpaid"
+     ],
+     "w": null
+    },
+    "from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "to": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "approved_by": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "label": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "word"
+      },
+      "enabled": {
+       "t": "bool",
+       "p": 0.8,
+       "n": 0.0,
+       "pt": 0.5
+      },
+      "mode": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "stats": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "label": {
+         "t": "string",
+         "p": 0.3,
+         "n": 0.0,
+         "g": "word"
+        },
+        "mode": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "a",
+          "b",
+          "c"
+         ],
+         "w": null
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "from",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "employee_id": {
+       "bsonType": "objectId"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "vacation",
+        "sick",
+        "parental",
+        "unpaid"
+       ]
+      },
+      "from": {
+       "bsonType": "date"
+      },
+      "to": {
+       "bsonType": "date"
+      },
+      "approved_by": {
+       "bsonType": "objectId"
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "label": {
+         "bsonType": "string"
+        },
+        "enabled": {
+         "bsonType": "bool"
+        },
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "stats": {
+         "bsonType": "object",
+         "properties": {
+          "label": {
+           "bsonType": "string"
+          },
+          "mode": {
+           "bsonType": "string",
+           "enum": [
+            "a",
+            "b",
+            "c"
+           ]
+          },
+          "count": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "mode",
+          "count"
+         ]
+        }
+       }
+      },
+      "version_no": {
+       "bsonType": "long"
+      }
+     },
+     "required": [
+      "employee_id",
+      "kind",
+      "from",
+      "to"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "leave_requests_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "kind": {
+         "type": "token"
+        },
+        "from": {
+         "type": "date"
+        },
+        "to": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "departments",
+   "name": "departments",
+   "doc_count": 1800,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "DP"
+    },
+    "budget": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10000.0,
+     "hi": 2000000.0
+    },
+    "parent": {
+     "t": "objectid",
+     "p": 0.5,
+     "n": 0.0,
+     "ref": "departments"
+    },
+    "cost_center": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CC"
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "history": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "by": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "change": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 0,
+     "max": 3
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "parent",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "created_at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "code": {
+       "bsonType": "string"
+      },
+      "budget": {
+       "bsonType": "decimal"
+      },
+      "parent": {
+       "bsonType": "objectId"
+      },
+      "cost_center": {
+       "bsonType": "string"
+      },
+      "tags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "history": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "at": {
+          "bsonType": "date"
+         },
+         "by": {
+          "bsonType": "string"
+         },
+         "change": {
+          "bsonType": "object",
+          "properties": {
+           "field": {
+            "bsonType": "string"
+           },
+           "from": {
+            "bsonType": "string"
+           },
+           "to": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "field"
+          ]
+         }
+        },
+        "required": [
+         "at",
+         "by",
+         "change"
+        ]
+       }
+      },
+      "created_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "name",
+      "code",
+      "budget",
+      "cost_center",
+      "created_at"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "positions",
+   "name": "positions",
+   "doc_count": 500,
+   "fields": {
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "level": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "junior",
+      "mid",
+      "senior",
+      "lead",
+      "director"
+     ],
+     "w": null
+    },
+    "band": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "min": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1500.0,
+       "hi": 8000.0
+      },
+      "max": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 8000.0,
+       "hi": 60000.0
+      }
+     }
+    },
+    "open_headcount": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 12
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "title",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "level",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "created_at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "title": {
+       "bsonType": "string"
+      },
+      "level": {
+       "bsonType": "string",
+       "enum": [
+        "junior",
+        "mid",
+        "senior",
+        "lead",
+        "director"
+       ]
+      },
+      "band": {
+       "bsonType": "object",
+       "properties": {
+        "min": {
+         "bsonType": "decimal"
+        },
+        "max": {
+         "bsonType": "decimal"
+        }
+       },
+       "required": [
+        "min",
+        "max"
+       ]
+      },
+      "open_headcount": {
+       "bsonType": "int"
+      },
+      "created_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "title",
+      "level",
+      "band",
+      "open_headcount",
+      "created_at"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  },
+  {
+   "key": "benefits",
+   "name": "benefits",
+   "doc_count": 700,
+   "fields": {
+    "employee_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "health",
+      "dental",
+      "meal",
+      "transport",
+      "gym"
+     ],
+     "w": null
+    },
+    "monthly_cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20.0,
+     "hi": 900.0
+    },
+    "since": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "dependents": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "relation": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "spouse",
+         "child",
+         "parent"
+        ],
+        "w": null
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "mode": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "size": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 9000000000
+      },
+      "at": {
+       "t": "date",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "attrs": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "count": {
+         "t": "int32",
+         "p": 0.95,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        },
+        "label": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        },
+        "extra": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "count": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          },
+          "at": {
+           "t": "date",
+           "p": 0.5,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "amount_total": {
+     "t": "decimal128",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "kind",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "employee_id": {
+       "bsonType": "objectId"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "health",
+        "dental",
+        "meal",
+        "transport",
+        "gym"
+       ]
+      },
+      "monthly_cost": {
+       "bsonType": "decimal"
+      },
+      "since": {
+       "bsonType": "date"
+      },
+      "dependents": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "name": {
+          "bsonType": "string"
+         },
+         "relation": {
+          "bsonType": "string",
+          "enum": [
+           "spouse",
+           "child",
+           "parent"
+          ]
+         }
+        },
+        "required": [
+         "name",
+         "relation"
+        ]
+       }
+      },
+      "attrs": {
+       "bsonType": "object",
+       "properties": {
+        "mode": {
+         "bsonType": "string",
+         "enum": [
+          "a",
+          "b",
+          "c"
+         ]
+        },
+        "size": {
+         "bsonType": "long"
+        },
+        "at": {
+         "bsonType": "date"
+        },
+        "attrs": {
+         "bsonType": "object",
+         "properties": {
+          "count": {
+           "bsonType": "int"
+          },
+          "label": {
+           "bsonType": "string"
+          },
+          "score": {
+           "bsonType": "double"
+          },
+          "extra": {
+           "bsonType": "object",
+           "properties": {
+            "count": {
+             "bsonType": "int"
+            },
+            "at": {
+             "bsonType": "date"
+            }
+           },
+           "required": [
+            "count"
+           ]
+          }
+         },
+         "required": [
+          "label",
+          "score"
+         ]
+        }
+       },
+       "required": [
+        "mode",
+        "size"
+       ]
+      },
+      "amount_total": {
+       "bsonType": "decimal"
+      }
+     },
+     "required": [
+      "employee_id",
+      "kind",
+      "monthly_cost",
+      "since"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 4
+  },
+  {
+   "key": "candidates",
+   "name": "candidates",
+   "doc_count": 1850,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "position": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "stage": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "applied",
+      "screen",
+      "interview",
+      "offer",
+      "hired",
+      "rejected"
+     ],
+     "w": null
+    },
+    "source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "referral",
+      "site",
+      "agency",
+      "social"
+     ],
+     "w": null
+    },
+    "resume_url": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "url"
+    },
+    "score": {
+     "t": "double",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": 0.0,
+     "hi": 10.0
+    },
+    "applied_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "attrs": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "total": {
+       "t": "decimal128",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 5000
+      },
+      "mode": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "a",
+        "b",
+        "c"
+       ],
+       "w": null
+      },
+      "label": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "word"
+      },
+      "quota": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "size": {
+         "t": "int64",
+         "p": 0.9,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000000000
+        },
+        "total": {
+         "t": "decimal128",
+         "p": 0.95,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        },
+        "attrs": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "count": {
+           "t": "int32",
+           "p": 0.95,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          },
+          "mode": {
+           "t": "string",
+           "p": 0.5,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "a",
+            "b",
+            "c"
+           ],
+           "w": null
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "stage",
+       1
+      ],
+      [
+       "source",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "position",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4
+  },
+  {
+   "key": "payroll",
+   "name": "payroll",
+   "doc_count": 900,
+   "fields": {
+    "employee_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "month": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "gross": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1500.0,
+     "hi": 60000.0
+    },
+    "net": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1200.0,
+     "hi": 48000.0
+    },
+    "deductions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "inss",
+         "irrf",
+         "health",
+         "union"
+        ],
+        "w": null
+       },
+       "amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 10.0,
+        "hi": 5000.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "paid_at": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "uid": {
+     "t": "uuid",
+     "p": 0.95,
+     "n": 0.0,
+     "v": 4
+    },
+    "tags": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "month",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "paid_at",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "timesheets",
+   "name": "timesheets",
+   "doc_count": 550,
+   "fields": {
+    "employee_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "date": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "project": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "PR"
+       },
+       "hours": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 9.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "approved": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "version_no": {
+     "t": "int64",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9000000000
+    },
+    "amount_total": {
+     "t": "decimal128",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "date",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "date",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "approved": true
+     }
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "timesheets_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "date": {
+         "type": "date"
+        },
+        "version_no": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2
+  },
+  {
+   "key": "employees",
+   "name": "employees",
+   "doc_count": 700,
+   "fields": {
+    "full_name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "department_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "departments"
+    },
+    "position": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "salary": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1500.0,
+     "hi": 45000.0
+    },
+    "hired_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "manager_id": {
+     "t": "objectid",
+     "p": 0.8,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "leave",
+      "terminated"
+     ],
+     "w": null
+    },
+    "address": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "city": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "country": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      },
+      "geo": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "lat": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -34.0,
+         "hi": 5.0
+        },
+        "lng": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -74.0,
+         "hi": -35.0
+        }
+       }
+      }
+     }
+    },
+    "skills": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "external_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "amount_total": {
+     "t": "decimal128",
+     "p": 0.4,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 90000
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "department_id",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "hired_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "skills",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "full_name": {
+       "bsonType": "string"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "department_id": {
+       "bsonType": "objectId"
+      },
+      "position": {
+       "bsonType": "string"
+      },
+      "salary": {
+       "bsonType": "decimal"
+      },
+      "hired_at": {
+       "bsonType": "date"
+      },
+      "manager_id": {
+       "bsonType": "objectId"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "leave",
+        "terminated"
+       ]
+      },
+      "address": {
+       "bsonType": "object",
+       "properties": {
+        "city": {
+         "bsonType": "string"
+        },
+        "country": {
+         "bsonType": "string"
+        },
+        "geo": {
+         "bsonType": "object",
+         "properties": {
+          "lat": {
+           "bsonType": "double"
+          },
+          "lng": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "lat",
+          "lng"
+         ]
+        }
+       },
+       "required": [
+        "city",
+        "country"
+       ]
+      },
+      "skills": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "external_id": {
+       "bsonType": "binData"
+      },
+      "amount_total": {
+       "bsonType": "decimal"
+      }
+     },
+     "required": [
+      "full_name",
+      "email",
+      "department_id",
+      "position",
+      "salary",
+      "hired_at",
+      "status",
+      "external_id"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  }
+ ],
+ "language": "en"
+}

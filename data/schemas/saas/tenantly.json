@@ -1,0 +1,805 @@
+{
+ "schema_id": "tenantly",
+ "domain": "saas",
+ "holdout": false,
+ "description": "SaaS multi-tenant, snake_case",
+ "name_style": "snake",
+ "seed": 20261008,
+ "format_version": 1,
+ "collections": [
+  {
+   "key": "tenants",
+   "name": "tenants",
+   "doc_count": 650,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "plan": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "free",
+      "team",
+      "business",
+      "enterprise"
+     ],
+     "w": [
+      40,
+      30,
+      20,
+      10
+     ]
+    },
+    "seats": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500
+    },
+    "mrr": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 20000
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "trial_ends_at": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.3,
+     "lo": "2026-01-01",
+     "hi": "2026-12-31"
+    },
+    "settings": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "sso": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.2
+      },
+      "locale": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "en",
+        "pt-BR",
+        "es"
+       ],
+       "w": null
+      },
+      "limits": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "api_rpm": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 60,
+         "hi": 6000
+        },
+        "storage_gb": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 1,
+         "hi": 5000
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "plan",
+       1
+      ],
+      [
+       "mrr",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "trial_ends_at",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "trial_ends_at": {
+       "$exists": true
+      }
+     }
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "users",
+   "name": "users",
+   "doc_count": 350,
+   "fields": {
+    "tenant_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "role": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "owner",
+      "admin",
+      "member",
+      "viewer"
+     ],
+     "w": [
+      5,
+      15,
+      60,
+      20
+     ]
+    },
+    "display_name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "mfa_enabled": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.35
+    },
+    "last_seen_at": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "prefs": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "theme": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "light",
+        "dark"
+       ],
+       "w": null
+      },
+      "notifications": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "email": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.7
+        },
+        "push": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.4
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tenant_id",
+       1
+      ],
+      [
+       "role",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "tenant_id": {
+       "bsonType": "objectId"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "role": {
+       "bsonType": "string",
+       "enum": [
+        "owner",
+        "admin",
+        "member",
+        "viewer"
+       ]
+      },
+      "display_name": {
+       "bsonType": "string"
+      },
+      "mfa_enabled": {
+       "bsonType": "bool"
+      },
+      "last_seen_at": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "prefs": {
+       "bsonType": "object",
+       "properties": {
+        "theme": {
+         "bsonType": "string",
+         "enum": [
+          "light",
+          "dark"
+         ]
+        },
+        "notifications": {
+         "bsonType": "object",
+         "properties": {
+          "email": {
+           "bsonType": "bool"
+          },
+          "push": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "email",
+          "push"
+         ]
+        }
+       },
+       "required": [
+        "theme",
+        "notifications"
+       ]
+      }
+     },
+     "required": [
+      "tenant_id",
+      "email",
+      "role",
+      "display_name",
+      "mfa_enabled"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3
+  },
+  {
+   "key": "api_keys",
+   "name": "api_keys",
+   "doc_count": 1300,
+   "fields": {
+    "tenant_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "key_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "prefix": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "scopes": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "read",
+       "write",
+       "admin",
+       "billing"
+      ],
+      "w": null
+     },
+     "min": 1,
+     "max": 3
+    },
+    "created_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "revoked": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.15
+    },
+    "expires_at": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": "2026-06-01",
+     "hi": "2027-12-31"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "key_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tenant_id",
+       1
+      ],
+      [
+       "revoked",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "api_keys_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "prefix": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "created_at": {
+         "type": "date"
+        },
+        "expires_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1
+  },
+  {
+   "key": "audit_log",
+   "name": "audit_log",
+   "doc_count": 700,
+   "fields": {
+    "tenant_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "actor_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "users"
+    },
+    "action": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "login",
+      "create",
+      "update",
+      "delete",
+      "export",
+      "invite"
+     ],
+     "w": null
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ip": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "user_agent": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "request_id": {
+       "t": "uuid",
+       "p": 1.0,
+       "n": 0.0,
+       "v": 4
+      },
+      "changes": {
+       "t": "array",
+       "p": 0.8,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "from": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.3,
+          "g": "word"
+         },
+         "to": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.3,
+          "g": "word"
+         }
+        }
+       },
+       "min": 0,
+       "max": 3
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tenant_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "action",
+       1
+      ],
+      [
+       "at",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "audit_log_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "ip": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "action": {
+         "type": "token"
+        },
+        "at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3
+  },
+  {
+   "key": "invoices",
+   "name": "invoices",
+   "doc_count": 1650,
+   "fields": {
+    "tenant_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tenants"
+    },
+    "number": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "INV-"
+    },
+    "amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 20000
+    },
+    "currency": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "USD",
+      "BRL",
+      "EUR"
+     ],
+     "w": null
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "draft",
+      "open",
+      "paid",
+      "void"
+     ],
+     "w": [
+      5,
+      20,
+      70,
+      5
+     ]
+    },
+    "issued_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "lines": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 50
+       },
+       "unit": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 400
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "number",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tenant_id",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "tenant_id": {
+       "bsonType": "objectId"
+      },
+      "number": {
+       "bsonType": "string"
+      },
+      "amount": {
+       "bsonType": "decimal"
+      },
+      "currency": {
+       "bsonType": "string",
+       "enum": [
+        "USD",
+        "BRL",
+        "EUR"
+       ]
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "draft",
+        "open",
+        "paid",
+        "void"
+       ]
+      },
+      "issued_at": {
+       "bsonType": "date"
+      },
+      "lines": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "desc": {
+          "bsonType": "string"
+         },
+         "qty": {
+          "bsonType": "int"
+         },
+         "unit": {
+          "bsonType": "decimal"
+         }
+        },
+        "required": [
+         "desc",
+         "qty",
+         "unit"
+        ]
+       }
+      }
+     },
+     "required": [
+      "tenant_id",
+      "number",
+      "amount",
+      "currency",
+      "status",
+      "issued_at",
+      "lines"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2
+  }
+ ],
+ "language": "en"
+}
