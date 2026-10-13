@@ -246,6 +246,7 @@ def main():
             assert n == len(docs), (name, col["name"], n, len(docs))
             entries.append({
                 "schema_id": schema["schema_id"], "domain": schema["domain"], "holdout": schema["holdout"],
+                "split_role": schema.get("split_role"),
                 "db": name, "collection": col["name"], "count": n,
                 "docs_sha256": docs_hash(docs), "schema_sha256": schema_sha,
                 "indexes": index_specs(col), "validator": "validator" in col,

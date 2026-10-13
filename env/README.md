@@ -12,6 +12,14 @@ Servidor: MongoDB 8.0.32 no WSL (Ubuntu), `mongodb://127.0.0.1:27017`, sem auth.
 - seed completo ~118 s; check completo (com hash) ~8 s; dumps 110 arquivos ~76 MB (gitignored: `data/fixtures/dumps/`).
 - Atenção: TTL de 10 anos com datas antigas faria o TTL monitor apagar docs; o gerador só usa TTL em campos de data >= 2025-01-01.
 
+## split_role (train|eval) por schema
+- Cada schema grava `split_role` no JSON (`data/schemas/*/*.json`) e em `data/fixtures/manifest.json`; regra e parametros em
+  `configs/dataset.yaml` (bloco `schema_split`), implementada em `scripts/data/split_roles.py` (`assign_roles`, `role_for`).
+- education/legal (holdout) = `eval` sempre; nos demais dominios ~25% dos schemas `eval` (ordem por sha256 de `seed:schema_id`,
+  minimo 1 `eval` com >= 6 schemas, estilos de nome/idioma nos dois lados). Resumo: `python scripts/data/split_roles.py`.
+- Webhooks (saas): campo `secret` renomeado para `signature_salt` (valores `SALT-000123`), p/ nao disparar o sanitizador
+  (`secret ... [:=]` em render_contract/validate_pipeline).
+
 ```powershell
 # venv (ignorado no git); recriar: py -3.12 -m venv env\.venv; env\.venv\Scripts\pip install -r env\requirements.txt
 env\.venv\Scripts\Activate.ps1

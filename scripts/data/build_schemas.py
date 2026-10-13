@@ -11,6 +11,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from split_roles import assign_roles  # noqa: E402
+
 SEED = 20261008
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -463,7 +466,7 @@ ENT = {
   EE("api_keys", "chaves_api", "tenant_id=ref:tenants;key_id=u4;prefix=hex;scopes=as:e:read|write|admin;created_at=t;revoked=b:0.1;last_used=t??", "!key_id;tenant_id;scopes"),
   EE("audit_events", "eventos_auditoria", "tenant_id=ref:tenants;actor=ref:users?;action=e:login|create|update|delete|export|invite;target=o(kind=word,id=hex);at=t;ip=ip;details=o(before=o(v=word?)?,after=o(v=word?)?)?", "tenant_id,-at;action;ttl:at"),
   EE("feature_flags", "flags_recurso", "key=slug;description=sentence;enabled=b:0.5;rollout_pct=i:0..100;rules=a(attr=word,op=e:eq|in|gt,value=word)?;updated_at=t", "!key;enabled"),
-  EE("webhooks", "webhooks", "tenant_id=ref:tenants;url=url;events=as:e:invoice.paid|user.created|plan.changed;secret=hex;active=b:0.9;failures=i:0..30", "tenant_id,active;events"),
+  EE("webhooks", "webhooks", "tenant_id=ref:tenants;url=url;events=as:e:invoice.paid|user.created|plan.changed;signature_salt=code:SALT-;active=b:0.9;failures=i:0..30", "tenant_id,active;events"),
   EE("usage_records", "registros_uso", "tenant_id=ref:tenants;metric=e:api_calls|storage|seats|jobs;day=t;value=l:0..900000;cost=m:0..400?", "tenant_id,metric,-day"),
   EE("support_tickets", "chamados", "tenant_id=ref:tenants;opened_by=ref:users;subject=title;priority=e:low|normal|high|urgent;status=e:open|pending|solved;messages=a(at=t,from=e:agent|customer,body=sentence);csat=i:1..5??", "tenant_id,status;priority,-opened_by"),
  ],
@@ -1090,8 +1093,11 @@ def main():
     out = Path(a.out)
     n_s = n_c = 0
     hand = schema_defs()
-    for d in hand + procedural_defs(a.seed, hand):
-        s = build(d, a.seed)
+    defs = hand + procedural_defs(a.seed, hand)
+    built = [(d, build(d, a.seed)) for d in defs]
+    roles = assign_roles([{k: s[k] for k in ("schema_id", "domain", "holdout", "name_style", "language")} for _, s in built], a.seed)
+    for d, s in built:
+        s = {**{k: v for k, v in s.items() if k != "collections"}, "split_role": roles[s["schema_id"]], "collections": s["collections"]}
         p = out / d["domain"] / f"{d['schema_id']}.json"
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(s, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
