@@ -96,3 +96,26 @@ chat:
     chat: 0.15               # chat + explain
     correction: 0.06
     negative: 0.03
+
+# --- contexto de editor (gen_editor_context.py; contrato editor-context-v1, spec §4.1/§4.3) ---
+# Le data/generated/<ver>/fim.jsonl + snippets.jsonl + data/schemas; grava fim_ctx.jsonl. Determinístico por seed.
+editor_context:
+  contract: editor-context-v1
+  golden: data/contracts/editor-context-v1.golden   # copia do golden congelado da IDE (commit 7844bd7)
+  tokenizer: BaseRepos/Qwen2.5-Coder-0.5B/tokenizer.json
+  context_tokens: 2048       # AutocompleteSettings.ContextTokens (orcamento do FIM Qwen = 2048 - 3)
+  prefix_window: 4096        # caracteres UTF-16 antes do cursor
+  suffix_window: 1024
+  max_names: 128
+  max_result_fields: 128     # spec: ate 128 nomes do resultado
+  max_recent_commands: 3     # ate 3, 256 caracteres cada
+  cursor_marker: "▌"    # editor_text = prefix + marcador + suffix
+  none_ratio: 0.08           # sem contexto: prompt = FIM cru (header ausente, facts vazios)
+  irrelevant_ratio: 0.10     # known_names/result_fields de OUTRAS colecoes/schemas (ruido; facts seguem verdadeiros)
+  input_panel_ratio: 0.04    # raro; so campos do schema da colecao
+  result_fields: {all: 0.60, projection: 0.25, none: 0.15}   # painel de resultado: tudo / projecao de 3-8 campos / vazio
+  recent_commands: {0: 0.45, 1: 0.25, 2: 0.15, 3: 0.15}      # mesma colecao e mesmo split, outro grupo
+  similar_statement_ratio: 0.15
+  schema_subset: {min: 6, max: 16, include_hidden_target: 0.5}   # campos do alvo ausentes do texto visivel entram com p=0.5
+  connections: [dev-cluster, Development, Production, local, staging, "Prod Cluster", atlas-eu, reporting]
+  repeat_target_names: 0.5   # repete conexao/banco/colecao ativos no fim de known_names (como na v1)

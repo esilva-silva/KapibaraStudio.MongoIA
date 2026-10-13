@@ -10,8 +10,11 @@ Fases:
   all    : gen e depois score num subprocesso com env/.venv (que tem pymongo; o venv ROCm nao tem).
 
 Contratos: `fim-raw` (padrao; prompt = QwenFimPromptBuilder sobre prefix/suffix do registro, sem cabecalho de contexto, pois o
-fim.jsonl da v1 nao traz `context`) e `editor-context-v1` (cabecalho da IDE reconstruido so com LANGUAGE/KNOWN NAMES=colecao;
-aproximacao, ver README do relatorio). kapi-context-v2/local-agent-fim-v0 nao se aplicam a esta etapa (chat/SFT).
+fim.jsonl da v1 nao traz `context`) e `editor-context-v1`: le `data/generated/v1/fim_ctx.jsonl` (gen_editor_context.py; campo
+`editor` de cada linha) e renderiza o cabecalho real da IDE com `scripts/data/render_contract.py` (CRLF fixo, ModelPrefix, janelas);
+linhas `context_kind=none` ficam sem cabecalho (8%). Sem fim_ctx.jsonl cai na aproximacao antiga (LANGUAGE + KNOWN NAMES=colecao).
+`--ids-from <sample_ids.json>` restringe a amostra aos ids de outra execucao (comparacao pareada; `--n` sorteia dentre eles).
+kapi-context-v2/local-agent-fim-v0 nao se aplicam a esta etapa (chat/SFT).
 Saida: Repos/KapiTeacher-Mongo-7B/reports/baseline_base/<model>/{summary.json,predictions.jsonl,report.md,gen_meta.json,sample_ids.json}
 """
 from __future__ import annotations
@@ -32,11 +35,29 @@ from _common import (ENV_VENV_PY, ROOT, TEACHER_REPO, auto_load, gpu_lock, libra
 
 DATASET = ROOT / "data" / "generated" / "v1" / "fim.jsonl"
 DATASET_MANIFEST = ROOT / "data" / "generated" / "v1" / "fim.manifest.json"
+DATASET_CTX = ROOT / "data" / "generated" / "v1" / "fim_ctx.jsonl"
+DATASET_CTX_MANIFEST = ROOT / "data" / "generated" / "v1" / "fim_ctx.manifest.json"
+sys.path.insert(0, str(ROOT / "scripts" / "data"))
 MAX_NEW_TOKENS = 96      # §3.5: greedy ate 96 tokens (autocomplete)
 IDE_MAX_NEW_TOKENS = 32  # AutocompleteSettings.MaximumCompletionTokens (metricas @32 como no bake-off)
 CONTEXT_TOKENS = 2048
 CONTRACTS = ("fim-raw", "editor-context-v1")
 LANGUAGE_BY_DIALECT = {"console": "Mongo Console JavaScript", "mongosh": "JavaScript (mongosh)", "json": "json"}
+
+
+def dataset_paths(contract_name: str) -> tuple[Path, Path]:
+    """(jsonl, manifest) do contrato: editor-context-v1 usa fim_ctx.jsonl quando existe."""
+    if contract_name == "editor-context-v1" and DATASET_CTX.exists():
+        return DATASET_CTX, DATASET_CTX_MANIFEST
+    return DATASET, DATASET_MANIFEST
+
+
+def read_rows(contract_name: str) -> list[dict]:
+    path, _ = dataset_paths(contract_name)
+    rows = read_jsonl(path)
+    for r in rows:  # fim_ctx.jsonl grava a resposta em `target` (= middle)
+        r.setdefault("middle", r.get("target"))
+    return rows
 
 
 # -- amostragem -------------------------------------------------------------------------------------------------------------------
@@ -61,10 +82,13 @@ def stratified_sample(rows: list[dict], n: int, seed: int) -> list[dict]:
     return sorted(chosen, key=lambda r: r["id"])
 
 
-def load_sample(split: str, n: int, seed: int) -> tuple[list[dict], dict]:
-    rows = [r for r in read_jsonl(DATASET) if r["split"] == split]
+def load_sample(split: str, n: int, seed: int, contract_name: str = "fim-raw", ids_from: str | None = None) -> tuple[list[dict], dict]:
+    rows = [r for r in read_rows(contract_name) if r["split"] == split]
+    if ids_from:
+        wanted = set(json.loads(Path(ids_from).read_text(encoding="utf-8"))["ids"])
+        rows = [r for r in rows if r["id"] in wanted]
     sample = stratified_sample(rows, n, seed)
-    info = {"split": split, "split_size": len(rows), "n": len(sample), "seed": seed, "stratify_by": ["cut_kind", "domain"],
+    info = {"split": split, "split_size": len(rows), "n": len(sample), "seed": seed, "ids_from": ids_from, "stratify_by": ["cut_kind", "domain"],
             "cut_kind": dict(collections.Counter(r["cut_kind"] for r in sample)),
             "domain": dict(collections.Counter(r["domain"] for r in sample)),
             "sample_ids_sha256": sha256_text("\n".join(r["id"] for r in sample))}
@@ -76,7 +100,12 @@ def build_ids(contract, row: dict, contract_name: str) -> list[int]:
     from compact.contracts import PREFIX_WINDOW, SUFFIX_WINDOW, model_prefix
 
     prefix, suffix = row["prefix"][-PREFIX_WINDOW:], row["suffix"][:SUFFIX_WINDOW]
-    if contract_name == "editor-context-v1":
+    if contract_name == "editor-context-v1" and "editor" in row:
+        import render_contract as rc  # scripts/data: renderer do contrato (cabecalho real; None = sem contexto)
+
+        prefix, suffix = rc.bound_window(row["prefix"], row["suffix"])
+        prefix = rc.render_model_prefix(prefix, row["editor"], row.get("language") or rc.editor_language(row))
+    elif contract_name == "editor-context-v1":
         context = {"language": LANGUAGE_BY_DIALECT.get(row["dialect"]), "newline": "\r\n" if row.get("crlf") else "\n",
                    "known_names": [row["collection"]]}
         prefix = model_prefix(prefix, context, contract.deepseek_context)
@@ -110,7 +139,7 @@ def phase_gen(args, out_dir: Path) -> None:
     from _common import Generator, load_hf
 
     model_dir = Path(args.model).resolve()
-    sample, sample_info = load_sample(args.split, args.n, args.seed)
+    sample, sample_info = load_sample(args.split, args.n, args.seed, args.contract, args.ids_from)
     write_json(out_dir / "sample_ids.json", {**sample_info, "ids": [r["id"] for r in sample]})
     predictions = out_dir / "predictions.jsonl"
     done: dict[str, dict] = {}
@@ -188,8 +217,9 @@ def phase_gen(args, out_dir: Path) -> None:
         "model_path": str(model_dir), "model": model_fingerprint(model_dir), "load": load, "load_seconds": load_seconds,
         "contract": args.contract, "model_contract": contract_name, "stop_ids": stops, "max_new_tokens": MAX_NEW_TOKENS,
         "ide_max_new_tokens": IDE_MAX_NEW_TOKENS, "context_tokens": CONTEXT_TOKENS, "decoding": "greedy (argmax), padding do vocab mascarado",
-        "seed": args.seed, "dataset": {"path": str(DATASET.relative_to(ROOT)), "sha256": sha256_file(DATASET),
-                                       "manifest_sha256": sha256_file(DATASET_MANIFEST), **sample_info},
+        "seed": args.seed, "dataset": {"path": str(dataset_paths(args.contract)[0].relative_to(ROOT)),
+                                       "sha256": sha256_file(dataset_paths(args.contract)[0]),
+                                       "manifest_sha256": sha256_file(dataset_paths(args.contract)[1]), **sample_info},
         "libraries": library_versions(), "gpu": gpu_report, "memory": memory,
         "gpu_seconds": round(time.time() - wall0, 1), "generation_seconds": round(gen_seconds, 1),
         "examples_generated": len(rows), "finished": time.strftime("%FT%T"),
@@ -206,7 +236,7 @@ def phase_score(args, out_dir: Path) -> None:
     schemas = {s.full_id: s for s in load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"))}
     executor = cv.Executor(cfg)
     node = cv.NodeChecker()
-    sample = {r["id"]: r for r in read_jsonl(DATASET) if r["split"] == args.split}
+    sample = {r["id"]: r for r in read_rows(args.contract) if r["split"] == args.split}
     rows = read_jsonl(out_dir / "predictions.jsonl")
     started = time.time()
 
@@ -352,6 +382,7 @@ def main() -> int:
     parser.add_argument("--name", help="nome da pasta de saida (padrao: nome do modelo)")
     parser.add_argument("--out-root", default=str(TEACHER_REPO / "reports" / "baseline_base"))
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--ids-from", help="sample_ids.json de outra execucao: amostra so dentre esses ids")
     args = parser.parse_args()
     if args.split == "test":
         print("AVISO: split test usado so para leitura final; confirme que e intencional.", file=sys.stderr)
@@ -362,6 +393,8 @@ def main() -> int:
     if args.phase == "all":
         command = [str(ENV_VENV_PY), "-I", str(Path(__file__).resolve()), "--phase", "score", "--model", args.model, "--split", args.split,
                    "--contract", args.contract, "--n", str(args.n), "--seed", str(args.seed), "--out-root", args.out_root]
+        if args.ids_from:
+            command += ["--ids-from", args.ids_from]
         if args.name:
             command += ["--name", args.name]
         subprocess.run(command, check=True)
