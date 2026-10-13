@@ -94,17 +94,26 @@ def library_versions() -> dict[str, str]:
 
 @contextlib.contextmanager
 def gpu_lock(job: str):
-    """tmp/gpu.lock (Fase 05 §4.2): uma GPU, um job por vez. Trava obsoleta (pid morto) e tomada."""
+    """tmp/gpu.lock (Fase 05 §4.2): uma GPU, um job por vez. Trava obsoleta (pid morto) e tomada.
+
+    Sob a fila (scripts/gpu_queue.ps1) o lock pertence a ela (KAPI_GPU_QUEUE_PID == pid do dono): o filho apenas o respeita.
+    """
     import psutil
 
     GPU_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    queue_owned = False
     if GPU_LOCK.exists():
         try:
             holder = json.loads(GPU_LOCK.read_text(encoding="utf-8"))
-            if psutil.pid_exists(int(holder.get("pid", -1))):
-                raise SystemExit(f"GPU ocupada: {GPU_LOCK} detido por {holder}")
         except (ValueError, OSError):
-            pass
+            holder = {}
+        if os.environ.get("KAPI_GPU_QUEUE_PID") and str(holder.get("pid")) == os.environ["KAPI_GPU_QUEUE_PID"]:
+            queue_owned = True
+        elif holder.get("pid") is not None and psutil.pid_exists(int(holder["pid"])):
+            raise SystemExit(f"GPU ocupada: {GPU_LOCK} detido por {holder}")
+    if queue_owned:
+        yield
+        return
     GPU_LOCK.write_text(json.dumps({"pid": os.getpid(), "job": job, "started": time.strftime("%FT%T")}), encoding="utf-8")
     try:
         yield

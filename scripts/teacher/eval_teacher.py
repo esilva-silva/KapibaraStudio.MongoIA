@@ -45,14 +45,35 @@ CONTRACTS = ("fim-raw", "editor-context-v1")
 LANGUAGE_BY_DIALECT = {"console": "Mongo Console JavaScript", "mongosh": "JavaScript (mongosh)", "json": "json"}
 
 
+DATA_VERSION = "v1"                       # --data-version v2c: data/validated/v2c (Fase 03 v2c; split val/test; NUNCA train)
+V2C_DIR = ROOT / "data" / "validated" / "v2c"
+
+
 def dataset_paths(contract_name: str) -> tuple[Path, Path]:
-    """(jsonl, manifest) do contrato: editor-context-v1 usa fim_ctx.jsonl quando existe."""
+    """(jsonl, manifest) do contrato: editor-context-v1 usa fim_ctx.jsonl quando existe. v2c: (primeiro shard, manifest.json)."""
+    if DATA_VERSION == "v2c":
+        return sorted(V2C_DIR.glob("fim-*.jsonl"))[0], V2C_DIR / "manifest.json"
     if contract_name == "editor-context-v1" and DATASET_CTX.exists():
         return DATASET_CTX, DATASET_CTX_MANIFEST
     return DATASET, DATASET_MANIFEST
 
 
-def read_rows(contract_name: str) -> list[dict]:
+def read_rows(contract_name: str, split: str | None = None) -> list[dict]:
+    if DATA_VERSION == "v2c":
+        # v2c: registros de varios shards (fim-*.jsonl, ~6 GB); le so o split pedido e so autocomplete (type fim). train e proibido.
+        if split not in ("val", "test"):
+            raise SystemExit("v2c: eval_teacher so le val (ou test na leitura final); train/bench/blind nunca")
+        needle = f'"split":"{split}"'
+        rows = []
+        for shard in sorted(V2C_DIR.glob("fim-*.jsonl")):
+            with shard.open(encoding="utf-8") as handle:
+                for line in handle:
+                    if needle in line:
+                        rec = json.loads(line)
+                        if rec.get("split") == split and rec.get("type") == "fim":
+                            rec.setdefault("target", rec["middle"])
+                            rows.append(rec)
+        return rows
     path, _ = dataset_paths(contract_name)
     rows = read_jsonl(path)
     for r in rows:  # fim_ctx.jsonl grava a resposta em `target` (= middle)
@@ -83,7 +104,7 @@ def stratified_sample(rows: list[dict], n: int, seed: int) -> list[dict]:
 
 
 def load_sample(split: str, n: int, seed: int, contract_name: str = "fim-raw", ids_from: str | None = None) -> tuple[list[dict], dict]:
-    rows = [r for r in read_rows(contract_name) if r["split"] == split]
+    rows = [r for r in read_rows(contract_name, split) if r["split"] == split]
     if ids_from:
         wanted = set(json.loads(Path(ids_from).read_text(encoding="utf-8"))["ids"])
         rows = [r for r in rows if r["id"] in wanted]
@@ -151,6 +172,15 @@ def phase_gen(args, out_dir: Path) -> None:
         model, tokenizer, device, gpu, load_seconds = load_hf(model_dir, load)
         import torch
 
+        adapter_info = None
+        if args.adapter:  # QLoRA do professor: adapter PEFT sobre o base NF4 (sem merge; merge bf16 e feito em outro passo)
+            from peft import PeftModel
+
+            adapter_dir = Path(args.adapter).resolve()
+            model = PeftModel.from_pretrained(model, adapter_dir, torch_device=str(device))
+            model.eval()
+            adapter_info = {"path": str(adapter_dir), "sha256": sha256_file(adapter_dir / "adapter_model.safetensors")}
+
         contract = contract_for(tokenizer)
         gen = Generator(model, tokenizer, device)
         for row in sample[:3]:  # aquecimento (igual ao bake-off)
@@ -215,6 +245,7 @@ def phase_gen(args, out_dir: Path) -> None:
             handle.write(json.dumps(r, ensure_ascii=False) + "\n")
     write_json(out_dir / "gen_meta.json", {
         "model_path": str(model_dir), "model": model_fingerprint(model_dir), "load": load, "load_seconds": load_seconds,
+        "adapter": adapter_info, "data_version": DATA_VERSION,
         "contract": args.contract, "model_contract": contract_name, "stop_ids": stops, "max_new_tokens": MAX_NEW_TOKENS,
         "ide_max_new_tokens": IDE_MAX_NEW_TOKENS, "context_tokens": CONTEXT_TOKENS, "decoding": "greedy (argmax), padding do vocab mascarado",
         "seed": args.seed, "dataset": {"path": str(dataset_paths(args.contract)[0].relative_to(ROOT)),
@@ -236,7 +267,7 @@ def phase_score(args, out_dir: Path) -> None:
     schemas = {s.full_id: s for s in load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"))}
     executor = cv.Executor(cfg)
     node = cv.NodeChecker()
-    sample = {r["id"]: r for r in read_rows(args.contract) if r["split"] == args.split}
+    sample = {r["id"]: r for r in read_rows(args.contract, args.split) if r["split"] == args.split}
     rows = read_jsonl(out_dir / "predictions.jsonl")
     started = time.time()
 
@@ -383,7 +414,11 @@ def main() -> int:
     parser.add_argument("--out-root", default=str(TEACHER_REPO / "reports" / "baseline_base"))
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--ids-from", help="sample_ids.json de outra execucao: amostra so dentre esses ids")
+    parser.add_argument("--adapter", help="diretorio do adapter PEFT (KapiTeacher) aplicado sobre --model (NF4)")
+    parser.add_argument("--data-version", choices=["v1", "v2c"], default="v1", help="v2c: data/validated/v2c (val/test)")
     args = parser.parse_args()
+    global DATA_VERSION
+    DATA_VERSION = args.data_version
     if args.split == "test":
         print("AVISO: split test usado so para leitura final; confirme que e intencional.", file=sys.stderr)
     out_dir = Path(args.out_root) / (args.name or Path(args.model).name)
@@ -395,6 +430,7 @@ def main() -> int:
                    "--contract", args.contract, "--n", str(args.n), "--seed", str(args.seed), "--out-root", args.out_root]
         if args.ids_from:
             command += ["--ids-from", args.ids_from]
+        command += ["--data-version", args.data_version]
         if args.name:
             command += ["--name", args.name]
         subprocess.run(command, check=True)

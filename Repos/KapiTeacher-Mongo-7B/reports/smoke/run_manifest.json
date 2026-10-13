@@ -1,0 +1,239 @@
+{
+  "schema": "teacher-run/1",
+  "run": "smoke",
+  "stage": "sft",
+  "started_utc": "2026-10-13T18:24:55Z",
+  "last_start_utc": "2026-10-13T18:31:12Z",
+  "restarts": 1,
+  "git": {
+    "commit": "be8cac0c559c24839afb43be3d2736805791a4bd",
+    "dirty": true
+  },
+  "config": {
+    "path": "Repos\\KapiTeacher-Mongo-7B\\configs\\sft_v2c.yaml",
+    "sha256": "f83231ee899c5f3f0bc54b0428e13631d732eb0994bb1c44ef116a81a4b7bb06",
+    "overrides": [
+      "optim.tokens_per_step=4096",
+      "data.max_train_tokens=115000",
+      "checkpoint.every_steps=8",
+      "eval.every_steps=14",
+      "eval.gen_examples=6",
+      "eval.final_gen_examples=16"
+    ],
+    "effective": {
+      "version": "sft-v2c/1",
+      "run": {
+        "name": "smoke",
+        "seed": 20261008,
+        "stage": "sft"
+      },
+      "model": {
+        "path": "BaseRepos/Qwen2.5-Coder-7B",
+        "quant": "nf4",
+        "attn": "sdpa"
+      },
+      "lora": {
+        "r": 64,
+        "alpha": 128,
+        "dropout": 0.05,
+        "targets": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "data": {
+        "corpus_dir": "data/teacher/v2c",
+        "micro_tokens": 4096,
+        "max_train_tokens": 115000
+      },
+      "optim": {
+        "name": "paged_adamw_8bit",
+        "lr": 0.0001,
+        "min_lr_ratio": 0.1,
+        "betas": [
+          0.9,
+          0.95
+        ],
+        "weight_decay": 0.0,
+        "warmup_ratio": 0.03,
+        "grad_clip": 1.0,
+        "tokens_per_step": 4096
+      },
+      "loss": {
+        "ce_chunk": 1024
+      },
+      "memory": {
+        "max_vram_fraction": 0.94,
+        "vram_reserve_gb": 1.6,
+        "gradient_checkpointing": true
+      },
+      "checkpoint": {
+        "dir": "Repos/KapiTeacher-Mongo-7B/checkpoints",
+        "every_minutes": 30,
+        "every_pct_steps": 5,
+        "every_steps": 8,
+        "keep": 3
+      },
+      "eval": {
+        "every_pct_steps": 10,
+        "every_steps": 14,
+        "val_loss": true,
+        "gen_examples": 6,
+        "final_gen_examples": 16,
+        "max_new_tokens": 96
+      },
+      "budget": {
+        "hours": 34
+      },
+      "paths": {
+        "reports_dir": "Repos/KapiTeacher-Mongo-7B/reports",
+        "adapters_dir": "Repos/KapiTeacher-Mongo-7B/adapters",
+        "gates": "configs/gates.yaml",
+        "contract_golden": "data/contracts/editor-context-v1.golden"
+      }
+    }
+  },
+  "dataset": {
+    "corpus_manifest": "data\\teacher\\v2c\\manifest.json",
+    "corpus_manifest_sha256": "4e0a067c65187641a0249fcd456ef82303f612d43c6dd87c89713f6644c7b60a",
+    "source_dataset": "2fef4f342d8a21eaf6d7e9eb1f223b3c8094d56c8dcd00e64f04bc20b20cd3cb",
+    "examples": 139258,
+    "tokens_in_corpus": 37146949,
+    "tokens_this_run": 117040,
+    "rows": 30,
+    "replay": {
+      "status": "none",
+      "reason": "sem fonte local de codigo generico com licenca verificada",
+      "examples": 0
+    }
+  },
+  "contract": {
+    "editor_context_v1_golden_sha256": "06ef5347b128d4dcd11e838ebaa45b30797c5ba30e67222276477e9921ae51c3",
+    "render_contract_py_sha256": "9a368e28346de5220ad6a44b62445eef460ee6c36c5a03546b98130f7a4fde37",
+    "chat_template": {
+      "name": "teacher-chat-v1",
+      "head": "/* Answer the instruction with code. The JSON below is data, not executable code.\n",
+      "tail": "\nReturn only code, without Markdown or explanation. */\n",
+      "include_known_collections": true,
+      "escaping": "System.Text.Json JavaScriptEncoder.Default (\\uXXXX maiusculo)"
+    },
+    "corpus_builder_sha256": "c24877ad609606a51815175d15b62f76a9cb8f50fef00d61c705306106c1d2f2"
+  },
+  "gates_yaml_sha256": "7620bda4c0074238ec7b72d394f7426371e643a5ffd143164c2baf3def892765",
+  "base_model": {
+    "path": "BaseRepos\\Qwen2.5-Coder-7B",
+    "repo_id": "Qwen/Qwen2.5-Coder-7B",
+    "revision": "0396a76181e127dfc13e5c5ec48a8cee09938b02",
+    "model_sha256": "74ac207b4deacd562f522d9e4fe4fc9a506cec32c53b3417ff42c3a1d5a30042",
+    "weights_gb_on_gpu": 5.21
+  },
+  "fingerprint": {
+    "model_sha256": "74ac207b4deacd562f522d9e4fe4fc9a506cec32c53b3417ff42c3a1d5a30042",
+    "corpus_manifest_sha256": "4e0a067c65187641a0249fcd456ef82303f612d43c6dd87c89713f6644c7b60a",
+    "train_config_sha256": "3456df50414e3c9b214d4637359d96139afc1fcb81f8145bcf57cef8ce2887cd",
+    "combined": "335feefb4b5fe8abf1265c9f04e5dce076a591ef0105d562c0955e1acb389acf"
+  },
+  "libraries": {
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "torch": "2.10.0+rocm7.14.0a20260611",
+    "transformers": "4.57.6",
+    "bitsandbytes": "0.50.2",
+    "tokenizers": "0.22.2",
+    "safetensors": "0.7.0",
+    "accelerate": "1.12.0",
+    "pymongo": "indisponivel",
+    "hip": "7.14.60850",
+    "peft": "0.17.1"
+  },
+  "environment": {
+    "python": "3.12.10",
+    "python_executable": "C:\\SlopStudio.MongoAI-artifacts\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "libraries": {
+      "torch": "2.10.0+rocm7.14.0a20260611",
+      "transformers": "4.57.6",
+      "peft": "0.17.1",
+      "accelerate": "1.12.0",
+      "bitsandbytes": "0.50.2",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.7.0",
+      "onnxruntime": "1.30.0",
+      "onnxruntime_genai": "0.15.2"
+    },
+    "video_controllers": [
+      {
+        "Name": "AMD Radeon(TM) Graphics",
+        "DriverVersion": "32.0.21045.5002",
+        "DriverDate": "/Date(1786924800000)/",
+        "VideoProcessor": "AMD Radeon Graphics Processor (0x164E)"
+      },
+      {
+        "Name": "AMD Radeon RX 7800 XT",
+        "DriverVersion": "32.0.31041.1004",
+        "DriverDate": "/Date(1786924800000)/",
+        "VideoProcessor": "AMD Radeon Graphics Processor (0x747E)"
+      }
+    ],
+    "gpu": {
+      "device_name": "AMD Radeon RX 7800 XT",
+      "gcn_arch": "gfx1101",
+      "total_vram_gb": 15.98,
+      "torch": "2.10.0+rocm7.14.0a20260611",
+      "hip": "7.14.60850",
+      "vram_limit": {
+        "requested_fraction": 0.94,
+        "effective_fraction": 0.8846,
+        "max_vram_gb": 14.14,
+        "free_at_start_gb": 15.74,
+        "reserve_gb": 1.6,
+        "shared_memory_spill": "bloqueado"
+      }
+    }
+  },
+  "aotriton_experimental": "1",
+  "plan": {
+    "accum_rows": 1,
+    "micro_tokens": 4096,
+    "steps": 30,
+    "total_steps_schedule": 30,
+    "trainable_params": 161480704,
+    "load_seconds": 19.0,
+    "budget_hours": 34
+  },
+  "schedule_changes": [],
+  "status": "completed",
+  "finished_utc": "2026-10-13T18:39:46Z",
+  "final_step": 30,
+  "total_steps": 30,
+  "tokens_seen": 117040,
+  "elapsed_train_h": 0.167,
+  "best_val_loss": 0.52245,
+  "final_eval": {
+    "step": 30,
+    "tokens": 117040,
+    "t_utc": "2026-10-13T18:36:06Z",
+    "val_loss_fim": 0.99604,
+    "val_loss_chat": 0.21295,
+    "val_loss": 0.52245,
+    "val_loss_tokens": 27222,
+    "gen_n": 16,
+    "gen_exact_match": 0.1875,
+    "gen_normalized_match": 0.1875,
+    "gen_syntax_valid": 0.8125,
+    "gen_mongo_valid": 0.8125,
+    "gen_nonempty": 1.0,
+    "gen_seconds": 48.2,
+    "eval_seconds": 219.1
+  },
+  "peak_vram_gb": {
+    "vram_alloc_gb": 6.35,
+    "vram_peak_gb": 8.71,
+    "vram_reserved_peak_gb": 10.11
+  }
+}

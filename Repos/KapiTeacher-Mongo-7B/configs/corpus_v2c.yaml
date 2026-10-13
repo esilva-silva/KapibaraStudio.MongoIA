@@ -1,0 +1,59 @@
+# corpus_v2c.yaml - corpus de SFT do KapiTeacher-Mongo-7B a partir do dataset v2c (docs/fase-02-professor.md §3.3 estagio B).
+# Lido por scripts/teacher/build_teacher_corpus.py. Somente split `train` entra no corpus; `val` gera apenas o mini-conjunto de
+# validacao do treino (val_loss/val_gen); test/bench/blind NUNCA sao lidos para treinar (G2.7, verificado no codigo).
+version: teacher-corpus/1
+dataset_version: v2c
+seed: 20261008
+tokenizer: BaseRepos/Qwen2.5-Coder-7B/tokenizer.json
+source_dir: data/validated/v2c
+splits_dir: data/splits/v2c
+out_dir: data/teacher/v2c
+
+# Pool total de exemplos (o treino consome um prefixo por orcamento de tokens/horas; a ordem das shards ja e aleatoria).
+target_examples: 140000
+seq_len: 4096              # exemplos maiores sao descartados (nenhum previsto: o orcamento do dataset limita o prompt a 2.048)
+micro_tokens: 4096         # orcamento de tokens PADDED de uma linha (micro-batch): n_exemplos x comprimento_maximo <= micro_tokens
+max_examples_per_row: 32
+shard_examples: 10000
+
+# Mistura (fracao do pool). Fase 02 §3.3 B: 48 FIM · 18 completion · 20 chat · 6 correcao · 4 negativos · 4 replay.
+# Replay = none (sem fonte local licenciada, ver `replay` abaixo): os 4% foram para FIM (+2) e completion (+2).
+mix:
+  fim_ctx: 0.40            # FIM PSM Qwen com o prompt `editor-context-v1` ja renderizado em v2c (cabecalho 92% / sem 8%)
+  fim_raw: 0.10            # MESMOS registros (outros ids) renderizados em FIM cru: so prefixo/sufixo, sem cabecalho de contexto
+  completion: 0.20         # sufixo vazio: contexto do cursor + alvo = middle + sufixo original (so restos curtos, <= max_chars)
+  chat: 0.15               # chat curto (instrucao + codigo) pt-BR/en ~50/50
+  chat_multiturn: 0.03     # turno de refinamento (o codigo anterior ja esta em context.editor)
+  explain: 0.02            # explicacao curta em comentario (<= 5% do chat, Fase 03)
+  correction: 0.06
+  negative: 0.04           # pedido sobre colecao/campo/API inexistente -> recusa curta com alternativas
+  replay: 0.00             # 0 = sem replay (ver bloco abaixo)
+
+completion:
+  max_chars: 240           # len(middle)+len(suffix) maximo do alvo derivado (~<= 80 tokens; limite do contrato: 96)
+
+fim_raw:
+  # Janelas do contrato (render_contract.bound_window): 4096 caracteres antes / 1024 depois do cursor (UTF-16).
+  contexts: [full, irrelevant]
+
+chat:
+  template: teacher-chat-v1   # FIM Qwen com sufixo vazio; prefixo no formato local-agent-fim-v0 da IDE (sem Qwen chat template)
+  include_known_collections: true   # linha extra "Colecoes disponiveis" (necessaria aos negativos); decisao pendente com a IDE
+  context_max_chars: 8192
+  # dotnet = System.Text.Json padrao (nao-ASCII e aspas viram uXXXX, como o JSON do contrato local-agent-fim-v0 da IDE; infla tokens);
+  # plain = json.dumps(ensure_ascii=False). Decidir com a IDE/ContractProbe antes de congelar o corpus.
+  json_escaping: dotnet
+
+replay:
+  status: none
+  # Nenhuma fonte local de JS/TS/JSON generico com licenca verificada: data/sources/ esta vazio, o repositorio da IDE nao esta
+  # neste workspace e BaseRepos/ so tem pesos. Para ligar: apontar `source` para um JSONL {"id","text","license"} permissivo
+  # (MIT/Apache/BSD, licenca por linha), definir mix.replay (0.04) e reduzir fim_ctx/completion na mesma proporcao.
+  source: null
+  fim_fraction: 0.5        # com source: 50% FIM PSM (corte aleatorio por caractere) / 50% causal (perda em todos os tokens)
+  max_chars: 6000
+
+validation_subset:         # so split `val`; usado pelo treino (val_loss e FIM EM/mongo_valid rapido)
+  fim: 600
+  chat: 200
+  gen: 200                 # subconjunto do fim acima para geracao greedy (EM / mongo_valid)

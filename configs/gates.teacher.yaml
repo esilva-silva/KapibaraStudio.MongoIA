@@ -1,0 +1,19 @@
+# gates.teacher.yaml - gates G2.2-G2.5 e G2.7 do professor (docs/fase-02-professor.md §3.6), no formato de configs/gates.yaml.
+# Uso: python -I scripts/teacher/teacher_measures.py ... --out <measures.json>
+#      python -I scripts/eval/check_gates.py --tier TEACHER --gates configs/gates.teacher.yaml --measures <measures.json>
+# G2.1 (checkpoint) ja esta em Repos/KapiTeacher-Mongo-7B/reports/gates.md; G2.6 (professor auxiliar) e G2.8 (papel de T2) ficam fora.
+version: 1
+status: draft
+source: "docs/fase-02-professor.md#3.6"
+tiers:
+  TEACHER:
+    name: "KapiTeacher-Mongo-7B (Fase 02 §3.6)"
+    gates:
+      - {id: G2.2.fim_acc_gain, metric: fim_acc_gain_vs_base_pp, op: ">=", threshold: 15, unit: pp, owner: python, blocking: true, source_note: "G2.2: FIM-acc >= base do mesmo tamanho + 15 p.p. (mesmos exemplos do val v2c)"}
+      - {id: G2.2.exec_valid, metric: exec_valid_autocomplete, op: ">=", threshold: 0.95, unit: ratio, owner: python, blocking: true, source_note: "G2.2: exec-valid autocomplete >= 0,95"}
+      - {id: G2.2.nonexistent_fields, metric: nonexistent_fields_rate_pct, op: "<=", threshold: 2, unit: pct, owner: python, blocking: true, source_note: "G2.2: campos inexistentes <= 2%"}
+      - {id: G2.3.chat_exec_equiv_val, metric: chat_exec_equivalence_val, op: ">=", threshold: 0.85, unit: ratio, owner: python, blocking: true, source_note: "G2.3: exec-equivalencia >= 0,85 no val chat (avaliador de chat ainda nao existe: fica unevaluated)"}
+      - {id: G2.3.chat_exec_equiv_blind, metric: chat_exec_equivalence_blind, op: ">=", threshold: 0.75, unit: ratio, owner: python, blocking: true, source_note: "G2.3: >= 0,75 no blind (1 leitura por versao candidata)"}
+      - {id: G2.4.vs_student_pp, metric: fim_acc_vs_best_student_pp, op: ">=", threshold: 5, unit: pp, owner: python, blocking: true, source_note: "G2.4: >= melhor student sem professor (J10) + 5 p.p.; se falhar a destilacao vira so filtragem"}
+      - {id: G2.5.generic_js_drop, metric: generic_js_fim_drop_pp, op: "<=", threshold: 3, unit: pp, owner: python, blocking: true, source_note: "G2.5: queda <= 3 p.p. no Generic-JS FIM vs base (conjunto de 500 ainda nao existe)"}
+      - {id: G2.7.contamination, metric: train_eval_leak_count, op: "==", threshold: 0, unit: count, owner: python, blocking: true, source_note: "G2.7: 0 exemplos de val/test/bench/blind no treino (manifesto do corpus)"}
