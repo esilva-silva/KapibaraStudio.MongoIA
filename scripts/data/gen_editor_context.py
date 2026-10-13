@@ -37,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import blind_guard  # noqa: E402
 import render_contract as rc  # noqa: E402
 from gen_snippets import CONFIG_PATH, ROOT, load_config, load_schemas  # noqa: E402
+from jsonl_shards import HashReservoir, ShardWriter, iter_jsonl, resolve_inputs, sha256_file  # noqa: E402
 
 SCHEMA_VERSION = "kapi-ds-record-v2"
 OP_RE = re.compile(r"\$[A-Za-z][A-Za-z0-9]*")
@@ -76,22 +77,34 @@ def read_jsonl(path: Path) -> list[dict]:
 class Pools:
     """Snippets por (schema_id, colecao, split), para recent_commands/SimilarStatement sem vazamento entre splits."""
 
-    def __init__(self, snippets: list[dict], schemas):
-        self.by_key: dict[tuple, list[tuple[str, str, str]]] = defaultdict(list)
-        self.snippet_by_id: dict[str, dict] = {}
-        for s in snippets:
-            self.snippet_by_id[s["id"]] = s
+    def __init__(self, snippets: list[dict], schemas, max_per_key: int = 0):
+        """`max_per_key` > 0: no maximo N snippets por (schema, colecao, split) como fonte de recent_commands/SimilarStatement
+        (amostra uniforme por hash; com ~3 M de snippets guardar todos os textos custa GBs e nao muda a distribuicao)."""
+        self.snippet_by_id: dict[str, tuple] = {}          # id -> (op, root_form)
+        res: dict[tuple, HashReservoir] = {}
+        for s in snippets:       # `snippets` pode ser um gerador (streaming); guarda so o que o contexto usa
+            self.snippet_by_id[s["id"]] = (s.get("op"), (s.get("style") or {}).get("root_form", "dot"))
             if len(s["text"]) <= rc.RECENT_MAX_CHARS and rc.is_safe(s["text"]):
-                self.by_key[(s["schema_id"], s["collection"], s["split"])].append((s["id"], s["text"], s["group_id"]))
-        for v in self.by_key.values():
-            v.sort()
+                k = (s["schema_id"], s["collection"], s["split"])
+                if k not in res:
+                    res[k] = HashReservoir(max_per_key, "ctxpool:" + "|".join(k))
+                res[k].add(s["id"], (s["id"], s["text"], s["group_id"]))
+        self.by_key: dict[tuple, list[tuple[str, str, str]]] = defaultdict(list)
+        for k, rv in res.items():
+            self.by_key[k] = sorted(rv.items())
         self.schemas = {s.full_id: s for s in schemas}
         self.sorted_schemas = sorted(schemas, key=lambda s: s.full_id)
         self.public = [s for s in self.sorted_schemas if not s.holdout]
 
-    def candidates(self, rec: dict, exclude_snippet: str) -> list[tuple[str, str, str]]:
-        return [c for c in self.by_key.get((rec["schema_id"], rec["collection"], rec["split"]), [])
-                if c[2] != rec["group_id"] and c[0] != exclude_snippet]
+    FAST_POOL = 64        # acima disso nao materializa a lista filtrada (O(n) por registro com ~1 M de snippets)
+
+    def candidates(self, rec: dict, exclude_snippet: str, rng: random.Random | None = None, want: int = 3):
+        pool = self.by_key.get((rec["schema_id"], rec["collection"], rec["split"]), [])
+        if rng is None or len(pool) <= self.FAST_POOL:
+            return [c for c in pool if c[2] != rec["group_id"] and c[0] != exclude_snippet]
+        # pool grande: sorteia indices e filtra (mesma distribuicao, custo O(want)); lista deterministica por rng
+        idx = rng.sample(range(len(pool)), min(len(pool), want * 3 + 8))
+        return [pool[i] for i in idx if pool[i][2] != rec["group_id"] and pool[i][0] != exclude_snippet]
 
     def distractor_schemas(self, rec: dict):
         """Treino/val nunca recebem vocabulario dos dominios holdout."""
@@ -114,7 +127,7 @@ def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
     rng = _rng(seed, rid)
     sch = pools.schemas[rec["schema_id"]]
     coll = next(c for c in sch.colls if c.name == rec["collection"])
-    snippet = pools.snippet_by_id.get(rec["snippet_id"], {})
+    snippet = pools.snippet_by_id.get(rec["snippet_id"]) or (None, "dot")
     language = rc.DIALECT_LANGUAGE.get(rec.get("dialect", "console"), rc.LANGUAGE_CONSOLE)
     text_visible = rec["prefix"] + rec["suffix"]
 
@@ -126,7 +139,7 @@ def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
     else:
         kind = "full"
 
-    root_form = (snippet.get("style") or {}).get("root_form", "dot")
+    root_form = snippet[1]
     conn = "local" if root_form == "pool" else rng.choice(ec["connections"])
     db = sch.schema_id
     target = {"connection": conn, "database": db, "collection": coll.name,
@@ -168,7 +181,7 @@ def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
 
         recent: list[str] = []
         n_recent = _weighted(rng, {int(k): v for k, v in ec["recent_commands"].items()})
-        cands = pools.candidates(rec, rec["snippet_id"]) if kind == "full" else []
+        cands = pools.candidates(rec, rec["snippet_id"], rng, ec["max_recent_commands"]) if kind == "full" else []
         if n_recent and cands:
             recent = [c[1] for c in rng.sample(cands, min(n_recent, len(cands)))][: ec["max_recent_commands"]]
 
@@ -209,7 +222,7 @@ def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
                 fact["item"] = f.item_t
             facts.append(fact)
         ops = [o for o in OP_RE.findall(text_visible)]
-        op_kind = rec.get("kind") or snippet.get("op")
+        op_kind = rec.get("kind") or snippet[0]
         base = STAGE_OPS if op_kind == "aggregate" else UPDATE_OPS if op_kind in ("updateOne", "updateMany") else []
         if not base or op_kind != "aggregate":
             fams = {family(f) for f in coll.fields.values()} | {"any"}
@@ -228,7 +241,7 @@ def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
         for m in DECL_RE.finditer(rec["prefix"]):
             facts.append({"kind": "LocalVariable", "name": m.group(2), "declaration": m.group(1), "value_head": m.group(3).strip()})
         if kind == "full" and rng.random() < ec["similar_statement_ratio"]:
-            cands = pools.candidates(rec, rec["snippet_id"])
+            cands = pools.candidates(rec, rec["snippet_id"], rng, 1)
             if cands:
                 facts.append({"kind": "SimilarStatement", "text": rng.choice(cands)[1]})
 
@@ -254,37 +267,23 @@ def percentile(sorted_vals: list[int], q: float) -> int:
     return sorted_vals[min(len(sorted_vals) - 1, int(round(q * (len(sorted_vals) - 1))))]
 
 
-def generate(fim: list[dict], snippets: list[dict], schemas, cfg: dict, tokenizer=None, seed=None, progress=False) -> list[dict]:
+def _finish_chunk(out: list[dict], cfg: dict, tokenizer) -> None:
+    """Prompt renderizado + orcamento de tokens (tokenizacao em lote e o custo dominante); e `prompt_sha256`/guarda blind."""
     ec = cfg["editor_context"]
-    seed = cfg.get("seed", 20261008) if seed is None else seed
-    pools = Pools(snippets, schemas)
-    out: list[dict] = []
-    for i, rec in enumerate(fim):
-        r = build_record(rec, make_context(rec, cfg, pools, seed), cfg)
-        # guarda do conjunto cego (so a API do guard)
-        blind_guard.check_record(r)
-        blind_guard.check_text(blind_guard.prompt_text({"kind": "autocomplete", "prefix": r["prefix"], "suffix": r["suffix"]}))
-        out.append(r)
-    # prompt renderizado + orcamento de tokens (lotes: tokenizacao e o custo dominante)
     rendered = []
     for r in out:
         prefix, suffix = rc.bound_window(r["prefix"], r["suffix"])
         before = rc.render_model_prefix(prefix, r["editor"], r["language"])
         rendered.append((before, suffix))
     if tokenizer is not None:
-        step = 4000
-        for s in range(0, len(out), step):
-            chunk = rendered[s:s + step]
-            bs = tokenizer.encode_batch([b for b, _ in chunk])
-            as_ = tokenizer.encode_batch([a for _, a in chunk])
-            for r, (before, after), b, a in zip(out[s:s + step], chunk, bs, as_):
-                ids, info = rc.build_ids(tokenizer, before, after, ec["context_tokens"], (b, a))
-                r["prompt_tokens"] = len(ids)
-                r["prompt_truncated"] = info["truncated"]
-                r["prompt_tokens_raw"] = info["prefix_tokens"] + info["suffix_tokens"] + 3
-                r["prompt"] = tokenizer.decode(ids) if info["truncated"] else rc.qwen_fim_text(before, after)
-            if progress:
-                print(f"  tokens {min(s + step, len(out))}/{len(out)}", flush=True)
+        bs = tokenizer.encode_batch([b for b, _ in rendered])
+        as_ = tokenizer.encode_batch([a for _, a in rendered])
+        for r, (before, after), b, a in zip(out, rendered, bs, as_):
+            ids, info = rc.build_ids(tokenizer, before, after, ec["context_tokens"], (b, a))
+            r["prompt_tokens"] = len(ids)
+            r["prompt_truncated"] = info["truncated"]
+            r["prompt_tokens_raw"] = info["prefix_tokens"] + info["suffix_tokens"] + 3
+            r["prompt"] = tokenizer.decode(ids) if info["truncated"] else rc.qwen_fim_text(before, after)
     else:
         for r, (before, after) in zip(out, rendered):
             r["prompt_tokens"] = None
@@ -294,7 +293,114 @@ def generate(fim: list[dict], snippets: list[dict], schemas, cfg: dict, tokenize
     for r in out:
         r["prompt_sha256"] = rc.prompt_sha256(r["prompt"])
         blind_guard.check_text(r["prompt"])
+
+
+def iter_generate(fim, pools: Pools, cfg: dict, tokenizer=None, seed=None, chunk: int = 4000, progress=False):
+    """Streaming: consome `fim` (iteravel) e gera registros com contexto em blocos de `chunk` (memoria constante)."""
+    seed = cfg.get("seed", 20261008) if seed is None else seed
+    buf: list[dict] = []
+    done = 0
+    for rec in fim:
+        r = build_record(rec, make_context(rec, cfg, pools, seed), cfg)
+        # guarda do conjunto cego (so a API do guard)
+        blind_guard.check_record(r)
+        blind_guard.check_text(blind_guard.prompt_text({"kind": "autocomplete", "prefix": r["prefix"], "suffix": r["suffix"]}))
+        buf.append(r)
+        if len(buf) >= chunk:
+            _finish_chunk(buf, cfg, tokenizer)
+            done += len(buf)
+            if progress:
+                print(f"  contexto {done}", flush=True)
+            yield from buf
+            buf = []
+    if buf:
+        _finish_chunk(buf, cfg, tokenizer)
+        yield from buf
+
+
+_WS: dict = {}
+
+
+def _ctx_init(pools, cfg, tok_path, seed):
+    import os
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    _WS.update(pools=pools, cfg=cfg, seed=seed, tok=rc.Tokenizer(tok_path) if tok_path else None)
+
+
+def _ctx_run(chunk):
+    cfg, pools, seed = _WS["cfg"], _WS["pools"], _WS["seed"]
+    out = []
+    for rec in chunk:
+        r = build_record(rec, make_context(rec, cfg, pools, seed), cfg)
+        blind_guard.check_record(r)
+        blind_guard.check_text(blind_guard.prompt_text({"kind": "autocomplete", "prefix": r["prefix"], "suffix": r["suffix"]}))
+        out.append(r)
+    _finish_chunk(out, cfg, _WS["tok"])
     return out
+
+
+def iter_generate_parallel(fim, pools: Pools, cfg: dict, tok_path, seed=None, workers: int = 1, chunk: int = 2000, progress=False):
+    """Mesmo resultado de `iter_generate` (cada registro depende so de id+seed), em `workers` processos; ordem preservada."""
+    import par
+    seed = cfg.get("seed", 20261008) if seed is None else seed
+    done = 0
+    for recs in par.ordered_map(_ctx_run, par.chunked(fim, chunk), workers, _ctx_init, (pools, cfg, tok_path, seed)):
+        done += len(recs)
+        if progress and (done // chunk) % 25 == 0:
+            print(f"  contexto {done}", flush=True)
+        yield from recs
+
+
+def generate(fim: list[dict], snippets: list[dict], schemas, cfg: dict, tokenizer=None, seed=None, progress=False) -> list[dict]:
+    pools = Pools(snippets, schemas)
+    return list(iter_generate(fim, pools, cfg, tokenizer, seed, progress=progress))
+
+
+class StatsAcc:
+    """Acumulador para `stats` sobre fluxo (nao guarda os registros)."""
+
+    def __init__(self):
+        self.n = 0
+        self.kinds, self.splits, self.facts = Counter(), Counter(), Counter()
+        self.toks, self.raw = [], []
+        self.by_kind = defaultdict(list)
+        self.truncated = self.with_rf = self.with_rc = self.with_ip = self.collisions = 0
+        self.rc_dist = Counter()
+
+    def add(self, r: dict) -> None:
+        self.n += 1
+        self.kinds[r["context_kind"]] += 1
+        self.splits[r["split"]] += 1
+        if r.get("prompt_tokens") is not None:
+            self.toks.append(r["prompt_tokens"])
+            self.raw.append(r["prompt_tokens_raw"])
+            self.by_kind[r["context_kind"]].append(r["prompt_tokens"])
+            self.truncated += 1 if r["prompt_truncated"] else 0
+        for f in r["facts"]:
+            self.facts[f["kind"]] += 1
+        self.with_rf += 1 if r["result_fields"] else 0
+        self.with_rc += 1 if r["recent_commands"] else 0
+        self.with_ip += 1 if (r["editor"] and r["editor"]["input_panel"]) else 0
+        self.rc_dist[len(r["recent_commands"])] += 1
+        self.collisions += 1 if r["editor_text"].count("▌") != 1 else 0
+
+    def result(self) -> dict:
+        d: dict = {"count": self.n, "context_kind": dict(self.kinds), "splits": dict(self.splits)}
+        if self.toks:
+            toks, raw = sorted(self.toks), sorted(self.raw)
+            d["prompt_tokens"] = {"p50": percentile(toks, .5), "p90": percentile(toks, .9), "p95": percentile(toks, .95),
+                                  "p99": percentile(toks, .99), "max": toks[-1], "mean": round(statistics.mean(toks), 1)}
+            d["prompt_tokens_before_budget"] = {"p50": percentile(raw, .5), "p95": percentile(raw, .95), "max": raw[-1]}
+            d["truncated"] = self.truncated
+            d["tokens_by_kind"] = {k: {"p50": percentile(sorted(v), .5), "p95": percentile(sorted(v), .95), "max": max(v)}
+                                   for k, v in self.by_kind.items()}
+        d["facts"] = dict(self.facts)
+        d["with_result_fields"] = self.with_rf
+        d["with_recent_commands"] = self.with_rc
+        d["with_input_panel"] = self.with_ip
+        d["recent_commands_dist"] = dict(sorted(self.rc_dist.items()))
+        d["cursor_marker_collisions"] = self.collisions
+        return d
 
 
 def stats(recs: list[dict]) -> dict:
@@ -376,6 +482,8 @@ def main(argv=None):
     ap.add_argument("--out")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--no-tokenizer", action="store_true")
+    ap.add_argument("--workers", type=int, help="processos (padrao: nucleos - 2, max 10); saida identica para qualquer N")
+    ap.add_argument("--shard-size", type=int, default=0, help="linhas por shard (fim_ctx-00000.jsonl, ...); 0 = arquivo unico")
     ap.add_argument("--report", action="store_true", help="grava reports/datasets/<ver>-editor-context-report.md")
     a = ap.parse_args(argv)
     cfg = load_config(a.config)
@@ -385,29 +493,56 @@ def main(argv=None):
     gdir = ROOT / cfg.get("out_dir", "data/generated") / ver
     fim_path = Path(a.fim) if a.fim else gdir / "fim.jsonl"
     blind_guard.check_path(fim_path)
-    fim = read_jsonl(fim_path)
-    if a.limit:
-        fim = fim[: a.limit]
-    snippets = read_jsonl(Path(a.snippets) if a.snippets else gdir / "snippets.jsonl")
+    fim_files = resolve_inputs(fim_path)
+    if not fim_files:
+        raise SystemExit(f"FIM nao encontrado: {fim_path} (nem shards fim-NNNNN.jsonl)")
+    snip_path = Path(a.snippets) if a.snippets else gdir / "snippets.jsonl"
     schemas = load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"))
     tok = None
-    if not a.no_tokenizer:
-        tok = rc.Tokenizer(ROOT / cfg["editor_context"]["tokenizer"])
+    tok_path = None if a.no_tokenizer else ROOT / cfg["editor_context"]["tokenizer"]
+    if tok_path is not None:
+        tok = rc.Tokenizer(tok_path)
     t0 = time.time()
-    recs = generate(fim, snippets, schemas, cfg, tok, progress=True)
+    pools = Pools(iter_jsonl(snip_path), schemas, int(cfg["editor_context"].get("pool_max_per_key", 0) or 0))   # snippets em streaming
+
+    def fim_stream():
+        n = 0
+        for r in iter_jsonl(fim_files):
+            if a.limit and n >= a.limit:
+                return
+            n += 1
+            yield r
+
     out = Path(a.out) if a.out else gdir / "fim_ctx.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
-    h = hashlib.sha256()
-    with open(out, "w", encoding="utf-8", newline="\n") as f:
-        for r in recs:
-            line = json.dumps(r, ensure_ascii=False, separators=(",", ":"))
-            f.write(line + "\n")
-            h.update(line.encode("utf-8"))
-    src_sha = hashlib.sha256(fim_path.read_bytes()).hexdigest()
-    man = {"ver": ver, "seed": cfg["seed"], "contract": cfg["editor_context"]["contract"], "source_fim": str(fim_path.relative_to(ROOT)),
-           "source_fim_sha256": src_sha, "sha256": h.hexdigest(), "tokenizer": None if tok is None else str(tok.path.relative_to(ROOT)),
-           "config": cfg["editor_context"], "seconds": round(time.time() - t0, 1), "stats": stats(recs)}
-    (out.parent / "fim_ctx.manifest.json").write_text(json.dumps(man, indent=1, ensure_ascii=False), encoding="utf-8")
+    w = ShardWriter(out.parent, out.stem, a.shard_size, out.suffix)
+    acc = StatsAcc()
+    import par
+    workers = a.workers if a.workers is not None else par.default_workers()
+    if workers > 1:
+        gen = iter_generate_parallel(fim_stream(), pools, cfg, tok_path, workers=workers, progress=True)
+    else:
+        gen = iter_generate(fim_stream(), pools, cfg, tok, progress=True)
+    for r in gen:
+        w.write(r)
+        acc.add(r)
+    wr = w.close()
+    if len(fim_files) == 1:
+        src_sha = sha256_file(fim_files[0])
+    else:
+        hh = hashlib.sha256()
+        for p in fim_files:
+            hh.update(sha256_file(p).encode())
+        src_sha = hh.hexdigest()
+    try:
+        src_name = str(fim_path.resolve().relative_to(ROOT))
+    except ValueError:
+        src_name = str(fim_path)
+    man = {"ver": ver, "seed": cfg["seed"], "contract": cfg["editor_context"]["contract"], "source_fim": src_name,
+           "source_fim_sha256": src_sha, "sha256": wr["stream_sha256"], "shards": wr["files"],
+           "tokenizer": None if tok is None else str(tok.path.relative_to(ROOT)),
+           "config": cfg["editor_context"], "seconds": round(time.time() - t0, 1), "stats": acc.result()}
+    (out.parent / f"{out.stem}.manifest.json").write_text(json.dumps(man, indent=1, ensure_ascii=False), encoding="utf-8")
     if a.report:
         parity = golden = None
         pp = ROOT / "data" / "contracts" / "parity_report.json"

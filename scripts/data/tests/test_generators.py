@@ -51,7 +51,8 @@ def test_fim_deterministic_and_reconstructs(cfg, snips):
     for r in a:
         assert r["prefix"] + r["middle"] + r["suffix"] == by_id[r["snippet_id"]]["text"]
         assert r["prefix"].strip() and r["suffix"].strip() and r["middle"].strip()
-        assert r["approx_middle_tokens"] <= cfg["fim"]["max_tokens"]
+        assert r["middle_tokens"] <= cfg["fim"]["max_tokens"]
+        assert r["middle_tokens_method"] in ("qwen", "approx")
         assert "<|" not in r["prefix"] + r["middle"] + r["suffix"]
         for k in ("id", "kind", "prefix", "suffix", "middle", "domain", "schema_id", "collection", "cut_kind",
                   "fields_used", "group", "split_key"):
@@ -167,7 +168,9 @@ def test_zero_writes_executed(snips):
     for r in snips:
         v = vs.validate_record(lambda name: DB(), r, 1000, 10)
         if r["kind"] == "write":
-            assert v["exec"] == "skipped"
+            assert v["exec"] in ("skipped", "skipped_write")
+        elif r.get("exec_mode") == "skipped_static":
+            assert v["exec"] == "skipped_static"
         else:
             assert v["exec"] in ("ok", "blocked")
     assert log and set(log) <= {"find", "aggregate", "count_documents", "distinct"}
@@ -259,3 +262,147 @@ def test_blind_guard_applied_in_pipeline(tmp_path, monkeypatch, cfg, snips):
     assert out and all((r["prefix"], r["suffix"]) != (victim["prefix"], victim["suffix"]) for r in out)
     assert not gs.blind_clean(snips[0], snips[0]["text"])
     assert gs.blind_clean(snips[1], snips[1]["text"])
+
+
+# ---- ciclo 2: tokenizer no teto do middle, split_role, categorias, cut_kind pos-decontam -----------------------
+
+EXTRA = ("atlas_search", "json_ejson", "indexes", "dsl")
+
+
+@pytest.fixture(scope="module")
+def big(cfg, schemas):
+    """Amostra maior com papeis de schema atribuidos (alterna train/eval nos nao-holdout) para os testes do ciclo 2."""
+    sc = copy.deepcopy(schemas)
+    hold = set(cfg["holdout_domains"])
+    non = [s for s in sc if s.domain not in hold and not s.holdout]
+    for i, s in enumerate(non):
+        s.split_role = "eval" if i % 4 == 0 else "train"
+    return sc, gs.generate(cfg, sc, 1500)
+
+
+def test_middle_token_cap_uses_tokenizer(cfg):
+    import random
+    tc = gen_fim.middle_tokens_for(cfg)
+    ap = gen_fim.MiddleTokens(None, 3.0)   # fallback approx marcado como tal e baseado em chars/cpt
+    assert ap.method == "approx" and ap.count("x" * 30) == 10
+    if tc.method != "qwen":
+        pytest.skip("pacote tokenizers/tokenizer.json indisponivel: so o fallback approx foi exercitado")
+    # 150 digitos: chars/3 = 50 tokens (aproximacao), mas o Qwen tokeniza digito a digito => > 96 tokens
+    digits = "7" * 150
+    text = "db.c.find({ a: { $in: [" + digits + "] } }).limit(5)"
+    s = text.index(digits)
+    assert tc.count(digits) > 96 and len(digits) / 3.0 <= 96
+    rec = {"text": text, "spans": [[0, len(text), "stmt", len(text)], [s, s + 150, "value", s + 150]]}
+    c = {"start": s, "tok_end": s + 150, "unit_end": s + 150, "role": "value", "mid_token": False}
+    # nenhum fim candidato cabe em 96 tokens => None (com chars/3 o corte de 150 chars passaria)
+    assert gen_fim.pick_end(rec, "value", c, cfg, random.Random(1), tc) is None
+    assert gen_fim.pick_end(rec, "value", c, cfg, random.Random(1), ap) is not None
+
+
+def test_fim_middle_tokens_le_cap_all_categories(cfg, big):
+    _sc, sn = big
+    tc = gen_fim.middle_tokens_for(cfg)
+    fims = gen_fim.generate_fim(sn, cfg, 800)
+    assert fims
+    for r in fims:
+        assert tc.count(r["middle"]) <= cfg["fim"]["max_tokens"], (r["id"], r["middle"])
+        assert r["middle_tokens"] == tc.count(r["middle"])
+
+
+def test_split_role_schema_isolation(cfg, big):
+    sc, sn = big
+    role = {s.full_id: s.split_role for s in sc}
+    by_split: dict[str, set] = {}
+    for r in sn:
+        by_split.setdefault(r["split"], set()).add(r["schema_id"])
+        assert r["split_role"] == role[r["schema_id"]]
+        if r["holdout"]:
+            assert r["split"] in ("test", "bench")
+        elif r["split_role"] == "train":
+            assert r["split"] == "train"
+        elif r["split_role"] == "eval":
+            assert r["split"] in ("val", "test", "bench")
+    assert by_split["train"] and by_split["test"] and by_split["val"]
+    assert not (by_split["train"] & by_split["test"])
+    assert not (by_split["train"] & by_split["val"])
+    assert not (by_split["train"] & by_split.get("bench", set()))
+    fims = gen_fim.generate_fim(sn, cfg, 600)
+    ft = {r["schema_id"] for r in fims if r["split"] == "train"}
+    fe = {r["schema_id"] for r in fims if r["split"] in ("test", "val", "bench")}
+    assert ft and fe and not (ft & fe)
+    # sem papel (None) o comportamento v1 e preservado
+    g = "d/s::agg.match"
+    assert gs.assign_split(g, "saas", "agg.match", cfg) == gs.assign_split(g, "saas", "agg.match", cfg, False, None)
+    assert gs.assign_split(g, "saas", "agg.match", cfg, False, "train") == "train"
+    assert gs.assign_split(g, "saas", "agg.match", cfg, False, "eval") in ("val", "test", "bench")
+    assert gs.assign_split(g, "legal", "agg.match", cfg, False, "train") in ("test", "bench")
+
+
+def test_extra_categories_present_and_well_formed(big):
+    sc, sn = big
+    cats = {r["category"] for r in sn}
+    assert set(EXTRA) <= cats and {"aggregation", "crud", "operators"} <= cats
+    for r in sn:
+        if r["category"] == "atlas_search":
+            assert r["exec_mode"] == "skipped_static" and r["kind"] == "read"
+            head = list(r["plan"]["pipeline"][0])[0]
+            assert head in ("$search", "$searchMeta", "$vectorSearch")
+            assert head in r["text"]
+        elif r["category"] == "indexes":
+            assert r["exec_mode"] in ("skipped_write", "skipped_static")
+            if r["op"] in ("createIndex", "dropIndex"):
+                assert r["kind"] == "write" and r["exec_mode"] == "skipped_write" and r["op"] in r["text"]
+        elif r["category"] == "json_ejson":
+            assert r["dialect"] == "json" and r["exec_mode"] == "live"
+            doc = json.loads(r["text"])           # JSON puro: sem ObjectId(...)/ISODate(...), sem ;
+            assert isinstance(doc, list) and doc
+            assert not any(t in r["text"] for t in ("ObjectId(", "ISODate(", "NumberLong(", "db."))
+        elif r["category"] == "dsl":
+            assert r["exec_mode"] == "live" and r["extra"]["dsl_form"]
+    assert any(r["category"] == "json_ejson" and any(k in r["text"] for k in ('"$oid"', '"$date"')) for r in sn)
+    by = {s.full_id: s for s in sc}
+    for r in sn:
+        coll = next(c for c in by[r["schema_id"]].colls if c.name == r["collection"])
+        if r["category"] in ("atlas_search", "indexes"):
+            miss = [p for p in r["fields_used"] if p not in coll.fields and p != "embedding"]
+            assert not miss, (r["id"], miss)
+
+
+def test_fim_categories_floor_and_cut_targets_post_decontam(cfg, big):
+    _sc, sn = big
+    cfg = json.loads(json.dumps(cfg))
+    cfg["fim"].update({"eval_counts": None, "decontam_prefilter": False, "max_cuts_per_snippet": 0})   # amostragem unica (v1)
+    fims = gen_fim.generate_fim(sn, cfg, 2000)
+    n = len(fims)
+    cats: dict = {}
+    for r in fims:
+        cats[r["category"]] = cats.get(r["category"], 0) + 1
+    assert set(EXTRA) <= set(cats)
+    floor = cfg["fim"]["category_floor"]
+    for c, v in cats.items():
+        assert v / n >= floor - 0.005, (c, v / n)   # piso de 4% por categoria
+    raw: dict = {}
+    for r in fims:
+        raw[r["cut_kind"]] = raw.get(r["cut_kind"], 0) + 1
+    exp = gen_fim.expected_post_decontam(raw, cfg["fim"])
+    for k, t in cfg["fim"]["cut_targets"].items():
+        assert abs(exp[k] - t) <= 0.02, (k, exp[k], t)
+    # categorias estaticas chegam ao FIM com exec estatico mesmo sem entrada no validation.jsonl
+    assert any(r.get("exec") == "skipped_static" for r in gen_fim.generate_fim(sn, cfg, 400, {}))
+    assert gen_fim.generate_fim(sn, cfg, 300) == gen_fim.generate_fim(sn, cfg, 300)   # determinismo
+
+
+def test_no_write_reaches_driver_for_new_categories(big):
+    _sc, sn = big
+    touched = []
+
+    def getter(name):
+        touched.append(name)
+        raise AssertionError("tocou no driver")
+    n = 0
+    for r in sn:
+        if r["exec_mode"] in ("skipped_static", "skipped_write"):
+            v = vs.validate_record(getter, r, 100, 10)
+            assert v["exec"] == r["exec_mode"]
+            n += 1
+    assert n and not touched

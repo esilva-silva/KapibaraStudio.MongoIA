@@ -129,8 +129,10 @@ class Describer:
         assert lang in ("pt", "en")
         self.pt = lang == "pt"
         self.rng = rng
-        self.reg = reg                      # n | i | t
+        self.reg = reg                      # n | i | t | g (telegrafico) | q (pergunta indireta)
         self.amb = ambiguous_coll
+        self.noun = rng.choice(["documentos", "registros", "documentos", "itens", "entradas"] if self.pt
+                               else ["documents", "records", "documents", "docs", "entries"])
 
     # ---- utilidades ----
     def ch(self, pt, en=None):
@@ -170,12 +172,12 @@ class Describer:
         fv = F(f)
         vv = V(v)
         pt = {
-            "$eq": ["{f} igual a {v}", "{f} = {v}", "{f} é {v}"],
-            "$ne": ["{f} diferente de {v}", "{f} != {v}", "{f} que não seja {v}"],
-            "$gt": ["{f} maior que {v}", "{f} > {v}", "{f} acima de {v}"],
-            "$gte": ["{f} maior ou igual a {v}", "{f} >= {v}", "{f} de {v} para cima"],
-            "$lt": ["{f} menor que {v}", "{f} < {v}", "{f} abaixo de {v}"],
-            "$lte": ["{f} menor ou igual a {v}", "{f} <= {v}", "{f} até {v} (inclusive)"],
+            "$eq": ["{f} igual a {v}", "{f} = {v}", "{f} é {v}", "{f} exatamente {v}"],
+            "$ne": ["{f} diferente de {v}", "{f} != {v}", "{f} que não seja {v}", "{f} não é {v}"],
+            "$gt": ["{f} maior que {v}", "{f} > {v}", "{f} acima de {v}", "{f} superior a {v}"],
+            "$gte": ["{f} maior ou igual a {v}", "{f} >= {v}", "{f} de {v} para cima", "{f} no mínimo {v}"],
+            "$lt": ["{f} menor que {v}", "{f} < {v}", "{f} abaixo de {v}", "{f} inferior a {v}"],
+            "$lte": ["{f} menor ou igual a {v}", "{f} <= {v}", "{f} até {v} (inclusive)", "{f} no máximo {v}"],
         }
         pt_d = {
             "$gt": ["{f} depois de {v}", "{f} posterior a {v}", "{f} > {v}"],
@@ -184,12 +186,12 @@ class Describer:
             "$lte": ["{f} até {v} (inclusive)", "{f} <= {v}", "{f} em {v} ou antes"],
         }
         en = {
-            "$eq": ["{f} equals {v}", "{f} = {v}", "{f} is {v}"],
-            "$ne": ["{f} not equal to {v}", "{f} != {v}", "{f} is not {v}"],
-            "$gt": ["{f} greater than {v}", "{f} > {v}", "{f} above {v}"],
-            "$gte": ["{f} greater than or equal to {v}", "{f} >= {v}", "{f} at least {v}"],
-            "$lt": ["{f} less than {v}", "{f} < {v}", "{f} below {v}"],
-            "$lte": ["{f} less than or equal to {v}", "{f} <= {v}", "{f} at most {v}"],
+            "$eq": ["{f} equals {v}", "{f} = {v}", "{f} is {v}", "{f} is exactly {v}"],
+            "$ne": ["{f} not equal to {v}", "{f} != {v}", "{f} is not {v}", "{f} other than {v}"],
+            "$gt": ["{f} greater than {v}", "{f} > {v}", "{f} above {v}", "{f} over {v}"],
+            "$gte": ["{f} greater than or equal to {v}", "{f} >= {v}", "{f} at least {v}", "{f} no less than {v}"],
+            "$lt": ["{f} less than {v}", "{f} < {v}", "{f} below {v}", "{f} under {v}"],
+            "$lte": ["{f} less than or equal to {v}", "{f} <= {v}", "{f} at most {v}", "{f} no more than {v}"],
         }
         en_d = {
             "$gt": ["{f} after {v}", "{f} > {v}"],
@@ -201,7 +203,7 @@ class Describer:
             raise Unsupported(op)
         table = (pt_d if (self.pt and d and op in pt_d) else pt) if self.pt else (en_d if (d and op in en_d) else en)
         t = self.rng.choice(table[op])
-        if self.reg == "t":
+        if self.reg in ("t", "g"):
             sym = {"$eq": "=", "$ne": "!=", "$gt": ">", "$gte": ">=", "$lt": "<", "$lte": "<="}[op]
             t = "{f} " + sym + " {v}"
         return t.format(f=fv, v=vv)
@@ -216,7 +218,7 @@ class Describer:
         sym_lo = "<=" if lo == "$gte" else "<"
         sym_hi = "<=" if hi == "$lte" else "<"
         math = f"{a} {sym_lo} {fv} {sym_hi} {b}"
-        if self.reg == "t" and self.rng.random() < 0.6:
+        if self.reg in ("t", "g") and self.rng.random() < 0.6:
             return math
         incl = "inclusive" if (lo, hi) == ("$gte", "$lte") else None
         if (lo, hi) == ("$gte", "$lte"):
@@ -417,7 +419,7 @@ class Describer:
         for k, d in srt.items():
             if d not in (1, -1):
                 raise Unsupported("sort")
-            if self.reg == "t" and self.rng.random() < 0.5:
+            if self.reg in ("t", "g") and self.rng.random() < (0.5 if self.reg == "t" else 0.85):
                 items.append(f"{F(k)} {'asc' if d == 1 else 'desc'}")
             elif self.pt:
                 items.append(f"{F(k)} {self.rng.choice(['crescente', 'ascendente']) if d == 1 else self.rng.choice(['decrescente', 'descendente'])}")
@@ -449,8 +451,8 @@ class Describer:
         (name, b), = st.items()
         if name == "$match":
             t = self.filter_text(b)
-            return self.ch([f"filtrar onde {t}", f"filtrar por {t}", f"match: {t}"],
-                           [f"filter where {t}", f"keep only rows with {t}", f"match: {t}"])
+            return self.ch([f"filtrar onde {t}", f"filtrar por {t}", f"match: {t}", f"considerar só {t}", f"manter onde {t}"],
+                           [f"filter where {t}", f"keep only rows with {t}", f"match: {t}", f"restrict to {t}", f"keep where {t}"])
         if name == "$group":
             if "_id" not in b:
                 raise Unsupported("group")
@@ -458,7 +460,8 @@ class Describer:
             if _id is None:
                 key = self.ch(["agrupar tudo em um único grupo"], ["group everything into a single group"])
             elif isinstance(_id, str) and _id.startswith("$") and not _id.startswith("$$"):
-                key = self.ch([f"agrupar por {F(_id[1:])}"], [f"group by {F(_id[1:])}"])
+                key = self.ch([f"agrupar por {F(_id[1:])}", f"totalizar por {F(_id[1:])}"],
+                              [f"group by {F(_id[1:])}", f"aggregate per {F(_id[1:])}"])
             elif isinstance(_id, dict) and not is_ej(_id) and all(not k.startswith("$") for k in _id):
                 inner = ", ".join(f"{F(k)}: {self.ex(v)}" for k, v in _id.items())
                 key = self.ch([f"agrupar por {{ {inner} }}"], [f"group by {{ {inner} }}"])
@@ -485,9 +488,10 @@ class Describer:
             ps = [b] if isinstance(b, str) else list(b)
             return self.ch([f"remover os campos {self.lst(F(p) for p in ps)}"], [f"remove the fields {self.lst(F(p) for p in ps)}"])
         if name == "$sort":
-            return self.ch([f"ordenar por {self.sort_text(b)}"], [f"sort by {self.sort_text(b)}"])
+            return self.ch([f"ordenar por {self.sort_text(b)}", f"classificar por {self.sort_text(b)}"],
+                           [f"sort by {self.sort_text(b)}", f"order by {self.sort_text(b)}"])
         if name == "$limit":
-            return self.ch([f"limitar a {b}"], [f"limit to {b}"])
+            return self.ch([f"limitar a {b}", f"manter só {b}", f"top {b}"], [f"limit to {b}", f"keep only {b}", f"top {b}"])
         if name == "$skip":
             return self.ch([f"pular {b}"], [f"skip {b}"])
         if name == "$count":
@@ -512,74 +516,153 @@ class Describer:
         raise Unsupported(name)
 
     # ---- pedido completo ----
+    def proj_short(self, p: dict) -> str:
+        inc = [k for k, v in p.items() if v in (1, True) and not isinstance(v, str)]
+        exc = [k for k, v in p.items() if v in (0, False) and not isinstance(v, str)]
+        if len(inc) + len(exc) != len(p):
+            raise Unsupported("proj")
+        parts = []
+        if inc:
+            parts.append(("campos " if self.pt else "fields ") + self.lst(F(k) for k in inc))
+        if exc:
+            parts.append(("sem " if self.pt else "without ") + self.lst(F(k) for k in exc))
+        return "; ".join(parts)
+
+    def tele(self, plan: dict, coll: str) -> str:
+        """Registro telegrafico: palavras-chave separadas por `;` (nome da colecao primeiro)."""
+        pt = self.pt
+        op = plan["op"]
+        flt = plan.get("filter") or {}
+        where = self.filter_text(flt) if flt else ""
+        head = F(coll) if not self.amb else self.ch(["aqui", "coleção atual", "esta coleção"], ["here", "current collection", "this collection"])
+        bits: list[str] = []
+        if op in ("find", "findOne"):
+            lead = head if op == "find" else ("1 doc " + head)
+            bits.append(lead + (": " + where if where else ""))
+            if op == "find":
+                if plan.get("sort"):
+                    bits.append(("ordem " if pt else "sort ") + self.sort_text(plan["sort"]))
+                if plan.get("skip") is not None:
+                    bits.append(("pular " if pt else "skip ") + str(plan["skip"]))
+                if plan.get("limit") is not None:
+                    bits.append(("limite " if pt else "limit ") + str(plan["limit"]))
+            if plan.get("projection"):
+                bits.append(self.proj_short(plan["projection"]))
+            return "; ".join(bits)
+        if op == "countDocuments":
+            return self.rng.choice([f"count {head}", (f"contar {head}" if pt else f"total {head}"), f"{head} count"]) + (": " + where if where else "")
+        if op == "distinct":
+            return f"distinct {F(plan['field'])} {head}" + ("; " + where if where else "")
+        if op == "aggregate":
+            if len(plan["pipeline"]) > 5:
+                raise Unsupported("long pipeline")
+            return f"{head} agg: " + " -> ".join(self.stage_text(s) for s in plan["pipeline"])
+        raise Unsupported(op)
+
     def describe(self, plan: dict, coll: str) -> str:
         op = plan["op"]
         pt = self.pt
+        if self.reg == "g":
+            return self.tele(plan, coll)
         cin, cof = self.coll_in(coll), self.coll_of(coll)
         flt = plan.get("filter") or {}
         where = self.filter_text(flt) if flt else ""
-        w_pt = (" " + self.rng.choice(["onde", "em que", "com"]) + " " + where) if where else ""
-        w_en = (" " + self.rng.choice(["where", "with"]) + " " + where) if where else ""
+        wp = self.rng.choice(["onde", "em que", "com", "que tenham", "tais que"])
+        we = self.rng.choice(["where", "with", "for which", "such that", "having"])
+        w_pt = (" " + wp + " " + where) if where else ""
+        w_en = (" " + we + " " + where) if where else ""
+        N = self.noun
+        flt_pt = (" com filtro: " + where) if where else ""
+        flt_en = (" with filter: " + where) if where else ""
         mods: list[str] = []
         if op in ("find", "findOne"):
             if plan.get("sort") and op == "find":
-                mods.append(self.ch([f"ordenados por {self.sort_text(plan['sort'])}", f"ordenando por {self.sort_text(plan['sort'])}"],
-                                    [f"sorted by {self.sort_text(plan['sort'])}", f"ordered by {self.sort_text(plan['sort'])}"]))
+                st = self.sort_text(plan["sort"])
+                mods.append(self.ch([f"ordenados por {st}", f"ordenando por {st}", f"em ordem de {st}", f"classificados por {st}"],
+                                    [f"sorted by {st}", f"ordered by {st}", f"in order of {st}", f"ranked by {st}"]))
             if plan.get("skip") is not None and op == "find":
-                mods.append(self.ch([f"pulando os {plan['skip']} primeiros", f"ignorando os {plan['skip']} primeiros"],
-                                    [f"skipping the first {plan['skip']}", f"after skipping {plan['skip']}"]))
+                k = plan["skip"]
+                mods.append(self.ch([f"pulando os {k} primeiros", f"ignorando os {k} primeiros", f"depois dos {k} primeiros"],
+                                    [f"skipping the first {k}", f"after skipping {k}", f"starting after the first {k}"]))
             if plan.get("limit") is not None and op == "find":
                 n = plan["limit"]
-                mods.append(self.ch([f"limitado a {n}", f"só {n}", f"no máximo {n}"], [f"limited to {n}", f"only {n}", f"at most {n}"]))
+                mods.append(self.ch([f"limitado a {n}", f"só {n}", f"no máximo {n}", f"apenas os {n} primeiros", f"trazendo {n}"],
+                                    [f"limited to {n}", f"only {n}", f"at most {n}", f"just the first {n}", f"capped at {n}"]))
             if plan.get("projection"):
                 mods.append(self.proj_text(plan["projection"]))
             self.rng.shuffle(mods)
             tail = (", " + ", ".join(mods)) if mods else ""
             if op == "find":
                 if pt:
-                    heads = {"n": [f"Busque {cin} os documentos{w_pt}", f"Liste os documentos {cof}{w_pt}",
-                                   f"Consulte {cin} os registros{w_pt}"],
-                             "i": [f"me mostra os registros {cof}{w_pt}", f"traz os documentos {cof}{w_pt}",
-                                   f"lista os itens {cof}{w_pt}"],
-                             "t": [f"find {cin}{(' com filtro: ' + where) if where else ''}", f"Consulta {cin}{(' filtrando ' + where) if where else ''}"]}
+                    heads = {
+                        "n": [f"Busque {cin} os {N}{w_pt}", f"Liste os {N} {cof}{w_pt}", f"Consulte {cin} os {N}{w_pt}",
+                              f"Retorne os {N} {cof}{w_pt}", f"Exiba os {N} {cof}{w_pt}", f"Preciso dos {N} {cof}{w_pt}"],
+                        "i": [f"me mostra os {N} {cof}{w_pt}", f"traz os {N} {cof}{w_pt}", f"lista os {N} {cof}{w_pt}",
+                              f"dá uma olhada nos {N} {cof}{w_pt}", f"me vê os {N} {cof}{w_pt}", f"puxa os {N} {cof}{w_pt}"],
+                        "t": [f"find {cin}{flt_pt}", f"Consulta {cin}{(' filtrando ' + where) if where else ''}",
+                              f"Executar find {cin}{flt_pt}", f"find() {cin}{flt_pt}"],
+                        "q": [f"Você consegue listar os {N} {cof}{w_pt}", f"Tem como me mostrar os {N} {cof}{w_pt}",
+                              f"Dá pra ver os {N} {cof}{w_pt}", f"Poderia buscar os {N} {cin}{w_pt}",
+                              f"Preciso ver os {N} {cof}{w_pt}, consegue"],
+                    }
                 else:
-                    heads = {"n": [f"Find the documents {cin}{w_en}", f"List the documents {cof}{w_en}",
-                                   f"Get the records {cin}{w_en}"],
-                             "i": [f"show me the docs {cof}{w_en}", f"get me the records {cof}{w_en}", f"list the stuff {cin}{w_en}"],
-                             "t": [f"find {cin}{(' with filter: ' + where) if where else ''}", f"Query {cin}{(' filtering ' + where) if where else ''}"]}
-                head = self.rng.choice(heads.get(self.reg) or heads["n"])
-                return head + tail
-            # findOne
+                    heads = {
+                        "n": [f"Find the {N} {cin}{w_en}", f"List the {N} {cof}{w_en}", f"Get the {N} {cin}{w_en}",
+                              f"Retrieve the {N} {cof}{w_en}", f"Show the {N} {cof}{w_en}", f"Fetch the {N} {cin}{w_en}"],
+                        "i": [f"show me the {N} {cof}{w_en}", f"get me the {N} {cof}{w_en}", f"list the {N} {cin}{w_en}",
+                              f"pull up the {N} {cof}{w_en}", f"grab the {N} {cof}{w_en}", f"gimme the {N} {cof}{w_en}"],
+                        "t": [f"find {cin}{flt_en}", f"Query {cin}{(' filtering ' + where) if where else ''}",
+                              f"Run find {cin}{flt_en}", f"find() {cin}{flt_en}"],
+                        "q": [f"Could you list the {N} {cof}{w_en}", f"Can you show me the {N} {cof}{w_en}",
+                              f"Is it possible to get the {N} {cin}{w_en}", f"Would you mind fetching the {N} {cof}{w_en}",
+                              f"Can you pull up the {N} {cof}{w_en}"],
+                    }
+                return self.rng.choice(heads.get(self.reg) or heads["n"]) + tail
             if pt:
-                h = {"n": [f"Busque um documento {cof}{w_pt}", f"Traga um registro {cof}{w_pt}"],
-                     "i": [f"traz só um documento {cof}{w_pt}", f"me dá um registro {cof}{w_pt}"],
-                     "t": [f"findOne {cin}{w_pt}", f"findOne {cin}{(' com filtro: ' + where) if where else ''}"]}
+                h = {"n": [f"Busque um documento {cof}{w_pt}", f"Traga um registro {cof}{w_pt}", f"Retorne o primeiro documento {cof}{w_pt}"],
+                     "i": [f"traz só um documento {cof}{w_pt}", f"me dá um registro {cof}{w_pt}", f"pega um doc {cof}{w_pt}"],
+                     "t": [f"findOne {cin}{w_pt}", f"findOne {cin}{flt_pt}"],
+                     "q": [f"Você consegue trazer um documento {cof}{w_pt}", f"Dá pra pegar um registro {cof}{w_pt}"]}
             else:
-                h = {"n": [f"Find one document {cof}{w_en}", f"Get a single record {cof}{w_en}"],
-                     "i": [f"grab one doc {cof}{w_en}", f"give me one record {cof}{w_en}"],
-                     "t": [f"findOne {cin}{w_en}", f"findOne {cin}{(' with filter: ' + where) if where else ''}"]}
+                h = {"n": [f"Find one document {cof}{w_en}", f"Get a single record {cof}{w_en}", f"Return the first document {cof}{w_en}"],
+                     "i": [f"grab one doc {cof}{w_en}", f"give me one record {cof}{w_en}", f"just one doc {cof}{w_en}"],
+                     "t": [f"findOne {cin}{w_en}", f"findOne {cin}{flt_en}"],
+                     "q": [f"Could you get me one document {cof}{w_en}", f"Can you fetch a single record {cof}{w_en}"]}
             return self.rng.choice(h.get(self.reg) or h["n"]) + tail
         if op == "countDocuments":
             if pt:
-                h = {"n": [f"Quantos documentos há {cin}{w_pt}?", f"Conte os documentos {cof}{w_pt}", f"Qual o total de registros {cof}{w_pt}?"],
-                     "i": [f"quantos tem {cin}{w_pt}?", f"conta quantos documentos {cof}{w_pt}"],
-                     "t": [f"countDocuments {cin}{w_pt}", f"countDocuments {cin}{(' com filtro: ' + where) if where else ''}"]}
+                h = {"n": [f"Quantos documentos há {cin}{w_pt}?", f"Conte os {N} {cof}{w_pt}", f"Qual o total de {N} {cof}{w_pt}?",
+                           f"Informe a quantidade de {N} {cof}{w_pt}"],
+                     "i": [f"quantos tem {cin}{w_pt}?", f"conta quantos {N} {cof}{w_pt}", f"me diz quantos {N} {cof}{w_pt}"],
+                     "t": [f"countDocuments {cin}{w_pt}", f"countDocuments {cin}{flt_pt}"],
+                     "q": [f"Você sabe quantos {N} existem {cin}{w_pt}?", f"Dá pra contar os {N} {cof}{w_pt}?",
+                           f"Consegue me dizer o total de {N} {cof}{w_pt}?"]}
             else:
-                h = {"n": [f"How many documents are there {cin}{w_en}?", f"Count the documents {cof}{w_en}",
-                           f"What is the total number of records {cof}{w_en}?"],
-                     "i": [f"how many are there {cin}{w_en}?", f"count how many docs {cof}{w_en}"],
-                     "t": [f"countDocuments {cin}{w_en}", f"countDocuments {cin}{(' with filter: ' + where) if where else ''}"]}
+                h = {"n": [f"How many documents are there {cin}{w_en}?", f"Count the {N} {cof}{w_en}",
+                           f"What is the total number of {N} {cof}{w_en}?", f"Return the number of {N} {cof}{w_en}"],
+                     "i": [f"how many are there {cin}{w_en}?", f"count how many {N} {cof}{w_en}", f"tell me how many {N} {cof}{w_en}"],
+                     "t": [f"countDocuments {cin}{w_en}", f"countDocuments {cin}{flt_en}"],
+                     "q": [f"Do you know how many {N} there are {cin}{w_en}?", f"Could you count the {N} {cof}{w_en}?",
+                           f"Can you tell me the total of {N} {cof}{w_en}?"]}
             return self.rng.choice(h.get(self.reg) or h["n"])
         if op == "distinct":
             f = plan["field"]
             if pt:
-                h = {"n": [f"Quais os valores distintos de {F(f)} {cin}{w_pt}?", f"Liste os valores únicos de {F(f)} {cof}{w_pt}"],
-                     "i": [f"quais valores diferentes de {F(f)} {cin}{w_pt}?", f"me lista os {F(f)} únicos {cof}{w_pt}"],
-                     "t": [f"distinct de {F(f)} {cin}{w_pt}", f"distinct({F(f)}) {cin}{(' com filtro: ' + where) if where else ''}"]}
+                h = {"n": [f"Quais os valores distintos de {F(f)} {cin}{w_pt}?", f"Liste os valores únicos de {F(f)} {cof}{w_pt}",
+                           f"Retorne os valores diferentes de {F(f)} {cof}{w_pt}"],
+                     "i": [f"quais valores diferentes de {F(f)} {cin}{w_pt}?", f"me lista os {F(f)} únicos {cof}{w_pt}",
+                           f"quais {F(f)} existem {cin}{w_pt}?"],
+                     "t": [f"distinct de {F(f)} {cin}{w_pt}", f"distinct({F(f)}) {cin}{flt_pt}"],
+                     "q": [f"Dá pra saber quais valores de {F(f)} existem {cin}{w_pt}?",
+                           f"Você consegue listar os valores únicos de {F(f)} {cof}{w_pt}?"]}
             else:
-                h = {"n": [f"What are the distinct values of {F(f)} {cin}{w_en}?", f"List the unique values of {F(f)} {cof}{w_en}"],
-                     "i": [f"what different {F(f)} values are there {cin}{w_en}?", f"list the unique {F(f)} {cof}{w_en}"],
-                     "t": [f"distinct {F(f)} {cin}{w_en}", f"distinct({F(f)}) {cin}{(' with filter: ' + where) if where else ''}"]}
+                h = {"n": [f"What are the distinct values of {F(f)} {cin}{w_en}?", f"List the unique values of {F(f)} {cof}{w_en}",
+                           f"Return the different values of {F(f)} {cof}{w_en}"],
+                     "i": [f"what different {F(f)} values are there {cin}{w_en}?", f"list the unique {F(f)} {cof}{w_en}",
+                           f"which {F(f)} exist {cin}{w_en}?"],
+                     "t": [f"distinct {F(f)} {cin}{w_en}", f"distinct({F(f)}) {cin}{flt_en}"],
+                     "q": [f"Could you tell me the distinct values of {F(f)} {cin}{w_en}?",
+                           f"Can you list the unique {F(f)} {cof}{w_en}?"]}
             return self.rng.choice(h.get(self.reg) or h["n"])
         if op == "aggregate":
             stages = plan["pipeline"]
@@ -587,16 +670,45 @@ class Describer:
                 raise Unsupported("long pipeline")
             steps = [self.stage_text(s) for s in stages]
             if self.rng.random() < 0.5:
-                conn = self.ch([", depois ", "; em seguida "], [", then ", "; next "])
+                conn = self.ch([", depois ", "; em seguida ", ", e então ", "; após isso "],
+                               [", then ", "; next ", ", and then ", "; after that "])
                 body = steps[0] + "".join(conn + s for s in steps[1:])
             else:
                 body = " ".join(f"({i + 1}) {s}" for i, s in enumerate(steps))
             if pt:
-                head = self.rng.choice([f"Faça uma agregação {cin}: ", f"Monte um aggregate {cin}: ", f"Aggregate {cin}: ", f"No pipeline {cin}: "])
+                heads = {"n": [f"Faça uma agregação {cin}: ", f"Monte um aggregate {cin}: ", f"Aggregate {cin}: ", f"No pipeline {cin}: ",
+                               f"Execute uma agregação {cin}: "],
+                         "i": [f"monta um aggregate {cin}: ", f"faz uma agregação {cin}: ", f"roda um pipeline {cin}: "],
+                         "t": [f"aggregate {cin}: ", f"Pipeline {cin}: "],
+                         "q": [f"Você consegue montar uma agregação {cin}: ", f"Dá pra rodar um pipeline {cin}: "]}
             else:
-                head = self.rng.choice([f"Run an aggregation {cin}: ", f"Build an aggregate {cin}: ", f"Aggregate {cin}: ", f"Pipeline {cin}: "])
-            return head + body
+                heads = {"n": [f"Run an aggregation {cin}: ", f"Build an aggregate {cin}: ", f"Aggregate {cin}: ", f"Pipeline {cin}: ",
+                               f"Execute an aggregation {cin}: "],
+                         "i": [f"put together an aggregate {cin}: ", f"do an aggregation {cin}: ", f"run a pipeline {cin}: "],
+                         "t": [f"aggregate {cin}: ", f"Pipeline {cin}: "],
+                         "q": [f"Could you build an aggregation {cin}: ", f"Can you run a pipeline {cin}: "]}
+            return self.rng.choice(heads.get(self.reg) or heads["n"]) + body
         raise Unsupported(op)
+
+    def refine_filter(self, cond: dict) -> str:
+        """Refinamento de turno 2: adiciona condicao(oes) ao filtro."""
+        t = self.filter_text(cond)
+        if not t:
+            raise Unsupported("refine")
+        N = self.noun
+        return self.ch([f"Agora só os {N} onde {t}", f"Refine: apenas os que tenham {t}", f"Filtre também por {t}",
+                        f"agora restringe a {t}", f"E só os com {t}", f"Mantenha a consulta, mas só onde {t}"],
+                       [f"Now only the {N} where {t}", f"Narrow it down to those with {t}", f"Also filter by {t}",
+                        f"now restrict to {t}", f"And only the ones with {t}", f"Keep the query but only where {t}"])
+
+    def refine_year(self, field: str, year: int, with_field: bool) -> str:
+        y = P0 + str(year) + P1
+        if with_field:
+            return self.ch([f"Agora só os de {y} (por {F(field)})", f"restringe a {y} usando {F(field)}", f"só os de {y}, pelo campo {F(field)}"],
+                           [f"Now only the ones from {y} (by {F(field)})", f"restrict to {y} using {F(field)}",
+                            f"only {y}, by the {F(field)} field"])
+        return self.ch([f"Agora só os de {y}", f"e só os de {y}", f"restringe a {y}"],
+                       [f"Now only the ones from {y}", f"and only {y}", f"restrict to {y}"])
 
     def explain(self, plan: dict, coll: str) -> str:
         """Frase curta (3a pessoa) do que a consulta faz, para comentario `//`."""
@@ -677,6 +789,15 @@ def finalize(text: str, lang: str, rng: random.Random, reg: str, deaccent_p: flo
     elif reg == "t":
         if t and t[0] != P0:
             t = t[0].upper() + t[1:]
+    elif reg == "g":
+        if t and t[0] != P0:
+            t = t[0].lower() + t[1:]
+        t = t.rstrip(".")
+    elif reg == "q":
+        if t and t[0] != P0:
+            t = t[0].upper() + t[1:]
+        if not t.endswith("?"):
+            t = t.rstrip(".") + "?"
     else:
         if t and t[0] != P0:
             t = t[0].upper() + t[1:]

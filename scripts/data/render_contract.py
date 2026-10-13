@@ -207,7 +207,17 @@ class Tokenizer:
     """Tokenizer do Qwen2.5-Coder (`tokenizer.json`, biblioteca `tokenizers`): mesmo vocabulario do adapter qwen2 da IDE."""
 
     def __init__(self, path: str | Path = DEFAULT_TOKENIZER):
-        from tokenizers import Tokenizer as _Tok
+        try:
+            from tokenizers import Tokenizer as _Tok
+        except ImportError:   # venv do bake-off (tem `tokenizers`): KAPI_TOKENIZERS_SITE, como no gen_fim/validate_pipeline
+            import os
+            import sys
+            site = os.environ.get("KAPI_TOKENIZERS_SITE")
+            if not site or not Path(site).exists():
+                raise
+            if site not in sys.path:
+                sys.path.append(site)
+            from tokenizers import Tokenizer as _Tok
 
         self.path = Path(path)
         self._tok = _Tok.from_file(str(self.path))

@@ -31,12 +31,38 @@ import blind_guard as bg  # noqa: E402
 
 ROOT = HERE.parents[1]
 NGRAM_N = 13
+# Regra OFICIAL do treino (decisao do usuario, opcao B): um 13-grama comum so conta como contaminacao se tiver >= 2 tokens de
+# CONTEUDO (campo/colecao/constante nomeada). 13-gramas puramente estruturais ($match/$group/$sort, pontuacao, placeholders, API do
+# Console) nao contam: os schemas sao disjuntos por split (split_role), logo nao ha vazamento de conteudo; a regra literal (k=0)
+# fica como auditoria (`analysis`). exact, approx_key, MinHash e blind seguem inalterados.
+DEFAULT_NGRAM_MIN_CONTENT = 2
 SHINGLE_K = 5
 NUM_PERM = 128
 BANDS, ROWS = 25, 5           # 25*5 <= 128; recall ~99% em J=0,7
 DECONTAM_JACCARD = 0.7
 DEDUP_JACCARD = 0.85
 _P = (1 << 31) - 1
+_NP = None
+
+
+def _numpy():
+    """numpy se disponivel (tambem via KAPI_TOKENIZERS_SITE / venv do bake-off); None => MinHash em Python puro (mesmo resultado)."""
+    global _NP
+    if _NP is None:
+        try:
+            import numpy as np  # noqa: F401
+        except ImportError:
+            import os
+            site = os.environ.get("KAPI_TOKENIZERS_SITE") or r"C:\SlopStudio.MongoAI-artifacts\.venv\Lib\site-packages"
+            np = None
+            if site and Path(site).exists() and site not in sys.path:
+                sys.path.append(site)
+                try:
+                    import numpy as np  # noqa: F811
+                except Exception:
+                    np = None
+        _NP = np if np is not None else False
+    return _NP or None
 EVAL_SPLITS = ("val", "test", "bench")
 RULES = ("blind", "exact", "ngram13", "approx_key", "minhash")
 
@@ -116,14 +142,23 @@ def h64(s: str) -> int:
 
 _STRUCT = set("db getCollection getDatabase getConnection getSiblingDB ConnectionPool find findOne aggregate countDocuments distinct "
               "updateOne updateMany deleteOne deleteMany toArray sort limit skip project true false null new Date ISODate ObjectId "
-              "UUID NumberLong NumberDecimal const let var _id".split())
+              "UUID NumberLong NumberDecimal const let var _id createIndex dropIndex console log ENV get".split())
+# Vocabulario da LINGUAGEM (argumentos de estagios do MQL e do Atlas Search): gramatica, nao conteudo de schema. Sem isso todo
+# `$search` (`index/text/query/path`) teria >= 2 "tokens de conteudo" e a regra oficial removeria 100% de atlas_search.
+_STRUCT |= set(("from localField foreignField as let pipeline path preserveNullAndEmptyArrays includeArrayIndex input cond then else "
+                "branches case default groupBy boundaries output partitionBy sortBy window documents unit format timezone onNull "
+                "index text query compound must mustNot should filter minimumShouldMatch fuzzy maxEdits prefixLength maxExpansions "
+                "autocomplete tokenOrder sequential any phrase slop wildcard allowAnalyzedField near origin pivot equals "
+                "range gt gte lt lte exists count type total highlight facet facets operator numBuckets lowerBound upperBound "
+                "numCandidates limit queryVector exact searchScore vectorSearchScore geoWithin moreLikeThis queryString defaultPath "
+                "synonyms scoreDetails returnStoredSource embedding").split())
 _UPD = {"$set", "$inc", "$unset", "$currentDate", "$push", "$addToSet", "$pull", "$mul", "$min", "$max", "$rename", "$pop"}
 
 
 def _known_ops() -> set[str]:
     try:
         import chat_validate as _cv
-        return set(_cv.KNOWN_OPS) | _UPD
+        return set(_cv.KNOWN_OPS) | set(_cv.ATLAS_OPS) | _UPD
     except Exception:  # pragma: no cover
         return set(_UPD) | {"$match", "$group", "$project", "$sort", "$limit", "$skip", "$unwind", "$lookup", "$gt", "$gte", "$lt",
                             "$lte", "$in", "$nin", "$eq", "$ne", "$and", "$or", "$exists", "$regex", "$options", "$sum", "$avg"}
@@ -161,6 +196,7 @@ class MinHasher:
     def __init__(self, num_perm: int = NUM_PERM, seed: int = 20261008):
         rng = random.Random(f"minhash:{seed}")
         self.ab = [(rng.randrange(1, _P), rng.randrange(0, _P)) for _ in range(num_perm)]
+        self._np_ab = None
 
     def shingles(self, tokens: list[str], k: int = SHINGLE_K) -> set[int]:
         if not tokens:
@@ -173,6 +209,14 @@ class MinHasher:
         sh = self.shingles(tokens, k)
         if not sh:
             return None
+        np = _numpy()
+        if np is not None:
+            # identico ao laco em Python: x < 2^32 e a < 2^31 => a*x + b < 2^63 (cabe em int64)
+            if self._np_ab is None:
+                self._np_ab = (np.array([a for a, _ in self.ab], dtype=np.int64), np.array([b for _, b in self.ab], dtype=np.int64))
+            a, b = self._np_ab
+            x = np.fromiter(sh, dtype=np.int64, count=len(sh))
+            return tuple(((x[:, None] * a[None, :] + b[None, :]) % _P).min(axis=0).tolist())
         return tuple(min((a * x + b) % _P for x in sh) for a, b in self.ab)
 
 
@@ -398,8 +442,13 @@ def match_item(f: dict, idx: dict, min_content: int = 0) -> dict[str, str]:
 
 
 def run(train: list[dict], evals: list[tuple[str, dict]], *, seed: int = 20261008, blind=None, threshold: float = DECONTAM_JACCARD,
-        examples: int = 20, min_content: int = 0) -> dict:
-    """Decontamina `train` contra `evals` [(origem, registro)]. Retorna dict com `removed` {id: [regras]} e contagens."""
+        examples: int = 20, min_content: int | None = None, analysis_k: tuple = ()) -> dict:
+    """Decontamina `train` contra `evals` [(origem, registro)]. Retorna dict com `removed` {id: [regras]} e contagens.
+
+    `analysis_k` (ex.: (2,)): ANALISE paralela, nunca aplicada: quantos registros seriam removidos se o 13-grama exigisse
+    >= k tokens de conteudo (as demais regras valem como estao); resultado em `analysis` {k: {removed, kept, by_cut_kind}}."""
+    if min_content is None:
+        min_content = DEFAULT_NGRAM_MIN_CONTENT
     mh = MinHasher(NUM_PERM, seed)
     idx = build_index(evals, mh, threshold)
     bstat = blind_status(blind)
@@ -412,6 +461,7 @@ def run(train: list[dict], evals: list[tuple[str, dict]], *, seed: int = 2026100
     ex: dict[str, list[str]] = {r: [] for r in RULES}
     by_kind: dict[str, int] = {}
     sens = {k: 0 for k in range(0, 5)}
+    an = {int(k): {"removed": 0, "removed_by_cut_kind": {}, "in_by_cut_kind": {}} for k in analysis_k}
     for rec in train:
         dk = doc_key(rec)
         if dk not in cache:
@@ -425,6 +475,14 @@ def run(train: list[dict], evals: list[tuple[str, dict]], *, seed: int = 2026100
                     sens[k] += 1
         if bstat == "sealed" and blind_hit(rec, blind):
             hit["blind"] = "blind"
+        if an:
+            ck = rec.get("cut_kind") or rec.get("kind") or "?"
+            other = any(r in hit for r in ("exact", "approx_key", "minhash", "blind"))
+            for k, a in an.items():
+                a["in_by_cut_kind"][ck] = a["in_by_cut_kind"].get(ck, 0) + 1
+                if other or (gb is not None and gb >= k):
+                    a["removed"] += 1
+                    a["removed_by_cut_kind"][ck] = a["removed_by_cut_kind"].get(ck, 0) + 1
         if not hit:
             continue
         rules = [r for r in RULES if r in hit]
@@ -451,6 +509,7 @@ def run(train: list[dict], evals: list[tuple[str, dict]], *, seed: int = 2026100
         "by_rule_first_match": first_rule,
         "removed_by_kind": by_kind,
         "ngram13_sensitivity_min_content": {str(k): v for k, v in sens.items()},
+        "analysis": {str(k): {**a, "kept": len(train) - a["removed"]} for k, a in an.items()},
         "matched_against": by_eval,
         "examples": ex,
         "eval_docs": idx["n"],
@@ -481,8 +540,8 @@ def main(argv=None):
     ap.add_argument("--legacy", nargs="*", default=[], help="jsonl legacy-v1 (somente avaliacao)")
     ap.add_argument("--eval-splits", nargs="+", default=list(EVAL_SPLITS))
     ap.add_argument("--seed", type=int, default=20261008)
-    ap.add_argument("--ngram-min-content", type=int, default=0,
-                    help="0 = regra literal (qualquer 13-grama comum); N>0 exige >= N tokens de conteudo (campos/colecoes) no 13-grama")
+    ap.add_argument("--ngram-min-content", type=int, default=DEFAULT_NGRAM_MIN_CONTENT,
+                    help="N>0 (padrao 2) exige >= N tokens de conteudo (campos/colecoes) no 13-grama; 0 = regra literal da spec")
     ap.add_argument("--report-dir", default=str(ROOT / "reports" / "decontam"))
     ap.add_argument("--out-ids", help="grava os ids removidos (um por linha)")
     a = ap.parse_args(argv)

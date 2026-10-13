@@ -102,3 +102,37 @@ Split por grupo (`domain/schema::template`); templates reservados (10%) e domini
 - FIM e filtrado por exec != error; multiplos cortes por snippet (60000 cortes sobre 20000 snippets).
 - Guarda do blind (`blind_guard.check_record/check_text`) aplicada em snippets e FIM, mas data/eval/blind/sealed/manifest.json esta ausente/vazio hoje, logo o filtro e no-op ate o selamento; re-gerar apos selar.
 - Contagem de nao vazios varia +-0.01 pp entre execucoes (estado do banco/ordenacao).
+
+## Apendice: mudancas do ciclo 2 (codigo; volume final NAO regerado)
+
+Mudancas em `scripts/data/gen_snippets.py`, `gen_fim.py`, `validate_snippets.py` (so o atalho `exec_mode`) e `configs/dataset.yaml`
+(blocos `snippets`, `fim`, `split_policy`). Numeros abaixo vem de uma amostra de verificacao (3000 snippets, seed 20261008, 6000 cortes),
+nao do volume v1.
+
+- **Teto do middle com tokenizer Qwen**: `fim.max_tokens` (96) e medido com `tokenizer.json` do Qwen2.5-Coder (mesma contagem da
+  etapa 7 do `validate_pipeline`); sem o pacote `tokenizers` o gerador tenta `KAPI_TOKENIZERS_SITE`/`fim.tokenizer_site`/venv do
+  bake-off e, por fim, cai em chars/3 com `middle_tokens_method: approx` no registro. Amostra: max middle = 96 tokens, 0 acima do teto
+  (v1 tinha 885 respostas > 96 por usar chars/3).
+- **split_role**: schema "train" -> so train; "eval" -> so val/test/bench (`split_policy.eval_fractions` val 0.50/test 0.25/bench 0.25);
+  holdout vence qualquer papel; ausente = comportamento v1. Efeito colateral documentado: com papel definido, templates reservados
+  (10%) de schemas "train" nao vao mais para test (isolamento por schema > por template).
+- **Categorias novas** (`category` por registro; fracao do total de snippets em `snippets.extra_categories`): `atlas_search`
+  ($search/$searchMeta/$vectorSearch, `exec_mode: skipped_static`), `json_ejson` (dialect `json`, JSON puro com $oid/$date/
+  $numberLong/$numberDecimal/$uuid; executavel), `indexes` (createIndex/dropIndex, `skipped_write`; getIndexes/explain implementados
+  mas com peso 0 ate a API do Console ser confirmada) e `dsl` (getConnection().getDatabase().getCollection(), ConnectionPool.a.b.c
+  e ConnectionPool["Prod Cluster"]["Db"], db.getSiblingDB, ENV.get, cursor em variavel, console.log; plano executavel).
+- **Amostragem FIM**: distribuicao conjunta categoria x cut_kind por IPF (marginais = `fim.category_targets` com piso 4% e
+  `fim.cut_targets` / `fim.decontam_survival`). Os pesos de reamostragem (alvo/sobrevivencia v1: stage 0.327, multiline 0.378 sao os que
+  mais perdem) fazem a distribuicao ESPERADA pos-decontaminacao ficar em +-2 p.p. do alvo; a distribuicao bruta do fim.jsonl
+  difere do alvo de proposito (p.ex. stage ~15.8% bruto -> ~12.1% esperado). Amostra: desvio maximo esperado 1.0 p.p.
+- Distribuicao por categoria na amostra (cortes): aggregation 27.0%, crud 18.6%, operators 11.4%, atlas_search 13.3%, dsl 13.9%,
+  json_ejson 10.9%, indexes 4.9% (piso 4% cumprido).
+- Execucao na amostra: 2191 leituras executadas, 0 erros (exec-valid 100%); 428 escritas (createIndex/dropIndex/update/delete) e 378
+  atlas_search nunca chegam ao driver (`skipped_write`/`skipped_static`); 0 comandos de escrita vistos pelo listener.
+
+Lacunas e pendencias: (1) a spec nao detalha a API de `ENV` alem de `ENV.get(name)` (usada so como nome de conexao) nem
+a gramatica do catalogo `mongodb-language.v1.json` (nao exportado; operadores Atlas Search seguem a documentacao publica);
+(2) `$vectorSearch` usa o campo sintetico `embedding` quando o schema nao tem vetor; (3) o parser Console do `chat_validate`/
+`validate_pipeline` precisa aceitar getConnection/getSiblingDB/ENV.get/console.log/createIndex/$search e o dialect `json` (hoje
+rejeitaria na etapa API/sintaxe); os registros ja carregam `exec_mode` para a etapa 5 pular a execucao; (4) a taxa de sobrevivencia
+usada na reamostragem e a do v1 e deve ser recalibrada apos a decontaminacao do ciclo 2.

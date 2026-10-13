@@ -128,6 +128,9 @@ def execute_plan(coll, plan: dict, max_time_ms: int, cap: int) -> int:
 def validate_record(client_db_getter, rec: dict, max_time_ms: int, cap: int) -> dict:
     out = {"id": rec["id"], "db": rec.get("db"), "op": rec["op"]}
     plan = rec["plan"]
+    em = rec.get("exec_mode")   # categorias do ciclo 2: atlas_search/explain (static) e createIndex/dropIndex (write)
+    if em in ("skipped_static", "skipped_write"):
+        return {**out, "exec": em, "reason": em, "n_docs": None, "ms": 0}
     if rec["op"] in WRITE_OPS or rec.get("kind") == "write":
         return {**out, "exec": "skipped", "reason": "write", "n_docs": None, "ms": 0}
     db = rec.get("db", "")
@@ -184,9 +187,6 @@ def main(argv=None):
     ver = a.ver or cfg.get("version", "v0")
     gdir = ROOT / cfg.get("out_dir", "data/generated") / ver
     src = Path(a.snippets) if a.snippets else gdir / "snippets.jsonl"
-    recs = [json.loads(l) for l in open(src, encoding="utf-8") if l.strip()]
-    if a.limit:
-        recs = recs[:a.limit]
     uri = a.uri or vc.get("uri", "mongodb://127.0.0.1:27017")
     if not re.match(r"^mongodb://(127\.0\.0\.1|localhost)(:\d+)?/?$", uri):
         raise SystemExit("RECUSADO: apenas MongoDB local (127.0.0.1/localhost) sem credenciais")
@@ -197,23 +197,43 @@ def main(argv=None):
     max_ms, cap = int(vc.get("max_time_ms", 2000)), int(vc.get("result_cap", 101))
 
     def work(r):
-        if r.get("db") not in existing and r["op"] in READ_OPS:
+        if r.get("db") not in existing and r["op"] in READ_OPS and r.get("exec_mode") not in ("skipped_static", "skipped_write"):
             return {"id": r["id"], "db": r.get("db"), "op": r["op"], "exec": "unseeded", "reason": "banco nao semeado", "n_docs": None, "ms": 0}
         return validate_record(getter, r, max_ms, cap)
 
-    t0 = time.perf_counter()
-    with ThreadPoolExecutor(max_workers=a.workers or int(vc.get("workers", 8))) as ex:
-        res = list(ex.map(work, recs))
+    def read_chunks(path, size=20000):
+        """Le o jsonl em blocos (streaming; nunca carrega o arquivo inteiro)."""
+        buf = []
+        n = 0
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                buf.append(json.loads(line))
+                n += 1
+                if len(buf) >= size:
+                    yield buf
+                    buf = []
+                if a.limit and n >= a.limit:
+                    break
+        if buf:
+            yield buf
+
     out = Path(a.out) if a.out else gdir / "validation.jsonl"
-    with open(out, "w", encoding="utf-8", newline="\n") as f:
-        for r in res:
-            f.write(json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n")
     cnt: dict = {}
-    for r in res:
-        cnt[r["exec"]] = cnt.get(r["exec"], 0) + 1
+    ok_nonempty = 0
+    total = 0
+    t0 = time.perf_counter()
+    with ThreadPoolExecutor(max_workers=a.workers or int(vc.get("workers", 8))) as ex,             open(out, "w", encoding="utf-8", newline="\n") as f:
+        for chunk in read_chunks(src):
+            for r in ex.map(work, chunk):
+                f.write(json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n")
+                cnt[r["exec"]] = cnt.get(r["exec"], 0) + 1
+                total += 1
+                if r["exec"] == "ok" and not r.get("empty"):
+                    ok_nonempty += 1
     reads = cnt.get("ok", 0) + cnt.get("error", 0)
-    ok_nonempty = sum(1 for r in res if r["exec"] == "ok" and not r.get("empty"))
-    summary = {"total": len(res), **cnt, "exec_valid_rate_reads": round(cnt.get("ok", 0) / reads, 4) if reads else None,
+    summary = {"total": total, **cnt, "exec_valid_rate_reads": round(cnt.get("ok", 0) / reads, 4) if reads else None,
                "ok_nonempty_rate": round(ok_nonempty / cnt["ok"], 4) if cnt.get("ok") else None,
                "write_commands_seen": len(guard.violations), "violations": sorted(set(guard.violations)),
                "read_commands": guard.reads, "elapsed_s": round(time.perf_counter() - t0, 1)}

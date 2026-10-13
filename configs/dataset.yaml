@@ -1,6 +1,6 @@
 # dataset.yaml - parametros dos geradores de snippets/FIM (spec fase-03 §4.3-4.6)
 # Lido por scripts/data/gen_snippets.py, gen_fim.py e validate_snippets.py.
-version: v1
+version: v2c
 seed: 20261008
 schemas_dir: data/schemas
 out_dir: data/generated
@@ -8,16 +8,28 @@ out_dir: data/generated
 # Dominios holdout: seus grupos vao so para test/bench (nunca train/val).
 holdout_domains: [education, legal]
 
+# Decontaminacao treino x avaliacao (scripts/data/decontaminate.py; MESMA regra no pre-filtro do gen_fim e na etapa 9 do pipeline).
+# OFICIAL (opcao B, decisao do usuario): um 13-grama comum so e contaminacao se tiver >= 2 tokens de CONTEUDO (campo, colecao ou
+# constante nomeada). Justificativa: os schemas sao disjuntos por split (`split_role`: treino x avaliacao), entao conteudo de schema
+# nunca vaza; 13-gramas puramente estruturais ($match/$group/$sort, pontuacao, placeholders, API do Console) sao a gramatica do
+# Console e coincidem por construcao entre qualquer par de pipelines (a regra literal removia 85% do treino piloto e 100% de
+# atlas_search). Inalterados: exact, chave aproximada (v1), MinHash >= 0,7 e blind (via blind_guard). A regra literal (0) e
+# calculada em paralelo como AUDITORIA (relatorio) e nunca aplicada.
+decontam:
+  ngram_min_content: 2
+
 snippets:
-  count: 20000
+  count: 3000000            # v2/v2c: bruto (snippets reaproveitados da v2); ~21% dos snippets de treino sobrevivem a decontaminacao literal (pre-filtro do gen_fim); v1 = 20000
   max_chars: 1800            # descarta snippets longos demais
-  kinds:                     # proporcao por tipo de statement
-    find: 0.40
-    aggregate: 0.34
-    countDocuments: 0.05
-    distinct: 0.04
-    findOne: 0.03
-    update: 0.10             # updateOne/updateMany (escrita: nunca executada)
+  # v2: proporcoes BRUTAS ajustadas a sobrevivencia medida na decontaminacao literal (v2s1: agregacao 3%, json_ejson 1%,
+  # atlas_search 0%, crud 33%, indexes 83%): quanto menos sobrevive, mais se gera (spec §4.6 "Como o volume cai").
+  kinds:                     # proporcao por tipo de statement (categorias base)
+    find: 0.22
+    aggregate: 0.56
+    countDocuments: 0.04
+    distinct: 0.03
+    findOne: 0.02
+    update: 0.09             # updateOne/updateMany (escrita: nunca executada)
     delete: 0.04             # deleteOne/deleteMany (escrita: nunca executada)
   layouts: {compact: 0.25, lines: 0.40, pretty: 0.35}
   quotes: {double: 0.55, single: 0.45}
@@ -29,12 +41,56 @@ snippets:
   root_forms: {auto: 0.72, getCollection: 0.10, bracket: 0.06, pool: 0.07, var: 0.05}
   const_extract: 0.12        # filtro/pipeline extraido para `const x = ...;`
   date_forms: {isodate: 0.6, new_date: 0.4}
+  # Categorias extras (ciclo 2; spec §4.3 "distribuicao alvo"): fracao do TOTAL de snippets; o resto segue `kinds`
+  # (-> aggregation / crud / operators). Cada registro grava `category` e `exec_mode` (live|skipped_static|skipped_write).
+  extra_categories:
+    atlas_search: 0.06       # $search/$searchMeta/$vectorSearch; so validacao estatica (exec_mode skipped_static)
+    json_ejson: 0.20         # modo Agregacao (`dialect: json`): pipeline como JSON/Extended JSON puro ($oid,$date,...)
+    dsl: 0.12                # getConnection/ConnectionPool/getSiblingDB/ENV.get/cursor/console.log (plano executavel)
+    indexes: 0.04            # createIndex/dropIndex (skipped_write) e, se habilitados abaixo, getIndexes/explain
+  dsl_forms: {conn: 0.28, pool_idx: 0.20, pool: 0.10, sibling: 0.12, cursor: 0.15, log: 0.15}
+  indexes:
+    # getIndexes/explain NAO constam na lista de API do Console (spec §2: colecao = ..., createIndex, dropIndex; cursor =
+    # sort/skip/limit/project/toArray). Ficam implementados mas com peso 0 ate a API ser confirmada (docs\20-console.md).
+    kinds: {create: 0.62, drop: 0.22, create_special: 0.16, getIndexes: 0.0, explain: 0.0}
 
 fim:
-  count: 60000
-  max_tokens: 96             # limite de resposta (spec §4.3)
-  chars_per_token: 3.0       # aproximacao (sem tokenizer Qwen aqui)
-  cut_targets:               # alvo de distribuicao no train, +-2 p.p.
+  count: 1100000            # v2c (v2 final: 1,2 M); alvo da spec §4.6 (~1,5 M candidatos -> ~1,0 M validados); v1 = 60000
+  # Tamanhos FIXOS da avaliacao (spec §4.6: val 10.000, test 5.000, bench 3.000 cortes) x `eval_margin` (perdas do pipeline);
+  # train recebe o resto de `count`. Cada split e amostrado separadamente com as mesmas marginais de categoria/cut_kind.
+  # Sem este bloco: amostragem unica sobre todos os splits (v1; ~1/3 dos cortes iria para avaliacao com split_role).
+  eval_counts: {val: 30000, test: 20000, bench: 10000}   # v2c: >= 30k/20k/10k (spec §4.6 pedia 10k/5k/3k)
+  eval_margin: 1.15
+  # Pre-filtro de decontaminacao (regra LITERAL, o mesmo `decontaminate`): o treino so usa snippets que nao seriam removidos na
+  # etapa 9 contra os documentos de avaliacao escolhidos (+ legacy-v1). Evita gerar/validar cortes que o pipeline descartaria.
+  decontam_prefilter: true
+  max_cuts_per_snippet: 8    # oferta = snippets sobreviventes x teto; limita a repeticao do mesmo documento
+  max_tokens: 96             # limite de resposta (spec §4.3), MEDIDO com o tokenizer Qwen (editor_context.tokenizer)
+  chars_per_token: 3.0       # so no fallback `approx` (tokenizer/pacote `tokenizers` indisponivel)
+  tokenizer_site: ""         # opcional: site-packages com `tokenizers` (env KAPI_TOKENIZERS_SITE tem precedencia)
+  # Pisos/alvos por categoria no FIM (spec §4.3: aggregation 24, crud 16, operators 10, atlas_search 12, json_ejson 10,
+  # console_dsl 12, indexes 5 -- renormalizados sobre as 7 categorias de autocomplete; chat/correcao ficam fora do FIM).
+  category_targets:
+    aggregation: 0.27
+    crud: 0.18
+    operators: 0.11
+    atlas_search: 0.13
+    json_ejson: 0.11
+    dsl: 0.14
+    indexes: 0.06
+  category_floor: 0.04       # piso por categoria pequena (spec §4.3, "Como o volume cai")
+  # Taxa de sobrevivencia por cut_kind na decontaminacao aproximada (v1: reports/datasets/v1-validation-report.md §3,
+  # saida/entrada por cut_kind). `stage`/`multiline` perdem mais (templates curtos e repetitivos); a amostragem usa
+  # peso alvo/sobrevivencia para que a distribuicao POS-decontam fique em +-2 p.p. do alvo.
+  # Sobrevivencia medida (v2c, regra OFICIAL k=2, COM o pre-filtro do gen_fim; treino FIM que chega a etapa 9 -> mantido):
+  decontam_survival: {key: 0.977, value: 0.976, operator: 0.976, stage: 0.964, member: 0.976, partial: 0.974,
+                      rest: 0.973, multiline: 0.977, stmt_start: 0.980}
+  category_survival: {aggregation: 0.955, atlas_search: 0.996, crud: 0.989, dsl: 0.970, indexes: 1.0, json_ejson: 0.967, operators: 0.977}
+  # Referencias: (a) regra LITERAL (k=0) sem pre-filtro, piloto v2s1: aggregation 0.030 atlas_search 0.000 json_ejson 0.007 dsl 0.127
+  # operators 0.210 crud 0.325 indexes 0.830; stage 0.018 multiline 0.118 (85% do treino removido). (b) regra literal aplicada como
+  # auditoria sobre o treino v2c: removeria 84% dos documentos que a regra oficial mantem (ver reports/datasets/v2c-validation-report.md).
+  resample_for_decontam: true
+  cut_targets:               # alvo de distribuicao no train, +-2 p.p. (POS-decontaminacao)
     key: 0.16
     value: 0.14
     operator: 0.14
@@ -53,6 +109,27 @@ splits:                      # por grupo (domain/schema::template), nunca por ex
   reserved_template_fraction: 0.10   # templates reservados -> test
   holdout_bench_fraction: 0.40       # holdout: 40% bench / 60% test
 
+# Politica de split por PAPEL de schema (campo `split_role` do JSON do schema; None/ausente = comportamento v1 por grupo).
+#  - "train": todos os grupos do schema vao SO para train (inclusive templates reservados: isolamento por schema vence o
+#             isolamento por template; a decontaminacao por conteudo continua valendo).
+#  - "eval":  grupos NUNCA vao para train; repartidos por hash do grupo em val/test/bench conforme eval_fractions.
+#             Assim `val` vem de schemas "eval" (generaliza para schema nao visto) e nenhum schema_id aparece em train e em
+#             val/test/bench. Val e test podem compartilhar schema entre si (so o train precisa de isolamento).
+#  - holdout (dominios holdout_domains / schema.holdout) vence qualquer papel: so test/bench.
+split_policy:
+  enabled: true
+  eval_fractions: {val: 0.50, test: 0.25, bench: 0.25}
+
+schema_split:                # papel por schema (campo `split_role` no JSON do schema e em data/fixtures/manifest.json)
+  seed: 20261008
+  eval_fraction: 0.25        # dominios nao-holdout: ~25% dos schemas "eval", o resto "train"
+  min_schemas_for_eval: 6    # dominio com >= 6 schemas tem >= 1 schema "eval"
+  rule: >-
+    holdout_domains => "eval" sempre. Demais dominios: schemas ordenados por sha256("<seed>:<schema_id>");
+    os primeiros round(eval_fraction*n) sao "eval", o resto "train"; cada (name_style, language) fica
+    representado nos dois lados (troca por menor hash se faltar). Implementacao: scripts/data/split_roles.py
+    (assign_roles/role_for); geradores devem usar role_for(schema) e nunca misturar train/eval de um mesmo schema.
+
 validation:
   uri: mongodb://127.0.0.1:27017
   db_prefix: kapi_fx_
@@ -62,27 +139,45 @@ validation:
 
 # --- chat curto / correcao / negativos / explain (gen_chat.py; spec §4.3, §4.6) ---
 chat:
-  count: 6000
-  kinds: {chat: 0.62, correction: 0.22, negative: 0.11, explain: 0.05}   # explain <= 5%
+  count: 300000              # v2c (ate o teto sem repeticao; v2: 40000): teto sem repeticao medido (ciclo 2: capacidade >> 15 mil); v1 = 6000
+  # Teto do pool de snippets de AVALIACAO no chat (fracao do pool de treino): val/test/bench ficam com ~7% dos registros.
+  eval_read_caps: {val: 0.04, test: 0.02, bench: 0.02}
+  eval_write_caps: {val: 0.04, test: 0.02, bench: 0.02}
+  use_fim_survivors: true    # chat/correcao/negativos so partem de snippets de treino que sobrevivem ao pre-filtro do gen_fim
+  pool_max_train: 400000     # teto do pool de snippets por (tipo x split) lido do snippets.jsonl (amostra uniforme por hash)
+  pool_max_eval: 60000
+  kinds: {chat: 0.50, chat_multiturn: 0.09, correction: 0.25, negative: 0.11, explain: 0.05}   # explain <= 5%; multiturn conta como chat na mistura
   languages: {pt-BR: 0.5, en: 0.5}
-  register: {n: 0.45, i: 0.30, t: 0.25}   # neutro / informal / tecnico
+  register: {n: 0.30, i: 0.25, t: 0.17, g: 0.12, q: 0.16}   # neutro / informal / tecnico / telegrafico / pergunta indireta
   pt_deaccent: 0.30          # fracao das instrucoes pt-BR escritas sem acento
   typo: 0.04                 # erro de digitacao (troca de letras) em palavras de template
   ambiguous_collection: 0.10 # "nesta colecao"/"aqui" em vez do nome (resolvido pelo contexto)
   modify_fraction: 0.35      # dos chat elegiveis (find com sort/limit/proj; aggregate com $sort/$limit finais): editor ja tem a consulta base
   correction_error_message: 0.5
   max_instruction_chars: 520
-  preview_in_write_refusal: 0.35   # recusa de escrita + find de leitura equivalente (executado)
-  negative_types: {write: 0.45, out_of_scope: 0.25, no_collection: 0.15, ambiguous: 0.15}
-  defects:                   # familias de defeito injetado (correction)
-    wrong_field: 0.20
-    wrong_operator: 0.15
-    missing_dollar: 0.15
-    syntax_comma: 0.10
-    syntax_quote: 0.06
-    syntax_bracket: 0.06
-    wrong_type: 0.15
-    invalid_api: 0.13
+  preview_in_write_refusal: 0.35   # recusa de escrita/DDL + leitura equivalente (find limit 20 ou countDocuments; executada)
+  negative_types: {write: 0.28, ddl: 0.14, out_of_scope: 0.18, no_collection: 0.14, ambiguous: 0.12, ambiguous_field: 0.14}
+  defect_count: {1: 0.71, 2: 0.12, 3: 0.13, 4: 0.04}   # no. de defeitos combinados por correcao (>=3 em ~15% apos descartes)
+  defects:                   # familias de defeito injetado (correction); 8 do ciclo 1 + 11 do ciclo 2
+    wrong_field: 0.10
+    wrong_operator: 0.07
+    missing_dollar: 0.07
+    syntax_comma: 0.04
+    syntax_quote: 0.03
+    syntax_bracket: 0.03
+    wrong_type: 0.07
+    invalid_api: 0.05
+    misplaced_operator: 0.06   # operador de agregacao em filtro / de consulta em acumulador
+    group_no_id: 0.04          # $group sem _id
+    type_mismatch: 0.07        # string<->ObjectId, bool como string, data como numero
+    lookup_field: 0.05         # $lookup com localField/foreignField/from errado
+    stage_order: 0.06          # estagios do pipeline em ordem invalida (campo usado antes de existir)
+    unknown_method: 0.05       # metodo inexistente do Console (.findAll, .agg, ...)
+    hint_index: 0.04           # .hint() com indice inexistente
+    projection_mix: 0.05       # projecao mista inclusao/exclusao
+    sort_direction: 0.04       # direcao de sort diferente de 1/-1
+    limit_value: 0.04          # $limit/.limit com texto/zero, $skip negativo
+    wrong_collection: 0.04     # colecao inexistente no db[...]
   style:                     # estilo de renderizacao dos outputs (sobrepoe snippets.*)
     layouts: {compact: 0.45, lines: 0.40, pretty: 0.15}
     crlf_ratio: 0.10
@@ -110,6 +205,7 @@ editor_context:
   max_result_fields: 128     # spec: ate 128 nomes do resultado
   max_recent_commands: 3     # ate 3, 256 caracteres cada
   cursor_marker: "▌"    # editor_text = prefix + marcador + suffix
+  pool_max_per_key: 400      # snippets por (schema, colecao, split) usados como fonte de recent_commands/SimilarStatement
   none_ratio: 0.08           # sem contexto: prompt = FIM cru (header ausente, facts vazios)
   irrelevant_ratio: 0.10     # known_names/result_fields de OUTRAS colecoes/schemas (ruido; facts seguem verdadeiros)
   input_panel_ratio: 0.04    # raro; so campos do schema da colecao

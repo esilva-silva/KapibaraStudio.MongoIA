@@ -42,12 +42,32 @@ def split_key(group_id: str) -> str:
     return hashlib.sha256(group_id.encode("utf-8")).hexdigest()[:16]
 
 
-def assign_split(group_id: str, domain: str, template_id: str, cfg: dict, holdout: bool = False) -> str:
-    """Split por GRUPO (nunca por exemplo). Holdout so test/bench; templates reservados -> test."""
+SPLIT_ROLES = ("train", "eval")
+
+
+def assign_split(group_id: str, domain: str, template_id: str, cfg: dict, holdout: bool = False,
+                 split_role: str | None = None) -> str:
+    """Split por GRUPO (nunca por exemplo). Holdout so test/bench; templates reservados -> test.
+
+    `split_role` (campo do schema; `split_policy` em dataset.yaml): "train" -> sempre train; "eval" -> nunca train,
+    reparte os grupos entre val/test/bench por `split_policy.eval_fractions`; None -> comportamento v1 (grupos
+    do mesmo schema podem cair em splits diferentes). Holdout vence qualquer papel."""
     sp = cfg.get("splits", {})
+    pol = cfg.get("split_policy") or {}
     h = stable_hash("split:" + group_id) % 10000 / 10000.0
     if holdout or domain in set(cfg.get("holdout_domains", [])):
         return "bench" if h < sp.get("holdout_bench_fraction", 0.4) else "test"
+    if split_role == "train" and pol.get("enabled", True):
+        return "train"
+    if split_role == "eval" and pol.get("enabled", True):
+        fr = pol.get("eval_fractions") or {"val": 0.5, "test": 0.25, "bench": 0.25}
+        tot = sum(fr.values()) or 1.0
+        acc = 0.0
+        for name in ("val", "test", "bench"):
+            acc += fr.get(name, 0) / tot
+            if h < acc:
+                return name
+        return "test"
     if stable_hash("tpl:" + template_id) % 1000 / 1000.0 < sp.get("reserved_template_fraction", 0.10):
         return "test"
     edges = []
@@ -160,6 +180,8 @@ class Schema:
         self.domain = str(raw.get("domain") or path.parent.name)
         self.schema_id = str(raw.get("schema_id") or path.stem)
         self.holdout = bool(raw.get("holdout", False))
+        sr = raw.get("split_role")  # leitura defensiva; ausente/invalido => None (comportamento v1)
+        self.split_role = sr if sr in SPLIT_ROLES else None
         self.name_style = str(raw.get("name_style") or "camel")
         self.seed = raw.get("seed")
         self.description = raw.get("description", "")
@@ -1028,6 +1050,7 @@ class Style:
         self.brace_space = rng.random() < 0.85
         self.chain_lines = rng.random() < 0.4
         self.const_extract = rng.random() < sc["const_extract"]
+        self.dsl: dict | None = None   # preenchido pelo gerador da categoria `dsl` (formas de raiz do Console)
 
 
 class Writer:
@@ -1227,8 +1250,11 @@ def render_snippet(plan: dict, sch: Schema, coll: Coll, st: Style, rng: random.R
     preamble_vars: list[str] = []
     stmts_start: list[int] = []
 
-    root_form = st.root_form
-    if root_form == "auto":
+    dsl = st.dsl
+    root_form = dsl["form"] if dsl else st.root_form
+    if dsl:
+        pass
+    elif root_form == "auto":
         root_form = "dot" if (IDENT_RE.match(name) and name not in RESERVED_COLL and "$" not in name) else rng.choice(["getCollection", "bracket"])
     elif not IDENT_RE.match(name) and root_form == "dot":
         root_form = "getCollection"
@@ -1270,8 +1296,53 @@ def render_snippet(plan: dict, sch: Schema, coll: Coll, st: Style, rng: random.R
 
     # ---- statement principal
     mi = w.open("stmt")
+    cur_var = dsl.get("cursor_var") if dsl and op == "find" else None
+    if dsl and dsl.get("log"):
+        w.t("console.log(")
+    if cur_var:
+        w.t("const " + cur_var + " = ")
     if root_form == "var":
         w.t(var_name)
+    elif root_form == "conn":
+        w.t("getConnection(")
+        if dsl.get("env"):
+            w.t("ENV.")
+            m = w.open("method"); w.t("get"); w.close(m)
+            w.t("(" + q + dsl["env"] + q + ")")
+        else:
+            w.t(q + dsl["conn"] + q)
+        w.t(")")
+        for meth, arg in (("getDatabase", sch.schema_id), ("getCollection", name)):
+            w.t(".")
+            m = w.open("method"); w.t(meth); w.close(m)
+            w.t("(" + q)
+            s_ = w.open("member"); w.t(arg); w.close(s_)
+            w.t(q + ")")
+    elif root_form == "pool_idx":
+        w.t("ConnectionPool")
+        for part in (dsl["conn"], sch.schema_id, name):
+            if IDENT_RE.match(part) and not dsl.get("bracket"):
+                w.t(".")
+                s_ = w.open("member"); w.t(part); w.close(s_)
+            else:
+                w.t("[" + q)
+                s_ = w.open("member"); w.t(part); w.close(s_)
+                w.t(q + "]")
+    elif root_form == "sibling":
+        w.t("db.")
+        m = w.open("method"); w.t("getSiblingDB"); w.close(m)
+        w.t("(" + q)
+        s_ = w.open("member"); w.t(sch.schema_id); w.close(s_)
+        w.t(q + ")")
+        if IDENT_RE.match(name) and name not in RESERVED_COLL:
+            w.t(".")
+            s_ = w.open("member"); w.t(name); w.close(s_)
+        else:
+            w.t(".")
+            m = w.open("method"); w.t("getCollection"); w.close(m)
+            w.t("(" + q)
+            s_ = w.open("member"); w.t(name); w.close(s_)
+            w.t(q + ")")
     elif root_form == "pool":
         w.t("ConnectionPool")
         for part in ("local", sch.schema_id, name):
@@ -1329,6 +1400,11 @@ def render_snippet(plan: dict, sch: Schema, coll: Coll, st: Style, rng: random.R
                 w.t(", ")
                 R.obj(plan["projection"], 0, False)
         call(op, args)
+        if cur_var:  # `const cur = db.c.find(..);` + statement seguinte `cur.sort(..).toArray();`
+            w.t(";" + nl)
+            w.close(mi)
+            mi = w.open("stmt")
+            w.t(cur_var)
         if op == "find":
             if plan.get("sort"):
                 call("sort", lambda: R.obj(plan["sort"], 0, False), newline=True)
@@ -1336,7 +1412,13 @@ def render_snippet(plan: dict, sch: Schema, coll: Coll, st: Style, rng: random.R
                 call("skip", lambda: R.scalar(plan["skip"]), newline=True)
             if plan.get("limit") is not None:
                 call("limit", lambda: R.scalar(plan["limit"]), newline=True)
-            if st.to_array:
+            if plan.get("explain"):
+                def exp_args():
+                    w.t(q)
+                    s_ = w.open("strarg"); w.t(plan["explain"]); w.close(s_)
+                    w.t(q)
+                call("explain", exp_args, newline=True)
+            elif st.to_array:
                 call("toArray", lambda: None, newline=True)
     elif op == "aggregate":
         def args():
@@ -1371,8 +1453,28 @@ def render_snippet(plan: dict, sch: Schema, coll: Coll, st: Style, rng: random.R
         call(op, args)
     elif op in ("deleteOne", "deleteMany"):
         call(op, lambda: R.obj(plan["filter"], 0, False))
+    elif op == "createIndex":
+        def args():
+            R.obj(plan["keys"], 0, False)
+            if plan.get("options"):
+                w.t(", ")
+                R.obj(plan["options"], 0, False)
+        call("createIndex", args)
+    elif op == "dropIndex":
+        def args():
+            if isinstance(plan["index"], str):
+                w.t(q)
+                s_ = w.open("strarg"); w.t(plan["index"]); w.close(s_)
+                w.t(q)
+            else:
+                R.obj(plan["index"], 0, False)
+        call("dropIndex", args)
+    elif op == "getIndexes":
+        call("getIndexes", lambda: None)
     else:
         raise ValueError(op)
+    if dsl and dsl.get("log"):
+        w.t(")")
     if st.semicolon:
         w.t(";")
     w.close(mi)
@@ -1447,6 +1549,30 @@ def analyze_plan(plan: dict, sch: Schema, coll: Coll) -> dict:
                             pass
                         elif not op.startswith("$"):
                             missing.append("op:" + op)
+
+    def search_paths(body, stage):
+        """Atlas Search: todo `path`/`defaultPath` (string, lista) precisa existir no schema. `embedding` e o caminho
+        vetorial sintetico aceito em $vectorSearch quando a colecao nao tem campo vetorial."""
+        def one(p):
+            if isinstance(p, str):
+                if p == "embedding" and stage == "$vectorSearch" and p not in base_scope:
+                    return
+                ref(p, base_scope)
+            elif isinstance(p, list):
+                for x in p:
+                    one(x)
+
+        def walk(v):
+            if isinstance(v, dict):
+                for k, x in v.items():
+                    if k in ("path", "defaultPath"):
+                        one(x)
+                    elif k != "filter" or stage != "$vectorSearch":
+                        walk(x)
+            elif isinstance(v, list):
+                for x in v:
+                    walk(x)
+        walk(body)
 
     def pipeline(stages, scope):
         for s in stages:
@@ -1545,6 +1671,12 @@ def analyze_plan(plan: dict, sch: Schema, coll: Coll) -> dict:
                     new[f"{a}.{p}"] = o
                 created.append(a)
                 scope = new
+            elif name in ("$search", "$searchMeta", "$vectorSearch"):
+                search_paths(body, name)
+                if name == "$vectorSearch" and isinstance(body.get("filter"), dict):
+                    filt(body["filter"], scope)
+                if name == "$searchMeta":
+                    scope = {"count": None, "facet": None}
             elif name == "$count":
                 scope = {body: None}
                 created.append(body)
@@ -1556,6 +1688,7 @@ def analyze_plan(plan: dict, sch: Schema, coll: Coll) -> dict:
 
     op = plan.get("op")
     base = root_scope(coll)
+    base_scope = base
     if op in ("find", "findOne", "countDocuments", "deleteOne", "deleteMany", "updateOne", "updateMany", "distinct"):
         if plan.get("filter"):
             filt(plan["filter"], base)
@@ -1571,9 +1704,432 @@ def analyze_plan(plan: dict, sch: Schema, coll: Coll) -> dict:
                     ref(k, base)
     elif op == "aggregate":
         pipeline(plan["pipeline"], base)
+    elif op == "createIndex":
+        for k in plan.get("keys") or {}:
+            ref(k, base)
+        opts = plan.get("options") or {}
+        if isinstance(opts.get("partialFilterExpression"), dict):
+            filt(opts["partialFilterExpression"], base)
+        for k in opts.get("weights") or {}:
+            ref(k, base)
+    elif op == "dropIndex":
+        if isinstance(plan.get("index"), dict):
+            for k in plan["index"]:
+                ref(k, base)
+    elif op == "getIndexes":
+        pass
     else:
         missing.append("op:" + str(op))
     return {"used": sorted(used), "created": sorted(set(created)), "missing": missing}
+
+
+# --------------------------------------------------------------------------- categorias extras (spec §4.3, distribuicao alvo)
+# atlas_search ($search/$searchMeta/$vectorSearch; so validacao ESTATICA), json_ejson (modo Agregacao/EJSON, JSON puro),
+# indexes (createIndex/dropIndex/getIndexes/explain: texto de FIM, nunca executado) e dsl (conexoes/ConnectionPool/ENV/cursores).
+
+EXTRA_CATEGORIES = ("atlas_search", "json_ejson", "indexes", "dsl")
+OPERATOR_TAGS = {"regex", "nin", "exists", "null", "all", "size", "elem", "not", "or", "and", "expr", "mod", "type", "empty"}
+VECTOR_FILTER_TAGS = {"eq", "in", "ne", "nin", "cmp", "range"}   # operadores aceitos no filter de $vectorSearch
+EXEC_LIVE, EXEC_STATIC, EXEC_WRITE = "live", "skipped_static", "skipped_write"
+
+
+def category_of(op: str, tags: list[str]) -> str:
+    if op == "aggregate":
+        return "aggregation"
+    if op in ("find", "findOne", "countDocuments", "distinct") and (OPERATOR_TAGS & set(tags) or any(t.startswith("elem_") for t in tags)):
+        return "operators"
+    return "crud"
+
+
+def _paths(scope: dict, pred) -> list[str]:
+    return [p for p, f in scope.items() if p != "_id" and pred(f)]
+
+
+class Extras:
+    """Construtores das categorias extras sobre um Builder (mesmo rng/schema/colecao)."""
+
+    def __init__(self, b: Builder):
+        self.b, self.rng, self.coll = b, b.rng, b.coll
+        self.scope = b.root_scope()
+        self.used: list[str] = []
+        self.tags: list[str] = []
+        self.created: list[str] = []
+        self.synthetic = False
+        sc = self.scope
+        self.str_f = _paths(sc, lambda f: f.leaf_t == "string")
+        self.num_f = _paths(sc, lambda f: f.t in NUMERIC and not f.via_array)
+        self.date_f = _paths(sc, lambda f: f.t == "date" and not f.via_array)
+        self.bool_f = _paths(sc, lambda f: f.t == "bool" and not f.via_array)
+        self.oid_f = _paths(sc, lambda f: f.t == "objectid" and not f.via_array)
+        self.scal_f = _paths(sc, lambda f: f.t in SCALAR and not f.via_array)
+        self.any_f = _paths(sc, lambda f: f.t in SCALAR or f.t == "array")
+
+    def use(self, p: str) -> str:
+        if p not in self.used:
+            self.used.append(p)
+        return p
+
+    # ---------------------------------------------------------------- atlas search
+    def term(self, p: str) -> str:
+        s = self.b.sample(self.scope[p])
+        if not isinstance(s, str) or not s.strip():
+            s = self.rng.choice(WORDS)
+        words = s.split()
+        return self.rng.choice(words) if words else s
+
+    def leaf_op(self):
+        """Operador folha de Atlas Search: (nome, corpo, tag) ou None."""
+        rng, b = self.rng, self.b
+        kinds = []
+        if self.str_f:
+            kinds += [("text", 5), ("phrase", 2), ("autocomplete", 2), ("wildcard", 1), ("regex", 1), ("queryString", 1), ("in", 1)]
+        if self.num_f or self.date_f:
+            kinds += [("range", 3), ("near", 1)]
+        if self.bool_f or self.oid_f or self.num_f or self.str_f:
+            kinds += [("equals", 2)]
+        if self.any_f:
+            kinds += [("exists", 1)]
+        if not kinds:
+            return None
+        k = rng.choices([x for x, _ in kinds], weights=[w for _, w in kinds])[0]
+        if k in ("text", "phrase", "autocomplete", "wildcard", "regex", "queryString"):
+            p = self.use(rng.choice(self.str_f))
+            path: object = p
+            if k == "text" and len(self.str_f) > 1 and rng.random() < 0.25:
+                path = [p, self.use(rng.choice([x for x in self.str_f if x != p]))]
+            t = self.term(p)
+            if k == "text":
+                body = {"query": t, "path": path}
+                if rng.random() < 0.25:
+                    body["fuzzy"] = {"maxEdits": rng.choice([1, 2])}
+            elif k == "phrase":
+                body = {"query": f"{t} {self.term(p)}", "path": path}
+                if rng.random() < 0.3:
+                    body["slop"] = rng.choice([1, 2])
+            elif k == "autocomplete":
+                body = {"query": t[:max(2, min(len(t), rng.randint(2, 4)))], "path": path}
+                if rng.random() < 0.3:
+                    body["tokenOrder"] = "sequential"
+            elif k == "wildcard":
+                body = {"query": t[:max(2, len(t) // 2)] + "*", "path": path, "allowAnalyzedField": True}
+            elif k == "regex":
+                body = {"query": "(.*)" + re.escape(t[:max(2, len(t) // 2)]) + "(.*)", "path": path, "allowAnalyzedField": True}
+            else:
+                body = {"defaultPath": p, "query": t}
+            return k, body, k
+        if k == "range":
+            if self.date_f and (not self.num_f or rng.random() < 0.45):
+                p = self.use(rng.choice(self.date_f))
+            else:
+                p = self.use(rng.choice(self.num_f))
+            a, c = sorted([b.sample(self.scope[p]), b.sample(self.scope[p])],
+                          key=lambda x: x.val if isinstance(x, Ctor) and x.kind == "date" else (float(x.val) if isinstance(x, Ctor) else float(x)))
+            if rng.random() < 0.3:
+                return k, {"path": p, rng.choice(["gt", "gte"]): a}, k
+            return k, {"path": p, rng.choice(["gt", "gte"]): a, rng.choice(["lt", "lte"]): c}, k
+        if k == "near":
+            p = self.use(rng.choice(self.date_f or self.num_f))
+            f = self.scope[p]
+            pivot = rng.choice([86400000, 604800000]) if f.t == "date" else rng.choice([5, 10, 100])
+            return k, {"path": p, "origin": b.sample(f), "pivot": pivot}, k
+        if k == "equals":
+            pool = self.bool_f + self.oid_f + self.num_f
+            p = self.use(rng.choice(pool or self.str_f))
+            return k, {"path": p, "value": b.sample(self.scope[p])}, k
+        if k == "in":
+            p = self.use(rng.choice(self.str_f))
+            return k, {"path": p, "value": [b.sample(self.scope[p]) for _ in range(rng.randint(2, 3))]}, k
+        p = self.use(rng.choice(self.any_f))   # exists
+        return k, {"path": p}, "exists"
+
+    def operator(self):
+        rng = self.rng
+        if rng.random() < 0.30:
+            clauses: dict = {}
+            names: list[str] = []
+            for clause, w in (("must", 5), ("should", 3), ("mustNot", 1), ("filter", 3)):
+                if rng.random() < w / 6:
+                    items = []
+                    for _ in range(rng.randint(1, 2)):
+                        lo = self.leaf_op()
+                        if lo:
+                            items.append({lo[0]: lo[1]})
+                    if items:
+                        clauses[clause] = items
+                        names.append(clause)
+            if not clauses:
+                lo = self.leaf_op()
+                if lo is None:
+                    return None
+                clauses["must"] = [{lo[0]: lo[1]}]
+                names = ["must"]
+            if "should" in clauses and rng.random() < 0.5:
+                clauses["minimumShouldMatch"] = 1
+            self.tags.append("compound." + "+".join(sorted(names)))
+            return "compound", clauses
+        lo = self.leaf_op()
+        if lo is None:
+            return None
+        self.tags.append(lo[2])
+        return lo[0], lo[1]
+
+    def index_name(self):
+        rng = self.rng
+        r = rng.random()
+        if r < 0.4:
+            return None
+        if r < 0.7:
+            return "default"
+        return rng.choice([f"{self.coll.name}_search", f"{self.coll.name}-idx", "search_index"])
+
+    def tail_stages(self, score_meta: str) -> list[dict]:
+        rng, out = self.rng, []
+        if rng.random() < 0.15 and self.scal_f:
+            p = rng.choice(self.scal_f)
+            val, tag = self.b.cond(p, self.scope[p])
+            if tag in VECTOR_FILTER_TAGS or tag == "exists":
+                out.append({"$match": {self.use(p): val}})
+                self.tags.append("match")
+        if rng.random() < 0.35:
+            fields = rng.sample(self.scal_f, min(len(self.scal_f), rng.randint(1, 3))) if self.scal_f else []
+            pr: dict = {self.use(f): 1 for f in fields}
+            if rng.random() < 0.6 or not pr:
+                pr["score"] = {"$meta": score_meta}
+                self.created.append("score")
+            if rng.random() < 0.3 and "_id" not in pr:
+                pr["_id"] = 0
+            out.append({"$project": pr})
+            self.tags.append("project")
+        if rng.random() < 0.55:
+            out.append({"$limit": rng.choice([5, 10, 20, 50])})
+            self.tags.append("limit")
+        return out
+
+    def build_atlas(self) -> dict:
+        rng = self.rng
+        r = rng.random()
+        if r < 0.14 and (self.str_f or self.num_f):
+            return self.build_search_meta()
+        if r < 0.30:
+            return self.build_vector()
+        op = self.operator()
+        if op is None:
+            raise ValueError("sem campos para $search")
+        body: dict = {}
+        ix = self.index_name()
+        if ix:
+            body["index"] = ix
+        body[op[0]] = op[1]
+        if rng.random() < 0.12:
+            body["count"] = {"type": "total"}
+            self.tags.append("count")
+        if rng.random() < 0.10 and self.str_f:
+            body["highlight"] = {"path": self.use(rng.choice(self.str_f))}
+            self.tags.append("highlight")
+        stages: list[dict] = [{"$search": body}] + self.tail_stages("searchScore")
+        self.tags.insert(0, "search")
+        return {"op": "aggregate", "pipeline": stages}
+
+    def build_search_meta(self) -> dict:
+        rng = self.rng
+        body: dict = {}
+        ix = self.index_name()
+        if ix:
+            body["index"] = ix
+        op = self.operator()
+        facets: dict = {}
+        if rng.random() < 0.5:
+            if self.str_f:
+                p = self.use(rng.choice(self.str_f))
+                facets[p.replace(".", "_") + "Facet"] = {"type": "string", "path": p, "numBuckets": rng.choice([3, 5, 10])}
+            if self.num_f and (not facets or rng.random() < 0.4):
+                p = self.use(rng.choice(self.num_f))
+                vals = sorted({float(x) if not isinstance(x, Ctor) else float(x.val)
+                               for x in (self.b.sample(self.scope[p]) for _ in range(6))})
+                if len(vals) >= 2:
+                    facets[p.replace(".", "_") + "Buckets"] = {"type": "number", "path": p, "boundaries": vals[:4], "default": "other"}
+        if facets:
+            fb: dict = {}
+            if op:
+                fb["operator"] = {op[0]: op[1]}
+            fb["facets"] = facets
+            body["facet"] = fb
+            self.tags.append("meta.facet")
+        else:
+            body["count"] = {"type": "total"}
+            if op:
+                body[op[0]] = op[1]
+            self.tags.append("meta.count")
+        self.tags.insert(0, "searchmeta")
+        return {"op": "aggregate", "pipeline": [{"$searchMeta": body}]}
+
+    def build_vector(self) -> dict:
+        rng = self.rng
+        vec = _paths(self.scope, lambda f: f.t == "array" and f.item_t in NUMERIC and not f.via_array)
+        if vec:
+            path = self.use(rng.choice(vec))
+        else:   # campo vetorial sintetico (nao existe no schema): marcado `synthetic_vector_path`
+            path = "embedding"
+            self.synthetic = True
+        qv = [round(rng.uniform(-1, 1), 3) for _ in range(rng.choice([8, 8, 12]))]
+        body: dict = {"index": rng.choice(["vector_index", "default", f"{self.coll.name}_vector"]), "path": path, "queryVector": qv,
+                      "numCandidates": rng.choice([50, 100, 200]), "limit": rng.choice([5, 10, 20])}
+        if self.scal_f and rng.random() < 0.5:
+            p = rng.choice(self.scal_f)
+            val, tag = self.b.cond(p, self.scope[p])
+            if tag in VECTOR_FILTER_TAGS:
+                body["filter"] = {self.use(p): val}
+                self.tags.append("filter")
+        stages: list[dict] = [{"$vectorSearch": body}]
+        if rng.random() < 0.5:
+            fields = rng.sample(self.scal_f, min(len(self.scal_f), 2)) if self.scal_f else []
+            pr = {self.use(f): 1 for f in fields}
+            pr["score"] = {"$meta": "vectorSearchScore"}
+            self.created.append("score")
+            stages.append({"$project": pr})
+        self.tags.insert(0, "vector")
+        return {"op": "aggregate", "pipeline": stages}
+
+    # ---------------------------------------------------------------- indexes
+    def build_index(self) -> dict:
+        rng = self.rng
+        icfg = self.b.cfg["snippets"].get("indexes") or {}
+        kinds = icfg.get("kinds") or {"create": 0.62, "drop": 0.22, "create_special": 0.16}
+        names = [k for k, w in kinds.items() if w > 0]
+        k = rng.choices(names, weights=[kinds[n] for n in names])[0]
+        coll = self.coll
+        if not self.scal_f:
+            raise ValueError("sem campos escalares")
+        if k == "getIndexes":
+            self.tags.append("list")
+            return {"op": "getIndexes"}
+        if k == "explain":
+            plan = self.b.build("find")
+            plan["explain"] = rng.choice(["queryPlanner", "executionStats", "allPlansExecution"])
+            self.tags.append("explain")
+            return plan
+        if k == "drop":
+            ex = [ix for ix in coll.indexes if isinstance(ix, dict) and ix.get("keys")]
+            keys: list[tuple[str, object]] = []
+            if ex and rng.random() < 0.8:
+                ix = rng.choice(ex)
+                keys = [(str(a), d) for a, d in ix["keys"]]
+            if not keys or any(p not in self.scope for p, _ in keys):
+                keys = [(rng.choice(self.scal_f), rng.choice([1, -1]))]
+            for p, _ in keys:
+                self.use(p)
+            if rng.random() < 0.65:
+                self.tags.append("drop.name")
+                return {"op": "dropIndex", "index": "_".join(f"{p}_{d}" for p, d in keys)}
+            self.tags.append("drop.keys")
+            return {"op": "dropIndex", "index": {p: d for p, d in keys}}
+        opts: dict = {}
+        flavor = "single"
+        if k == "create_special":
+            flavor = rng.choice(["ttl", "text", "hashed", "partial", "unique", "sparse"])
+        if flavor == "ttl" and not self.date_f:
+            flavor = "unique"
+        if flavor == "text" and not self.str_f:
+            flavor = "single"
+        keys_d: dict
+        if flavor == "ttl":
+            keys_d = {self.use(rng.choice(self.date_f)): 1}
+            opts["expireAfterSeconds"] = rng.choice([3600, 86400, 604800, 2592000])
+        elif flavor == "text":
+            ps = rng.sample(self.str_f, min(len(self.str_f), rng.randint(1, 2)))
+            keys_d = {self.use(p): "text" for p in ps}
+            if rng.random() < 0.5:
+                opts["default_language"] = rng.choice(["portuguese", "english", "none"])
+            if len(ps) > 1 and rng.random() < 0.5:
+                opts["weights"] = {p: rng.choice([1, 2, 5]) for p in ps}
+        elif flavor == "hashed":
+            keys_d = {self.use(rng.choice(self.scal_f)): "hashed"}
+        else:
+            n = rng.choices([1, 2, 3], weights=[50, 40, 10])[0]
+            ps = rng.sample(self.scal_f, min(len(self.scal_f), n))
+            keys_d = {self.use(p): rng.choice([1, 1, -1]) for p in ps}
+            if len(keys_d) > 1 and flavor == "single":
+                flavor = "compound"
+        if flavor == "unique" or (flavor in ("single", "compound") and rng.random() < 0.12):
+            opts["unique"] = True
+        if flavor == "sparse" or (flavor == "single" and rng.random() < 0.06):
+            opts["sparse"] = True
+        if flavor == "partial":
+            cand = [p for p in self.scal_f if p not in keys_d]
+            if cand:
+                p = rng.choice(cand)
+                val, tag = self.b.cond(p, self.scope[p])
+                if tag in ("exists", "eq", "cmp", "range"):
+                    opts["partialFilterExpression"] = {self.use(p): val}
+                else:
+                    opts["partialFilterExpression"] = {self.use(p): {"$exists": True}}
+            else:
+                flavor = "single"
+        if rng.random() < 0.35:
+            base = "_".join(re.sub(r"[^A-Za-z0-9]+", "_", p) for p in keys_d)
+            opts["name"] = rng.choice(["idx_", "ix_", ""]) + base + rng.choice(["", "", "_asc", "_v1"])
+        plan = {"op": "createIndex", "keys": keys_d}
+        if opts:
+            plan["options"] = opts
+        self.tags.append("create." + flavor)
+        return plan
+
+    # ---------------------------------------------------------------- dsl
+    def dsl_style(self, st: Style, plan: dict) -> dict:
+        """Escolhe a forma da DSL do Console e configura `st.dsl`. Devolve metadados do registro."""
+        rng, cfg = self.rng, self.b.cfg
+        forms = (cfg["snippets"].get("dsl_forms")
+                 or {"conn": 0.28, "pool_idx": 0.20, "pool": 0.10, "sibling": 0.12, "cursor": 0.15, "log": 0.15})
+        ks = list(forms)
+        form = rng.choices(ks, weights=[forms[k] for k in ks])[0]
+        conns = (cfg.get("editor_context") or {}).get("connections") or ["dev-cluster", "Development", "Production", "local", "staging"]
+        d: dict = {"form": "conn", "conn": rng.choice(conns), "bracket": rng.random() < 0.3}
+        if form == "cursor" and plan["op"] != "find":
+            form = "log"
+        if form == "cursor":
+            if not (plan.get("sort") or plan.get("limit") is not None or plan.get("skip") is not None or st.to_array):
+                plan["limit"] = rng.choice([5, 10, 20])
+            d["cursor_var"] = rng.choice(["cursor", "cur", "result", "docs"])
+            d["form"] = rng.choice(["conn", "pool_idx", "pool", "sibling", "getCollection"])
+        elif form == "log":
+            d["log"] = True
+            d["form"] = rng.choice(["conn", "pool_idx", "sibling", "getCollection", "dot"])
+        else:
+            d["form"] = form
+        if d["form"] == "conn" and rng.random() < 0.25:
+            d["env"] = rng.choice(["DEFAULT_CONNECTION", "MONGO_CONNECTION", "CONNECTION_NAME"])
+        if d["form"] == "dot" and not (IDENT_RE.match(self.coll.name) and self.coll.name not in RESERVED_COLL):
+            d["form"] = "getCollection"
+        st.dsl = d
+        self.tags.append("dsl." + d["form"] + ("+env" if d.get("env") else "") + ("+cursor" if d.get("cursor_var") else "") +
+                         ("+log" if d.get("log") else ""))
+        return {"connection": d["conn"], "dsl_form": d["form"], "uses_env": bool(d.get("env")),
+                "cursor_var": d.get("cursor_var"), "console_log": bool(d.get("log"))}
+
+
+def render_json_mode(plan: dict, st: Style) -> tuple[str, list, dict]:
+    """Modo Agregacao (`json`): pipeline como JSON puro/Extended JSON. Sem db./sem ;/sem comentarios."""
+    st.q, st.unquoted, st.semicolon = '"', False, False
+    w = Writer()
+    R = Renderer(st, w)
+    i = w.open("stmt")
+    R.arr(to_ej(plan["pipeline"]), 0, False, stages=True)   # EJSON puro ({"$oid": ...}), nunca ObjectId(...)
+    w.close(i)
+    return w.text(), w.spans, {"root_form": "json", "extracted": None}
+
+
+def has_ejson(v) -> bool:
+    if isinstance(v, Ctor):
+        return True
+    if isinstance(v, dict):
+        return any(has_ejson(x) for x in v.values())
+    if isinstance(v, (list, tuple)):
+        return any(has_ejson(x) for x in v)
+    return False
+
+
+def static_fields_missing(used: list[str], coll: Coll, synthetic_ok: set[str] = frozenset()) -> list[str]:
+    return [p for p in used if p not in coll.fields and p not in synthetic_ok]
 
 
 # --------------------------------------------------------------------------- driver
@@ -1606,11 +2162,27 @@ def template_id_for(op: str, tags: list[str], plan: dict) -> str:
 
 
 READ_OPS = {"find", "findOne", "aggregate", "countDocuments", "distinct"}
+DSL_OPS = (("find", 0.50), ("aggregate", 0.30), ("countDocuments", 0.12), ("distinct", 0.08))
+
+
+def pick_extra_category(index: int, cfg: dict) -> str | None:
+    """Categoria extra do snippet `index` (None = categorias base). RNG proprio: nao perturba o fluxo base."""
+    ex = cfg["snippets"].get("extra_categories") or {}
+    if not ex:
+        return None
+    r = random.Random(f"{cfg.get('seed', 20261008)}:snipcat:{index}").random()
+    acc = 0.0
+    for k in EXTRA_CATEGORIES:
+        acc += float(ex.get(k, 0) or 0)
+        if r < acc:
+            return k
+    return None
 
 
 def gen_one(index: int, schemas: list[Schema], cfg: dict, seen: set) -> dict | None:
     sc = cfg["snippets"]
     seed = cfg.get("seed", 20261008)
+    forced = pick_extra_category(index, cfg)
     rej = {"field_check": 0, "dup": 0, "long": 0}
     for attempt in range(12):
         rng = random.Random(f"{seed}:snip:{index}:{attempt}")
@@ -1619,42 +2191,91 @@ def gen_one(index: int, schemas: list[Schema], cfg: dict, seen: set) -> dict | N
         kinds = list(sc["kinds"])
         kind = rng.choices(kinds, weights=[sc["kinds"][k] for k in kinds])[0]
         b = Builder(rng, sch, coll, cfg)
+        ex: Extras | None = None
+        st = Style(rng, cfg)
+        meta: dict = {}
         try:
-            plan = b.build(kind)
+            if forced == "atlas_search":
+                ex = Extras(b)
+                plan = ex.build_atlas()
+            elif forced == "indexes":
+                ex = Extras(b)
+                plan = ex.build_index()
+            elif forced == "dsl":
+                ex = Extras(b)
+                plan = b.build(rng.choices([o for o, _ in DSL_OPS], weights=[w for _, w in DSL_OPS])[0])
+                meta = ex.dsl_style(st, plan)
+            elif forced == "json_ejson":
+                plan = b.build("aggregate")
+                if not has_ejson(plan):
+                    continue
+            else:
+                plan = b.build(kind)
         except Exception:
             continue
-        # plano EJSON para analise e execucao
         ej = to_ej(plan)
-        an = analyze_plan(ej, sch, coll)
+        if forced in ("atlas_search", "indexes"):
+            missing = static_fields_missing(ex.used, coll, {"embedding"} if ex.synthetic else set())
+            an = {"missing": missing, "used": sorted(ex.used), "created": sorted(set(ex.created))}
+            if forced == "atlas_search":
+                meta["synthetic_vector_path"] = ex.synthetic
+        else:
+            an = analyze_plan(ej, sch, coll)
         if an["missing"]:
             rej["field_check"] += 1
             continue
-        st = Style(rng, cfg)
-        text, spans, info = render_snippet(plan, sch, coll, st, rng)
+        if forced == "json_ejson":
+            text, spans, info = render_json_mode(plan, st)
+        else:
+            text, spans, info = render_snippet(plan, sch, coll, st, rng)
         if len(text) > sc.get("max_chars", 1800):
             rej["long"] += 1
             continue
-        norm = (sch.full_id, coll.key, re.sub(r"\s+", "", text.replace("'", '"')))
+        # chave de unicidade em hash de 64 bits (com ~1 M+ de snippets guardar o texto inteiro custa GBs)
+        norm = hashlib.blake2b(("%s%s%s" % (sch.full_id, coll.key, re.sub(r"\s+", "", text.replace("'", '"')))).encode("utf-8"),
+                               digest_size=8).digest()
         if norm in seen:
             rej["dup"] += 1
             continue
         seen.add(norm)
-        tid = template_id_for(plan["op"], b.tags, plan)
+        op = plan["op"]
+        if forced in ("atlas_search", "indexes"):
+            tid = ("atlas." if forced == "atlas_search" else "idx.") + ".".join(dict.fromkeys(ex.tags))
+            if forced == "indexes" and op == "find":
+                tid = "idx.explain." + template_id_for("find", b.tags, plan)
+        elif forced == "dsl":
+            tid = "dsl." + ex.tags[-1].split(".", 1)[1].replace("+", "_") + "." + template_id_for(op, b.tags, plan)
+        elif forced == "json_ejson":
+            tid = "json." + template_id_for(op, b.tags, plan)
+        else:
+            tid = template_id_for(op, b.tags, plan)
         group_id = f"{sch.full_id}::{tid}"
         holdout = sch.holdout or sch.domain in set(cfg.get("holdout_domains", []))
-        return {
+        if op in ("createIndex", "dropIndex"):
+            exec_mode, rkind = EXEC_WRITE, "write"
+        elif forced in ("atlas_search", "indexes"):
+            exec_mode, rkind = EXEC_STATIC, "read"
+        elif op in READ_OPS:
+            exec_mode, rkind = EXEC_LIVE, "read"
+        else:
+            exec_mode, rkind = EXEC_WRITE, "write"
+        category = forced or category_of(op, b.tags)
+        rec = {
             "id": f"snip-{sch.domain}.{sch.schema_id}.{coll.key.replace(' ', '_')}-{index:06d}",
-            "kind": "read" if plan["op"] in READ_OPS else "write",
-            "op": plan["op"],
-            "dialect": "console",
+            "kind": rkind,
+            "op": op,
+            "category": category,
+            "exec_mode": exec_mode,
+            "dialect": "json" if forced == "json_ejson" else "console",
             "domain": sch.domain,
             "schema_id": sch.full_id,
+            "split_role": sch.split_role,
             "db": sch.db_name,
             "collection": coll.name,
             "template_id": tid,
             "group_id": group_id,
             "split_key": split_key(group_id),
-            "split": assign_split(group_id, sch.domain, tid, cfg, holdout),
+            "split": assign_split(group_id, sch.domain, tid, cfg, holdout, sch.split_role),
             "holdout": holdout,
             "text": text,
             "spans": spans,
@@ -1664,6 +2285,9 @@ def gen_one(index: int, schemas: list[Schema], cfg: dict, seen: set) -> dict | N
             "style": {"layout": st.layout, "quote": st.q, "indent": len(st.indent), "crlf": st.nl == "\r\n",
                       "root_form": info["root_form"], "extracted": info["extracted"], "date_form": st.date_form},
         }
+        if meta:
+            rec["extra"] = meta
+        return rec
     return None
 
 
@@ -1678,15 +2302,18 @@ def blind_clean(record: dict, text: str) -> bool:
     return True
 
 
-def generate(cfg: dict, schemas: list[Schema], count: int | None = None) -> list[dict]:
+def generate_iter(cfg: dict, schemas: list[Schema], count: int | None = None):
+    """Gera snippets em streaming (sem materializar a lista); mesma sequencia/seed de `generate`."""
     count = count or cfg["snippets"]["count"]
     seen: set = set()
-    out = []
     for i in range(count):
         r = gen_one(i, schemas, cfg, seen)
         if r and blind_clean(r, r["text"]):
-            out.append(r)
-    return out
+            yield r
+
+
+def generate(cfg: dict, schemas: list[Schema], count: int | None = None) -> list[dict]:
+    return list(generate_iter(cfg, schemas, count))
 
 
 def main(argv=None):
@@ -1711,20 +2338,24 @@ def main(argv=None):
         schemas = [s for s in schemas if (s.domain, s.schema_id) in seeded]
     if not schemas:
         raise SystemExit("nenhum schema em data/schemas")
-    recs = generate(cfg, schemas, a.count)
     out = Path(a.out) if a.out else ROOT / cfg.get("out_dir", "data/generated") / ver / "snippets.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     h = hashlib.sha256()
-    with open(out, "w", encoding="utf-8", newline="\n") as f:
-        for r in recs:
+    by_op: dict = {}
+    by_cat: dict = {}
+    by_split = {s: 0 for s in ("train", "val", "test", "bench")}
+    n = 0
+    with open(out, "w", encoding="utf-8", newline="\n") as f:       # streaming: nunca carrega todos os snippets
+        for r in generate_iter(cfg, schemas, a.count):
             line = json.dumps(r, ensure_ascii=False, separators=(",", ":"))
             f.write(line + "\n")
             h.update(line.encode("utf-8"))
-    by_op: dict = {}
-    for r in recs:
-        by_op[r["op"]] = by_op.get(r["op"], 0) + 1
-    manifest = {"seed": cfg["seed"], "count": len(recs), "requested": a.count or cfg["snippets"]["count"], "sha256": h.hexdigest(),
-                "by_op": by_op, "schemas": len(schemas), "splits": {s: sum(1 for r in recs if r["split"] == s) for s in ("train", "val", "test", "bench")}}
+            n += 1
+            by_op[r["op"]] = by_op.get(r["op"], 0) + 1
+            by_cat[r.get("category")] = by_cat.get(r.get("category"), 0) + 1
+            by_split[r["split"]] = by_split.get(r["split"], 0) + 1
+    manifest = {"seed": cfg["seed"], "count": n, "requested": a.count or cfg["snippets"]["count"], "sha256": h.hexdigest(),
+                "by_op": by_op, "by_category": by_cat, "schemas": len(schemas), "splits": by_split}
     (out.parent / "snippets.manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print(json.dumps(manifest))
 

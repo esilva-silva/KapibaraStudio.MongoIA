@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import blind_guard  # noqa: E402
 import render_contract as rc  # noqa: E402
+from jsonl_shards import iter_jsonl, resolve_inputs  # noqa: E402
 
 ROOT = rc.ROOT
 
@@ -58,8 +59,11 @@ def main(argv=None):
     a = ap.parse_args(argv)
     src = Path(a.src) if a.src else ROOT / "data" / "generated" / a.ver / "fim_ctx.jsonl"
     blind_guard.check_path(src)
-    rows = [json.loads(l) for l in open(src, encoding="utf-8") if l.strip()]
-    chosen = select(rows, a.n, a.seed)
+    files = resolve_inputs(src)          # arquivo unico ou shards fim_ctx-00000.jsonl (v2: ~1,5 M de registros -> 2 passadas)
+    light = [{"id": r["id"], "context_kind": r["context_kind"]} for r in iter_jsonl(files)]
+    want = {r["id"] for r in select(light, a.n, a.seed)}
+    del light
+    chosen = sorted((r for r in iter_jsonl(files) if r["id"] in want), key=lambda r: r["id"])
     tok = rc.Tokenizer(a.tokenizer)
     try:
         tok_label = Path(a.tokenizer).resolve().relative_to(ROOT).as_posix()

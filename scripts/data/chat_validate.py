@@ -40,6 +40,9 @@ EXPR_OPS = {"$multiply", "$add", "$subtract", "$divide", "$round", "$toUpper", "
             "$ceil", "$floor", "$mod", "$switch", "$isArray", "$dayOfWeek", "$hour", "$substr", "$trim", "$split",
             "$filter", "$map", "$reduce", "$toDate", "$toDouble", "$strLenCP", "$max", "$min"}
 KNOWN_OPS = QUERY_OPS | ACC_OPS | EXPR_OPS | vs.ALLOWED_STAGES | EJSON_KEYS | {"$expr", "$group", "$unwind"}
+# Atlas Search (ciclo 2): so documentos FIM (allow_atlas=True); nunca executados (vs.FORBIDDEN_KEYS os bloqueia no driver).
+ATLAS_STAGES = {"$search", "$searchMeta", "$vectorSearch"}
+ATLAS_OPS = ATLAS_STAGES | {"$meta"}
 # chaves de estagio com argumentos nao-operador (nao sao operadores)
 NUM_T = {"int32", "int64", "double", "decimal128"}
 
@@ -126,6 +129,24 @@ class Bound:
         self.obj, self.name = obj, name
 
 
+class Conn:
+    """`getConnection("nome")` / `getConnection(ENV.get("X"))` (global do Console)."""
+
+    def __init__(self, name):
+        self.name = name
+
+
+class DbRef:
+    """Banco nomeado: `getConnection(c).getDatabase("b")` (via=conn) ou `db.getSiblingDB("b")` (via=sibling)."""
+
+    def __init__(self, database, conn=None, via="sibling"):
+        self.database, self.conn, self.via = database, conn, via
+
+
+class ConsoleObj:
+    """Global `console` (so `console.log(<consulta>)`, que devolve o proprio valor)."""
+
+
 class Parser:
     def __init__(self, text: str):
         self.t = tokenize(text)
@@ -184,10 +205,24 @@ class Parser:
                 return self.ctor("Date")
             if self.at("(") and v in ("ObjectId", "ISODate", "NumberLong", "NumberDecimal", "UUID", "Date"):
                 return self.ctor(v)
+            if v == "ENV" and self.at("."):
+                return self.env_get()
             if v in self.env and self.env[v][0] == "val":
                 return self.env[v][1]
             raise ChatParseError("api", f"identificador desconhecido: {v}")
         raise ChatParseError("syntax", f"valor inesperado: {v!r}")
+
+    def env_get(self):
+        """`ENV.get("NOME")`: valor simbolico (texto `ENV:NOME`); a API de ENV alem de `get` nao esta especificada."""
+        self.expect(".")
+        k, name = self.take()
+        if k != "id" or name != "get":
+            raise ChatParseError("api", f"ENV.{name}: so ENV.get(nome) e suportado")
+        args = self.args()
+        if len(args) != 1 or not isinstance(args[0], str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", args[0]):
+            raise ChatParseError("api", "ENV.get exige o nome da variavel (texto)")
+        self.meta["uses_env"] = True
+        return "ENV:" + args[0]
 
     def ctor(self, name):
         self.expect("(")
@@ -278,9 +313,13 @@ class Parser:
             return Db()
         if v == "ConnectionPool":
             return Pool([])
+        if v == "getConnection":
+            return Bound(None, "getConnection")
+        if v == "console":
+            return ConsoleObj()
         if v in self.env:
             kind, val = self.env[v]
-            if kind == "coll":
+            if kind in ("coll", "cur", "obj"):
                 return val
             raise ChatParseError("api", f"{v} nao e uma colecao")
         raise ChatParseError("api", f"identificador desconhecido: {v}")
@@ -305,14 +344,42 @@ class Parser:
             elif k == "p" and v == "(":
                 if not isinstance(obj, Bound):
                     raise ChatParseError("syntax", "chamada sobre valor que nao e funcao")
-                obj = self.call(obj, self.args())
+                if isinstance(obj.obj, ConsoleObj):
+                    obj = self.console_log()
+                else:
+                    obj = self.call(obj, self.args())
             else:
                 break
         return obj
 
+    def console_log(self):
+        """`console.log(<consulta>)`: o argumento e uma cadeia de consulta; o valor do statement e o da consulta."""
+        self.expect("(")
+        if self.at(")"):
+            raise ChatParseError("api", "console.log exige a consulta como argumento")
+        inner = self.chain()
+        self.expect(")")
+        if not isinstance(inner, Cur):
+            raise ChatParseError("api", "console.log(...) deve envolver uma consulta")
+        return inner
+
     def member(self, obj, name, via_dot):
-        if isinstance(obj, Db):
+        if isinstance(obj, ConsoleObj):
+            if via_dot and name == "log" and self.at("("):
+                return Bound(obj, name)
+            raise ChatParseError("api", f"console.{name} nao suportado (so console.log)")
+        if isinstance(obj, Conn):
+            if via_dot and name == "getDatabase" and self.at("("):
+                return Bound(obj, name)
+            raise ChatParseError("api", f"metodo de conexao nao suportado: {name}")
+        if isinstance(obj, DbRef):
             if via_dot and name == "getCollection" and self.at("("):
+                return Bound(obj, name)
+            if via_dot and self.at("("):
+                raise ChatParseError("api", f"metodo de banco nao suportado: {name}")
+            return Coll(name, obj.via, obj.conn, obj.database)
+        if isinstance(obj, Db):
+            if via_dot and name in ("getCollection", "getSiblingDB") and self.at("("):
                 return Bound(obj, name)
             if via_dot and self.at("(") :
                 raise ChatParseError("api", f"metodo de banco nao suportado no chat: {name}")
@@ -334,7 +401,23 @@ class Parser:
 
     def call(self, b: Bound, args):
         o, name = b.obj, b.name
+        if o is None and name == "getConnection":
+            if len(args) != 1 or not isinstance(args[0], str):
+                raise ChatParseError("api", "getConnection exige o nome da conexao (texto ou ENV.get)")
+            return Conn(args[0])
+        if isinstance(o, Conn):
+            if len(args) != 1 or not isinstance(args[0], str):
+                raise ChatParseError("api", "getDatabase exige texto")
+            return DbRef(args[0], o.name, "conn")
+        if isinstance(o, DbRef):
+            if len(args) != 1 or not isinstance(args[0], str):
+                raise ChatParseError("api", "getCollection exige texto")
+            return Coll(args[0], o.via, o.conn, o.database)
         if isinstance(o, Db):
+            if name == "getSiblingDB":
+                if len(args) != 1 or not isinstance(args[0], str):
+                    raise ChatParseError("api", "getSiblingDB exige texto")
+                return DbRef(args[0], None, "sibling")
             if name == "getCollection" and len(args) == 1 and isinstance(args[0], str):
                 return Coll(args[0], "getCollection")
             raise ChatParseError("api", "getCollection exige texto")
@@ -346,6 +429,8 @@ class Parser:
                 raise ChatParseError("api", f"metodo inexistente no Console: {name}")
             return Cur(self.build(name, args), terminal=name not in ("find", "aggregate"))
         if isinstance(o, Cur):
+            if name == "hint":
+                raise ChatParseError("api", "hint: indice inexistente ou fora do subconjunto do Console")
             if name not in CURSOR_METHODS:
                 raise ChatParseError("api", f"metodo de cursor inexistente no Console: {name}")
             if o.terminal:
@@ -408,11 +493,16 @@ class Parser:
                 self.expect("=")
                 save = self.i
                 k3, v3 = self.peek()
-                if k3 == "id" and (v3 in ("db", "ConnectionPool") or (v3 in self.env and self.env[v3][0] == "coll")):
+                if k3 == "id" and (v3 in ("db", "ConnectionPool", "getConnection") or (v3 in self.env and self.env[v3][0] in ("coll", "obj"))):
                     c = self.chain()
-                    if not isinstance(c, Coll):
-                        raise ChatParseError("api", "variavel deve guardar uma colecao")
-                    self.env[name] = ("coll", c)
+                    if isinstance(c, Coll):
+                        self.env[name] = ("coll", c)
+                    elif isinstance(c, (Conn, DbRef)):
+                        self.env[name] = ("obj", c)         # `const c = getConnection("x")` / `const d = db.getSiblingDB("y")`
+                    elif isinstance(c, Cur) and not c.terminal:
+                        self.env[name] = ("cur", c)       # cursor em variavel: `const cur = db.c.find(..); cur.sort(..).toArray()`
+                    else:
+                        raise ChatParseError("api", "variavel deve guardar uma colecao ou um cursor")
                 else:
                     self.env[name] = ("val", self.value())
             else:
@@ -520,17 +610,201 @@ def walk_keys(v, fn, depth=0):
             walk_keys(x, fn, depth + 1)
 
 
-def check_ops(plan: dict):
+def check_ops(plan: dict, allow_atlas: bool = False):
     bad = []
+    known = (KNOWN_OPS | ATLAS_OPS) if allow_atlas else KNOWN_OPS
 
     def fn(k):
-        if k.startswith("$") and k not in KNOWN_OPS:
+        if k.startswith("$") and k not in known:
             bad.append(k)
     walk_keys(plan.get("filter"), fn)
     walk_keys(plan.get("pipeline"), fn)
     if bad:
         return "api", f"operador/estagio inexistente: {bad[0]}"
     return None
+
+
+def check_atlas(plan: dict):
+    """Regras estaticas do Atlas Search (sem servidor): estagio de busca so como 1o estagio e uma vez; `$vectorSearch` exige
+    index, path, queryVector numerico, limit e numCandidates (ou exact). (stage, mensagem) ou None."""
+    if plan.get("op") != "aggregate":
+        return None
+    stages = plan.get("pipeline") or []
+    for i, st in enumerate(stages):
+        if not (isinstance(st, dict) and len(st) == 1):
+            continue
+        (name, b), = st.items()
+        if name not in ATLAS_STAGES:
+            continue
+        if i != 0:
+            return "api", f"{name} so pode ser o primeiro estagio do pipeline"
+        if not isinstance(b, dict):
+            return "api", f"{name} exige objeto"
+        if name == "$vectorSearch":
+            miss = [k for k in ("index", "path", "queryVector", "limit") if k not in b]
+            if miss or not ("numCandidates" in b or b.get("exact") is True):
+                return "api", f"$vectorSearch sem {miss or ['numCandidates/exact']}"
+            qv = b["queryVector"]
+            if not (isinstance(qv, list) and qv and all(_is_num(x) for x in qv)):
+                return "api", "$vectorSearch.queryVector deve ser lista numerica"
+    return None
+
+
+def parse_json_pipeline(text: str) -> tuple[dict, dict]:
+    """Modo Agregacao (`dialect: json`): JSON/Extended JSON puro (array de estagios). Sem db., sem `;`, sem comentarios."""
+    try:
+        v = json.loads(text)
+    except ValueError as e:
+        raise ChatParseError("syntax", f"JSON invalido: {e}") from None
+    if not isinstance(v, list) or not v:
+        raise ChatParseError("api", "modo json exige um array de estagios")
+
+    def chk(x, depth=0):
+        if depth > 40:
+            raise ChatParseError("syntax", "profundidade")
+        if isinstance(x, dict):
+            if len(x) == 1:
+                (k, a), = x.items()
+                if k == "$oid" and not (isinstance(a, str) and OID_RE.match(a)):
+                    raise ChatParseError("api", f"$oid invalido: {a!r}")
+                if k == "$date" and not (isinstance(a, str) and ISO_RE.match(a)):
+                    raise ChatParseError("api", f"$date invalido: {a!r}")
+                if k == "$numberLong" and not (isinstance(a, str) and re.match(r"^-?\d+$", a)):
+                    raise ChatParseError("api", f"$numberLong invalido: {a!r}")
+                if k == "$numberDecimal" and not (isinstance(a, str) and NUM_STR_RE.match(a)):
+                    raise ChatParseError("api", f"$numberDecimal invalido: {a!r}")
+                if k == "$uuid" and not (isinstance(a, str) and UUID_RE.match(a)):
+                    raise ChatParseError("api", f"$uuid invalido: {a!r}")
+            for a in x.values():
+                chk(a, depth + 1)
+        elif isinstance(x, list):
+            for a in x:
+                chk(a, depth + 1)
+    chk(v)
+    return {"op": "aggregate", "pipeline": v}, {"collection": None, "root_form": "json", "connection": None, "database": None}
+
+
+# --------------------------------------------------------------------------- estrutura (erros que o servidor rejeitaria)
+
+FILTER_NON_FIELD_OPS = {"$and", "$or", "$nor", "$expr", "$text", "$comment", "$jsonSchema"}
+FILTER_FIELD_OPS = QUERY_OPS - FILTER_NON_FIELD_OPS | {"$geoWithin", "$near", "$nearSphere", "$geoIntersects", "$bitsAllSet",
+                                                        "$bitsAnySet", "$bitsAllClear", "$bitsAnyClear", "$comment"}
+GROUP_ACC_OPS = ACC_OPS | {"$mergeObjects", "$top", "$bottom", "$topN", "$bottomN", "$firstN", "$lastN", "$maxN", "$minN",
+                           "$median", "$percentile", "$concatArrays", "$setUnion"}
+
+
+def _op_dict(v) -> bool:
+    return isinstance(v, dict) and bool(v) and not (set(v) & EJSON_KEYS) and all(isinstance(k, str) and k.startswith("$") for k in v)
+
+
+def _filter_ops(flt, errs: list, depth: int = 0):
+    if not isinstance(flt, dict) or depth > 12:
+        return
+    for k, v in flt.items():
+        if k in ("$and", "$or", "$nor"):
+            if isinstance(v, list):
+                for sub in v:
+                    _filter_ops(sub, errs, depth + 1)
+        elif k == "$expr" or k in FILTER_NON_FIELD_OPS:
+            continue
+        elif k.startswith("$"):
+            errs.append(("api", f"operador no topo do filtro nao existe: {k}"))
+        elif _op_dict(v):
+            for op, a in v.items():
+                if op not in FILTER_FIELD_OPS:
+                    if op in ACC_OPS | EXPR_OPS:
+                        errs.append(("api", f"operador de agregacao fora de lugar (em filtro): {op}"))
+                    else:
+                        errs.append(("api", f"operador de consulta inexistente: {op}"))
+                elif op == "$not" and isinstance(a, dict):
+                    _filter_ops({"x": a}, errs, depth + 1)
+                elif op == "$elemMatch" and isinstance(a, dict):
+                    if _op_dict(a):
+                        _filter_ops({"x": a}, errs, depth + 1)
+                    else:
+                        _filter_ops(a, errs, depth + 1)
+
+
+def _is_num(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _projection_err(p) -> str | None:
+    if not isinstance(p, dict) or not p:
+        return None
+    inc = [k for k, v in p.items() if k != "_id" and not (v in (0, False) and not isinstance(v, str))]
+    exc = [k for k, v in p.items() if k != "_id" and (v in (0, False) and not isinstance(v, str))]
+    if inc and exc:
+        return f"projecao mista: exclusao de {exc[0]!r} em projecao de inclusao"
+    return None
+
+
+def _sort_err(srt) -> str | None:
+    if not isinstance(srt, dict):
+        return None
+    for k, d in srt.items():
+        if isinstance(d, dict) and "$meta" in d:
+            continue
+        if isinstance(d, bool) or d not in (1, -1):
+            return f"ordenacao invalida em {k!r}: use 1 ou -1"
+    return None
+
+
+def check_structure(plan: dict):
+    """Regras estaticas que o MongoDB rejeita (ou que tornam o comando sem sentido); (stage, mensagem) ou None."""
+    errs: list = []
+    op = plan.get("op")
+    if op in ("find", "findOne", "countDocuments", "distinct"):
+        _filter_ops(plan.get("filter"), errs)
+        e = _projection_err(plan.get("projection"))
+        if e:
+            errs.append(("fields", e))
+        e = _sort_err(plan.get("sort"))
+        if e:
+            errs.append(("fields", e))
+        for k in ("limit", "skip"):
+            if k in plan and (not _is_num(plan[k]) or plan[k] < 0):
+                errs.append(("fields", f"{k} deve ser inteiro nao negativo"))
+    elif op == "aggregate":
+        for st in plan.get("pipeline") or []:
+            if not (isinstance(st, dict) and len(st) == 1):
+                continue
+            (name, b), = st.items()
+            if name == "$match":
+                _filter_ops(b, errs)
+            elif name == "$group":
+                if not isinstance(b, dict) or "_id" not in b:
+                    errs.append(("fields", "a group specification must include an _id"))
+                else:
+                    for k, v in b.items():
+                        if k == "_id":
+                            continue
+                        if not (isinstance(v, dict) and len(v) == 1):
+                            errs.append(("fields", f"campo {k!r} de $group deve ser um acumulador"))
+                            break
+                        acc = next(iter(v))
+                        if acc not in GROUP_ACC_OPS:
+                            errs.append(("api", f"operador fora de lugar em $group (acumulador esperado): {acc}"))
+                            break
+            elif name == "$sort":
+                e = _sort_err(b)
+                if e:
+                    errs.append(("fields", e))
+            elif name == "$limit":
+                if not _is_num(b) or b <= 0 or int(b) != b:
+                    errs.append(("fields", "$limit deve ser inteiro positivo"))
+            elif name == "$skip":
+                if not _is_num(b) or b < 0 or int(b) != b:
+                    errs.append(("fields", "$skip deve ser inteiro nao negativo"))
+            elif name == "$project":
+                e = _projection_err(b)
+                if e:
+                    errs.append(("fields", e))
+            elif name == "$lookup":
+                if not isinstance(b, dict) or not {"from", "as"} <= set(b) or not (
+                        {"localField", "foreignField"} <= set(b) or "pipeline" in b):
+                    errs.append(("fields", "$lookup exige from, localField, foreignField e as"))
+    return errs[0] if errs else None
 
 
 def vtype(v):
@@ -677,9 +951,9 @@ def validate_text(text: str, sch, coll, executor: Executor | None, syntax_msg: s
     res["plan"], res["meta"] = plan, meta
     if meta.get("collection") != coll.name:
         return {**res, "stage": "fields", "error": f"colecao {meta.get('collection')!r} nao e {coll.name!r}"}
-    if meta.get("root_form") == "pool" and meta.get("database") != sch.schema_id:
+    if meta.get("database") is not None and meta.get("database") != sch.schema_id:
         return {**res, "stage": "fields", "error": f"banco {meta.get('database')!r} desconhecido"}
-    for chk in (check_ops(plan),):
+    for chk in (check_ops(plan), check_structure(plan)):
         if chk:
             return {**res, "stage": chk[0], "error": chk[1]}
     try:

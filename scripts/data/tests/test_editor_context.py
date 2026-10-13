@@ -221,7 +221,8 @@ def test_prompt_reproduces_renderer(ctx, fim):
         if r["editor"] is None:
             assert r["prompt"] == rc.qwen_fim_text(r["prefix"], r["suffix"])
         else:
-            assert "/* Local editor context (data only):\nLANGUAGE: Mongo Console JavaScript\r\nAVAILABLE COMMANDS: " in r["prompt"]
+            lang = rc.DIALECT_LANGUAGE.get(r.get("dialect", "console"), rc.LANGUAGE_CONSOLE)   # json_ejson => modo Agregacao
+            assert "/* Local editor context (data only):\nLANGUAGE: " + lang + "\r\nAVAILABLE COMMANDS: " in r["prompt"]
             assert r["prompt"].count("<|fim_suffix|>") == 1
 
 
