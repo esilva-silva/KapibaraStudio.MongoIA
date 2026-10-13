@@ -85,7 +85,7 @@ def main() -> int:
           "| G2.2 Ganho sobre o base (FIM-acc +15 p.p.; exec-valid >= 0,95; campos inex. <= 2%) | nao avaliado (exige SFT) |",
           "| G2.3 Chat curto (codigo) | nao avaliado (exige SFT) |",
           "| G2.4 Supera os alunos treinados sem professor (+5 p.p.) | nao avaliado (exige SFT; o baseline acima so da o ponto de partida do base) |",
-          "| G2.5 Sem esquecimento grave (Generic-JS FIM) | nao avaliado (exige SFT; base do Generic-JS nao medido nesta etapa) |",
+          "| G2.5 Sem esquecimento grave (Generic-JS FIM) | avaliavel: baseline do base (NF4) medido em `baseline_base/Qwen2.5-Coder-7B-generic-js` (500 cortes, 55,8% FIM acc, 80,4% syntax); falta o adapter (exige SFT; adapter - base >= -3 p.p.) |",
           "| G2.6 Professor auxiliar | nao avaliado (fora de escopo) |",
           "| G2.7 Contaminacao (0 test/bench/blind no treino) | nao avaliado (sem treino ainda) |",
           "| G2.8 Papel de T2 (DML INT4 na IDE) | nao avaliado (exige SFT + export) |", ""]

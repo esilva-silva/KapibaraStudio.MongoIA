@@ -47,10 +47,14 @@ LANGUAGE_BY_DIALECT = {"console": "Mongo Console JavaScript", "mongosh": "JavaSc
 
 DATA_VERSION = "v1"                       # --data-version v2c: data/validated/v2c (Fase 03 v2c; split val/test; NUNCA train)
 V2C_DIR = ROOT / "data" / "validated" / "v2c"
+GENERIC_JS_DIR = ROOT / "data" / "replay" / "v1"   # --data-version generic-js: G2.5 (500 cortes FIM de pacotes JS holdout; sem Mongo)
+GENERIC_JS_EVAL = GENERIC_JS_DIR / "generic_js_fim_eval.jsonl"
 
 
 def dataset_paths(contract_name: str) -> tuple[Path, Path]:
     """(jsonl, manifest) do contrato: editor-context-v1 usa fim_ctx.jsonl quando existe. v2c: (primeiro shard, manifest.json)."""
+    if DATA_VERSION == "generic-js":
+        return GENERIC_JS_EVAL, GENERIC_JS_DIR / "manifest.json"
     if DATA_VERSION == "v2c":
         return sorted(V2C_DIR.glob("fim-*.jsonl"))[0], V2C_DIR / "manifest.json"
     if contract_name == "editor-context-v1" and DATASET_CTX.exists():
@@ -59,6 +63,14 @@ def dataset_paths(contract_name: str) -> tuple[Path, Path]:
 
 
 def read_rows(contract_name: str, split: str | None = None) -> list[dict]:
+    if DATA_VERSION == "generic-js":
+        # conjunto Generic-JS FIM (data/replay/v1): pacotes npm holdout, nenhum no replay do treino; so autocomplete JS
+        if split != "eval":
+            raise SystemExit("generic-js: use --split eval")
+        rows = read_jsonl(GENERIC_JS_EVAL)
+        for r in rows:
+            r.setdefault("target", r["middle"])
+        return rows
     if DATA_VERSION == "v2c":
         # v2c: registros de varios shards (fim-*.jsonl, ~6 GB); le so o split pedido e so autocomplete (type fim). train e proibido.
         if split not in ("val", "test"):
@@ -198,7 +210,7 @@ def phase_gen(args, out_dir: Path) -> None:
                 pred32 = postprocess(gen.decode(tokens[:IDE_MAX_NEW_TOKENS]), row)
                 reference = row["middle"]
                 record = {"id": row["id"], "split": row["split"], "cut_kind": row["cut_kind"], "domain": row["domain"],
-                          "dialect": row["dialect"], "schema_id": row["schema_id"], "collection": row["collection"],
+                          "dialect": row["dialect"], "schema_id": row.get("schema_id"), "collection": row.get("collection"),
                           "cursor_role": row.get("cursor_role"), "prompt_tokens": len(ids), "generated_tokens": len(result["tokens"]),
                           "stop": result["stop"], "stop_token": result["tokens"][-1], "ttft_ms": round(result["ttft"] * 1000, 1),
                           "raw": raw, "prediction": pred, "prediction_ide32": pred32, "reference": reference,
@@ -228,18 +240,20 @@ def phase_gen(args, out_dir: Path) -> None:
         for key, text in (("pred", r["prediction"]), ("pred32", r["prediction_ide32"]), ("ref", r["reference"])):
             jobs.append((f"{r['id']}|{key}", (src["prefix"] + text + src["suffix"]).replace("\r\n", "\n"), syntax.kind_for(src["dialect"])))
     syntax_results = syntax.check_many(jobs)
+    generic = DATA_VERSION == "generic-js"   # sem Mongo: so syntax (node vm.Script do documento reconstruido)
     texts = {j[0]: j[1] for j in jobs}
     for r in rows:
         for key, target in (("pred", "metrics"), ("pred32", "metrics_ide32")):
             job = f"{r['id']}|{key}"
             ok = syntax_results[job][0]
-            check = validate(texts[job], r["dialect"]) if ok else None
+            check = validate(texts[job], r["dialect"]) if ok and not generic else None
             r[target]["syntax_valid"] = ok
-            r[target]["mongo_valid"] = check.valid if check and check.validatable else (False if not ok else None)
+            r[target]["mongo_valid"] = None if generic else (check.valid if check and check.validatable else (False if not ok else None))
         job = f"{r['id']}|ref"
         ok = syntax_results[job][0]
-        check = validate(texts[job], r["dialect"]) if ok else None
-        r["reference_checks"] = {"syntax_valid": ok, "mongo_valid": check.valid if check and check.validatable else (False if not ok else None)}
+        check = validate(texts[job], r["dialect"]) if ok and not generic else None
+        r["reference_checks"] = {"syntax_valid": ok, "mongo_valid": None if generic else
+                                 (check.valid if check and check.validatable else (False if not ok else None))}
     with predictions.open("w", encoding="utf-8", newline="\n") as handle:
         for r in rows:
             handle.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -404,7 +418,7 @@ def phase_report(args, out_dir: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", required=True)
-    parser.add_argument("--split", choices=["val", "test"], default="val")
+    parser.add_argument("--split", choices=["val", "test", "eval"], default="val", help="eval: so com --data-version generic-js")
     parser.add_argument("--contract", choices=CONTRACTS, default="fim-raw")
     parser.add_argument("--n", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=20261008)
@@ -415,7 +429,8 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--ids-from", help="sample_ids.json de outra execucao: amostra so dentre esses ids")
     parser.add_argument("--adapter", help="diretorio do adapter PEFT (KapiTeacher) aplicado sobre --model (NF4)")
-    parser.add_argument("--data-version", choices=["v1", "v2c"], default="v1", help="v2c: data/validated/v2c (val/test)")
+    parser.add_argument("--data-version", choices=["v1", "v2c", "generic-js"], default="v1",
+                        help="v2c: data/validated/v2c (val/test); generic-js: data/replay/v1/generic_js_fim_eval.jsonl (G2.5, --split eval, sem Mongo)")
     args = parser.parse_args()
     global DATA_VERSION
     DATA_VERSION = args.data_version
@@ -425,7 +440,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     if args.phase in ("gen", "all"):
         phase_gen(args, out_dir)
-    if args.phase == "all":
+    if args.phase == "all" and DATA_VERSION != "generic-js":   # generic-js nao tem fase de execucao (sem Mongo)
         command = [str(ENV_VENV_PY), "-I", str(Path(__file__).resolve()), "--phase", "score", "--model", args.model, "--split", args.split,
                    "--contract", args.contract, "--n", str(args.n), "--seed", str(args.seed), "--out-root", args.out_root]
         if args.ids_from:

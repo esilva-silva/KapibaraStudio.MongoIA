@@ -49,12 +49,25 @@ def main() -> int:
         st = load(a.student_summary)["headline"]
         metrics["fim_acc_vs_best_student_pp"] = round((h["normalized_match"] - st["normalized_match"]) * 100, 2)
     if a.generic_base and a.generic_adapter:
-        gb, ga = load(a.generic_base)["headline"], load(a.generic_adapter)["headline"]
-        metrics["generic_js_fim_drop_pp"] = round((gb["normalized_match"] - ga["normalized_match"]) * 100, 2)
+        # G2.5: conjunto generic_js_fim_eval (500 cortes, eval_teacher.py --data-version generic-js --split eval), MESMA amostra;
+        # delta = adapter - base em FIM acc (normalized match) e em exact match; o gate usa o normalized (como o G2.2)
+        sb, sa = load(a.generic_base), load(a.generic_adapter)
+        gb, ga = sb["headline"], sa["headline"]
+        if sb["dataset"]["sample_ids_sha256"] != sa["dataset"]["sample_ids_sha256"]:
+            notes.append("AVISO: amostras generic-js de base e adapter diferem; G2.5 invalido")
+        else:
+            metrics["generic_js_fim_delta_pp"] = round((ga["normalized_match"] - gb["normalized_match"]) * 100, 2)
+            metrics["generic_js_fim_drop_pp"] = round((gb["normalized_match"] - ga["normalized_match"]) * 100, 2)  # informativo (= -delta)
+            metrics["generic_js_exact_match_delta_pp"] = round((ga["exact_match"] - gb["exact_match"]) * 100, 2)
+            metrics["generic_js_syntax_valid_delta_pp"] = round(((ga["syntax_valid"] or 0) - (gb["syntax_valid"] or 0)) * 100, 2)
     corpus = load(a.corpus_manifest)
     ver, iso = corpus["verification"], corpus["isolation"]
     leaks = (ver["in_val_ids"] + ver["in_test_ids"] + ver["in_bench_ids"] + ver["n_issues"] + sum(iso["group_overlap_train_x_eval"].values())
              + sum(iso["schema_overlap_train_x_eval"].values()) + iso["train_records_with_wrong_role_or_holdout"])
+    rep = (corpus.get("replay") or {}).get("isolation")   # replay x generic_js_fim_eval / val-test-bench do Mongo
+    if rep:
+        leaks += (len(rep["package_overlap_with_generic_eval"]) + rep["file_sha256_overlap_with_generic_eval"]
+                  + rep["chunks_containing_eval_cut"] + rep["chunks_matching_mongo_eval_content"])
     metrics["train_eval_leak_count"] = leaks
     out = {"run_id": Path(a.adapter_summary).parent.name, "env": {}, "metrics": metrics,
            "sources": {"adapter_summary": a.adapter_summary, "base_summary": a.base_summary, "corpus_manifest_sha256": corpus.get("manifest_sha256")},

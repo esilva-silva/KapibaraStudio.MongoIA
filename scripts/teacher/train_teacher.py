@@ -213,27 +213,31 @@ def eval_val_loss(model, corpus_dir: Path, manifest: dict, device, chunk: int, h
             ex_cnt = m.sum(1).cpu().tolist()
             for k in range(n):
                 comp = meta[first + k]["component"]
-                group = "chat" if comp not in ("fim_ctx", "fim_raw", "completion") else "fim"
+                group = ("generic" if comp.startswith("replay") else "chat" if comp not in ("fim_ctx", "fim_raw", "completion") else "fim")
                 sums[group] = sums.get(group, 0.0) + ex_sum[k]
                 counts[group] = counts.get(group, 0) + ex_cnt[k]
             first += n
             heartbeat()
     model.train()
     out = {f"val_loss_{g}": round(sums[g] / counts[g], 5) for g in sums}
-    out["val_loss"] = round(sum(sums.values()) / max(1, sum(counts.values())), 5)
-    out["val_loss_tokens"] = sum(counts.values())
+    # `val_loss` (selecao do best) so Mongo (fim+chat); `val_loss_generic` = monitor generic_js (G2.5), nunca entra na selecao
+    mongo = [g for g in sums if g != "generic"]
+    out["val_loss"] = round(sum(sums[g] for g in mongo) / max(1, sum(counts[g] for g in mongo)), 5)
+    out["val_loss_tokens"] = sum(counts[g] for g in mongo)
     return out
 
 
-def eval_val_gen(model, tokenizer, corpus_dir: Path, limit: int, max_new: int, device, heartbeat) -> dict:
-    """FIM greedy no val (prompt v2c editor-context-v1): EM, normalized match, syntax (node) e mongo_valid estatico."""
+def eval_val_gen(model, tokenizer, corpus_dir: Path, limit: int, max_new: int, device, heartbeat,
+                 filename: str = "val_gen.jsonl", prefix: str = "gen") -> dict:
+    """FIM greedy no val (prompt v2c editor-context-v1): EM, normalized match, syntax (node) e mongo_valid estatico.
+    `filename=val_gen_generic.jsonl, prefix=gjs`: monitor Generic-JS (FIM cru, sem Mongo; syntax = node vm.Script do documento)."""
     import torch
     from _common import Generator
     from compact import syntax
     from compact.contracts import postprocess
     from compact.mongo_validate import validate
 
-    rows = [json.loads(line) for line in (corpus_dir / "val" / "val_gen.jsonl").read_text(encoding="utf-8").splitlines() if line][:limit]
+    rows = [json.loads(line) for line in (corpus_dir / "val" / filename).read_text(encoding="utf-8").splitlines() if line][:limit]
     if not rows:
         return {}
     gen = Generator(model, tokenizer, device)
@@ -265,12 +269,16 @@ def eval_val_gen(model, tokenizer, corpus_dir: Path, limit: int, max_new: int, d
         nm += norm(p) == norm(r["target"])
         ok = syn[str(i)][0]
         sv += ok
-        check = validate(jobs[i][1], r["dialect"]) if ok else None
+        check = validate(jobs[i][1], r["dialect"]) if ok and prefix == "gen" else None
         mv += bool(check.valid) if check is not None and check.validatable else 0
         nonempty += bool(p.strip())
     n = len(rows)
-    return {"gen_n": n, "gen_exact_match": round(em / n, 4), "gen_normalized_match": round(nm / n, 4), "gen_syntax_valid": round(sv / n, 4),
-            "gen_mongo_valid": round(mv / n, 4), "gen_nonempty": round(nonempty / n, 4), "gen_seconds": round(time.time() - started, 1)}
+    out = {f"{prefix}_n": n, f"{prefix}_exact_match": round(em / n, 4), f"{prefix}_normalized_match": round(nm / n, 4),
+           f"{prefix}_syntax_valid": round(sv / n, 4), f"{prefix}_nonempty": round(nonempty / n, 4),
+           f"{prefix}_seconds": round(time.time() - started, 1)}
+    if prefix == "gen":
+        out["gen_mongo_valid"] = round(mv / n, 4)
+    return out
 
 
 # -- principal ----------------------------------------------------------------------------------------------------------------------
@@ -479,6 +487,10 @@ def main() -> int:
             limit = ev["final_gen_examples"] if final else ev["gen_examples"]
             if limit:
                 out.update(eval_val_gen(model, tokenizer, corpus.dir, limit, ev["max_new_tokens"], device, heartbeat))
+            glimit = ev.get("final_generic_gen_examples", ev.get("generic_gen_examples", 0)) if final else ev.get("generic_gen_examples", 0)
+            if glimit and (corpus.dir / "val" / "val_gen_generic.jsonl").exists():
+                out.update(eval_val_gen(model, tokenizer, corpus.dir, glimit, ev["max_new_tokens"], device, heartbeat,
+                                        filename="val_gen_generic.jsonl", prefix="gjs"))
             out["eval_seconds"] = round(time.time() - started, 1)
             with (rep_dir / "eval_history.jsonl").open("a", encoding="utf-8", newline="\n") as handle:
                 handle.write(json.dumps(out, ensure_ascii=False) + "\n")

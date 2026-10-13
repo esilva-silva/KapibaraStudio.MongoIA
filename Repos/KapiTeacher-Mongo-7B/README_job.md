@@ -1,6 +1,6 @@
 # Job de adaptacao do KapiTeacher-Mongo-7B (SFT QLoRA, corpus v2c)
 
-Estado: **preparado e enfileirado, NAO iniciado**. Base `BaseRepos\Qwen2.5-Coder-7B` (rev. `0396a761…`), workspace
+Estado: **preparado e enfileirado, NAO iniciado** (v2c + replay de 12%, sem CPT; decisoes do usuario em §7). Base `BaseRepos\Qwen2.5-Coder-7B` (rev. `0396a761…`), workspace
 `Repos\KapiTeacher-Mongo-7B`. Spec: `docs\fase-02-professor.md` §3.3 (B), §3.6; `docs\fase-05-treinamento.md` §4, §6.2, §9.6.
 
 Python (venv ROCm do bake-off; nao instalar torch novo): `$PY = "C:\SlopStudio.MongoAI-artifacts\.venv\Scripts\python.exe"`, sempre com `-I`.
@@ -10,16 +10,20 @@ Python (venv ROCm do bake-off; nao instalar torch novo): `$PY = "C:\SlopStudio.M
 | artefato | caminho |
 |---|---|
 | construtor do corpus | `scripts\teacher\build_teacher_corpus.py` + `Repos\KapiTeacher-Mongo-7B\configs\corpus_v2c.yaml` |
-| corpus (gitignored) | `data\teacher\v2c\` (14 shards `train-*.npz` + `.meta.jsonl`, `val\`, `manifest.json`); relatorio `reports\corpus_manifest.md` |
+| corpus (gitignored) | `data\teacher\v2c\` (13 shards `train-*.npz` + `.meta.jsonl`, `val\` incl. `val_gen_generic.jsonl`, `manifest.json`); relatorio `reports\corpus_manifest.md` |
+| replay + G2.5 (gitignored) | `data\replay\v1\` (`replay_train.jsonl`, `generic_js_fim_eval.jsonl` = 500 cortes, `generic_js_fim_monitor.jsonl`, `manifest.json`, `files.jsonl`, `LICENSES.md`); construtor `scripts\data\build_replay.py` + `scripts\data\replay_cuts.py`; baseline `reports\baseline_base\Qwen2.5-Coder-7B-generic-js\` |
 | treino | `scripts\teacher\train_teacher.py` + `configs\sft_v2c.yaml` |
 | fila | `scripts\gpu_queue.ps1` + `configs\gpu_queue.yaml` (estado em `reports\gpu_queue\state.json`, incidentes em `reports\gpu_queue\incidents.md`) |
 | avaliacao | `scripts\teacher\eval_teacher.py` (agora com `--adapter` e `--data-version v2c`), `scripts\teacher\teacher_measures.py`, `configs\gates.teacher.yaml`, `scripts\eval\check_gates.py` |
 | merge | `scripts\teacher\merge_teacher.py` (CPU, bf16) |
 | smoke | `reports\smoke_train.md` |
 
-Numeros do corpus (`reports\corpus_manifest.md`): 139.258 exemplos, **37.146.949 tokens** (media 267/ex.; 14,1% de tokens com perda),
-9.681 linhas de <= 4.096 tokens, **806 passos** de ~49k tokens (12 linhas). Mistura: FIM `editor-context-v1` 40%, FIM cru 10%,
-completion (sufixo vazio, derivado) 20%, chat 15% + multi-turno 3% + explain 2%, correcao 6%, negativos 4%, **replay 0%** (sem fonte local licenciada).
+Numeros do corpus (`reports\corpus_manifest.md`): 129.568 exemplos, **37.118.069 tokens** (media 287/ex.; 18,5% de tokens com perda),
+9.737 linhas de <= 4.096 tokens, **811 passos** de ~49k tokens (12 linhas). Mistura (pool nao-replay, por exemplos): FIM `editor-context-v1` 40%,
+FIM cru 10%, completion (sufixo vazio, derivado) 20%, chat 15% + multi-turno 3% + explain 2%, correcao 6%, negativos 4%; **mais replay de codigo
+generico = 12,0% dos tokens** (4,45 M tokens, 7.219 trechos de 4.429 arquivos / 555 pacotes npm MIT/Apache-2.0/BSD/ISC; 50/50 FIM PSM cru com
+middle <= 96 tokens / trechos causais em sequencia). O Mongo caiu ~12% (123 k exemplos nao-replay) para manter o total em ~37 M tokens.
+Fonte do replay: so `node_modules` ja instalados no disco (nada baixado); atribuicao em `data\replay\v1\LICENSES.md`.
 
 ## 1. Antes de iniciar (checklist)
 
@@ -31,7 +35,9 @@ completion (sufixo vazio, derivado) 20%, chat 15% + multi-turno 3% + explain 2%,
    & $PY -I scripts\teacher\build_teacher_corpus.py --verify-only        # relê os .meta.jsonl x data\splits\v2c\*.ids.txt
    & $PY -I scripts\teacher\train_teacher.py --dry-run --tok-s 500        # plano: passos, tokens, horas
    ```
-   Para regenerar (deterministico, ~45 s): `& $PY -I scripts\teacher\build_teacher_corpus.py` (aborta se houver qualquer vazamento train x val/test/bench).
+   Para regenerar (deterministico, ~45 s): `& $PY -I scripts\teacher\build_teacher_corpus.py` (aborta se houver qualquer vazamento train x val/test/bench
+   ou replay x generic_js_fim_eval). O replay (`data\replay\v1`) e reconstruido com `& $PY -I scripts\data\build_replay.py` (~1 min; redescobre
+   os node_modules do disco; a saida depende do que esta instalado: **nao regenerar depois do baseline sem refazer o baseline generic-js**).
 4. Para o job de avaliacao (J04b/J11): MongoDB dos fixtures no ar (`wsl -- true`, manter uma sessao WSL aberta) e Node no PATH.
 5. Decisoes pendentes do usuario: ver §7.
 
@@ -42,8 +48,8 @@ Pela fila (recomendado; detem o lock, tem watchdog e retomada):
 ```powershell
 .\scripts\gpu_queue.ps1 -Status
 .\scripts\gpu_queue.ps1 -Start -DryRun                         # mostra os comandos, nao executa
-.\scripts\gpu_queue.ps1 -Start -Only J09-teacher-sft-v2c       # so o treino (~22 h)
-.\scripts\gpu_queue.ps1 -Start                                 # J04b (baseline, ~35 min) -> J09 (treino) -> J11 (avaliacao)
+.\scripts\gpu_queue.ps1 -Start -Only J09-teacher-sft-v2c       # so o treino (~22 h; ate 34 h)
+.\scripts\gpu_queue.ps1 -Start                                 # J04b (baseline, ~35 min) -> J09 (treino) -> J11 (val v2c) -> J11b (G2.5 generic-js)
 ```
 
 Manual (mesmo lock `tmp\gpu.lock`; sem watchdog):
@@ -98,9 +104,21 @@ $E = "Repos\KapiTeacher-Mongo-7B\reports\eval"
 
 - **G2.2** (FIM-acc +15 p.p. sobre o base, exec-valid >= 0,95, campos inexistentes <= 2%) e **G2.7** saem do comando acima. `exit 7` do
   `check_gates` = nenhum reprovado mas ha gate nao avaliado.
-- **G2.3** (chat exec-equivalencia, val/blind), **G2.4** (vs. melhor student sem professor = J10) e **G2.5** (queda no Generic-JS FIM) **ainda nao
-  tem avaliador/conjunto**: ficam `unevaluated` (nunca aprovados). `--student-summary`, `--generic-base/--generic-adapter` do
-  `teacher_measures.py` aceitam os summaries quando existirem. O `blind` so e lido com `blind_tool.py` (<= 3 leituras na fase).
+- **G2.5** (adapter - base >= -3 p.p. em FIM acc no `generic_js_fim_eval`, 500 cortes de pacotes npm holdout; syntax = node `vm.Script`; sem Mongo):
+  baseline do base (NF4) ja medido em `reports\baseline_base\Qwen2.5-Coder-7B-generic-js\summary.json`. Apos o treino (job J11b):
+  ```powershell
+  & $PY -I scripts\teacher\eval_teacher.py --model BaseRepos\Qwen2.5-Coder-7B --adapter Repos\KapiTeacher-Mongo-7B\adapters\sft_v2c\final `
+        --data-version generic-js --split eval --contract fim-raw --n 500 --load nf4 --name sft_v2c-final-generic-js `
+        --ids-from Repos\KapiTeacher-Mongo-7B\reports\baseline_base\Qwen2.5-Coder-7B-generic-js\sample_ids.json --out-root $E
+  & $PY -I scripts\teacher\teacher_measures.py --adapter-summary $E\sft_v2c-final\summary.json --base-summary $E\base-v2c\summary.json `
+        --generic-base Repos\KapiTeacher-Mongo-7B\reports\baseline_base\Qwen2.5-Coder-7B-generic-js\summary.json `
+        --generic-adapter $E\sft_v2c-final-generic-js\summary.json --out $E\sft_v2c-final\measures.json
+  ```
+  Durante o treino o eval periodico reporta `val_loss_generic` e `gjs_*` (100 cortes de monitor de OUTROS arquivos dos mesmos pacotes holdout;
+  nunca seleciona o `best`). Queda de FIM acc generico > 1,5 p.p. no monitor ja e sinal para pausar e reavaliar (LR/replay).
+- **G2.3** (chat exec-equivalencia, val/blind) e **G2.4** (vs. melhor student sem professor = J10) **ainda nao tem avaliador/conjunto**: ficam
+  `unevaluated` (nunca aprovados). `--student-summary` do `teacher_measures.py` aceita o summary quando existir. O `blind` so e lido com
+  `blind_tool.py` (<= 3 leituras na fase).
 - Selecao de checkpoint: `adapters\sft_v2c\best` = menor val_loss; `final` = fim do plano. Comparar os dois no val antes do blind.
 - O val v2c e de schemas `eval` (nunca vistos no treino); nao usar `test`/`bench` para ajuste.
 
@@ -114,33 +132,39 @@ CPU, ~15 GB de RAM, nao usa a GPU (pode rodar com a fila ocupada). Grava safeten
 (o 7B em bf16 = 15,2 GB nao cabe no teto de 14,1 GB) e comparar com NF4+adapter, ou via GGUF Q8_0; a diferenca vem de fundir o
 adapter em pesos bf16 que nao sao os NF4 do treino.
 
-**Horas** (medido no smoke: 506 tok/s reais, 7,8 s por linha de 4k; corpus 37,15 M tokens):
+**Horas** (medido no smoke: 506 tok/s reais, 7,8 s por linha de 4k; corpus 37,10 M tokens com replay, 811 passos):
 
 | cenario | treino | + evals/ckpts | total |
 |---|---:|---:|---:|
-| medido (506 tok/s) | 20,4 h | ~1,6 h (10 evals de ~8 min + final ~13 min) | **~22 h** |
-| conservador (360 tok/s, sonda J03b) | 28,7 h | ~1,6 h | **~30 h** |
+| medido (506 tok/s) | 20,4 h | ~2,3 h (10 evals de ~12 min incl. 50 cortes generic-js + final ~21 min) | **~22,7 h** |
+| conservador (360 tok/s, sonda J03b) | 28,6 h | ~2,3 h | **~30,9 h** |
 | Fase 05 §9.2 (J09 7B, 47 M tok a 560 tok/s) | — | — | 25 h |
 
-O recorte padrao (1 epoca do corpus inteiro, `budget.hours: 34`) cabe na janela de 24–36 h mesmo no cenario conservador. Se a janela tiver de
+CPT (estagio A, ~11 h, J08) **pulado**: `stage_a_cpt: skip`. O recorte padrao (1 epoca do corpus inteiro, `budget.hours: 34`) cabe na janela de 24–36 h mesmo no cenario conservador (folga de ~3 h). Se a janela tiver de
 ser menor, **ordem de corte** (do mais barato em qualidade ao mais caro):
 
-1. Menos avaliacao: `--set eval.every_pct_steps=20 --set eval.gen_examples=50` (−0,7 h).
-2. `--set data.max_train_tokens=30000000` (806 -> 651 passos, −3,5 h); depois `24000000` (−6 h). Fazer antes de iniciar; durante o run use
+1. Menos avaliacao: `--set eval.every_pct_steps=20 --set eval.gen_examples=50 --set eval.generic_gen_examples=25` (−1,2 h).
+2. `--set data.max_train_tokens=30000000` (811 -> ~650 passos, −3,5 h; o corte e por prefixo aleatorio e mantem a proporcao de replay); depois `24000000` (−6 h). Fazer antes de iniciar; durante o run use
    `--total-steps N` (o cosseno e re-parametrizado a partir do passo atual; registrado em `schedule_changes` do manifest).
-3. Reconstruir o corpus com menos `completion` (derivado) e `fim_raw` (`mix` do `corpus_v2c.yaml`; ~45 s) e retreinar do zero.
+3. Reconstruir o corpus com menos `completion` (derivado) e `fim_raw` (`mix` do `corpus_v2c.yaml`; ~45 s) e retreinar do zero. Nao cortar o replay
+   (so ha ~4,45 M tokens locais; reduzi-lo piora o G2.5).
 4. Ultimo recurso: parar por `budget.hours` e usar `best`/o ultimo checkpoint (LR nao chegou ao piso; registrar).
 
-Nunca cortar: verificacao G2.7, avaliacao final, checkpoint por tempo. Para **crescer** (usar mais da janela): `--target-examples 190000` no
-construtor (~50 M tokens, ~28 h medido / ~39 h conservador — acima de 36 h no pior caso).
+Nunca cortar: verificacao G2.7, avaliacao final (Mongo e generic-js), checkpoint por tempo. Para **crescer** (usar mais da janela):
+`--target-examples 170000` no construtor (~46 M tokens nao-replay; o replay local e fixo em ~4,45 M tokens: cai para ~9,7% do total).
 
 ## 7. Decisoes do usuario antes de iniciar
 
-1. **CPT (estagio A) fica de fora?** Este job e so o estagio B (SFT). A mistura ja tem 10% de FIM cru (+ ~3% sem cabecalho) mantendo o infilling nativo; o CPT (7B: ~11 h, J08) so
-   se justifica se o val_loss/G2.2 ficar curto. Recomendado: pular e medir.
-2. **Replay de codigo generico (G2.5)**: sem fonte local licenciada, `replay: none`. Sem replay nem conjunto Generic-JS FIM o G2.5 nao e
-   mensuravel; fornecer ~4% (~5,5 mil ex.) de JS/TS/JSON MIT/Apache e o conjunto de 500 FIM, ou aceitar o risco (LoRA r=64, 1 epoca, base congelada).
-3. **Contrato do chat** (`teacher-chat-v1`): JSON com escape .NET (`\u00E3`, `\u0022`) e linha extra `Colecoes disponiveis`. Se o ContractProbe/IDE
-   divergir, mudar `chat.json_escaping`/`include_known_collections` e regerar (45 s) **antes** de treinar.
-4. Corte de tokens/horas (§6) e se o J04b (baseline do base no v2c, ~35 min) roda antes do J09 (esta primeiro na fila; use `-Only` para pular).
+1. ~~CPT (estagio A)~~ **Decidido: pulado** (`stage_a_cpt: skip`); o infilling nativo e protegido por 10% de FIM cru + 12% de replay (50% FIM PSM).
+   So reconsiderar se val_loss/G2.2 ficarem curtos ou se o G2.5 reprovar.
+2. ~~Replay de codigo generico (G2.5)~~ **Decidido e montado**: 12,0% dos tokens, so fonte local licenciada (`data\replay\v1`, 555 pacotes
+   MIT/Apache-2.0/BSD/ISC; nada baixado) + conjunto `generic_js_fim_eval` de 500 cortes com baseline medido. Risco residual: a fonte tem so
+   ~4,5 M tokens (sem repeticao) e e dominada por bibliotecas Node/TS compiladas. Para crescer (exige autorizacao de download; npm, licencas MIT/ISC/BSD/Apache,
+   ~0,3–1,5 M tokens cada, +8–10 M com ~20 pacotes): `react`, `vue`, `express`, `axios`, `d3`, `three`, `jquery`, `underscore`, `moment`, `chalk`,
+   `commander`, `yargs`, `uuid`, `debug`, `async`, `eslint`, `prettier` (MIT), `typescript` (Apache-2.0; arquivos > 2.000 linhas sao descartados), `core-js`.
+   Evitar pacotes do dominio MongoDB (`mongodb`, `mongoose`) para nao borrar o "generico".
+3. ~~Contrato do chat~~ **Mantido `teacher-chat-v1`** (JSON com escape .NET, linha `Colecoes disponiveis`). Se o ContractProbe/IDE divergir, mudar
+   `chat.json_escaping`/`include_known_collections` e regerar (45 s) **antes** de treinar.
+4. Teto de **34 h** mantido (`budget.hours`). Falta decidir so se o J04b (baseline do base no v2c, ~35 min) roda antes do J09 (esta primeiro na fila;
+   use `-Only` para pular).
 5. Energia/sistema: nobreak, sem suspensao, monitor na iGPU (libera ~0,5–1 GB de VRAM) — decisoes suas (Fase 05 §9.6/§9.8).

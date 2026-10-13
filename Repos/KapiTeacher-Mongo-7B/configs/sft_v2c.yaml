@@ -6,7 +6,8 @@ version: sft-v2c/1
 run:
   name: sft_v2c
   seed: 20261008
-  stage: sft              # CPT (estagio A) NAO esta neste job: ver README_job.md (decisao do usuario)
+  stage: sft              # estagio B (SFT). Estagio A (CPT) pulado por decisao do usuario: ver `stage_a_cpt` e README_job.md
+  stage_a_cpt: skip       # skip | run: sem CPT; FIM cru (10%) + replay de codigo generico (12% dos tokens, 50% FIM PSM) seguram o infilling (G2.5)
 
 model:
   path: BaseRepos/Qwen2.5-Coder-7B     # revisao fixada em BaseRepos/base-repos.lock.json (0396a761...)
@@ -55,6 +56,8 @@ eval:
   val_loss: true                       # val_loss.npz (600 FIM + 200 chat do split val)
   gen_examples: 100                    # FIM greedy no val (max 96 tokens): exact match / normalized / syntax / mongo_valid
   final_gen_examples: 200
+  generic_gen_examples: 50             # monitor Generic-JS FIM (val/val_gen_generic.jsonl; outros arquivos dos pacotes holdout; ~5 s/ex.)
+  final_generic_gen_examples: 100
   max_new_tokens: 96
 
 budget:

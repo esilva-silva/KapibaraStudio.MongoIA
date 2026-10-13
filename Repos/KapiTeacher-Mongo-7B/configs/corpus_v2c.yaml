@@ -10,14 +10,14 @@ splits_dir: data/splits/v2c
 out_dir: data/teacher/v2c
 
 # Pool total de exemplos (o treino consome um prefixo por orcamento de tokens/horas; a ordem das shards ja e aleatoria).
-target_examples: 140000
+target_examples: 123000   # pool NAO-replay; o replay entra por orcamento de tokens (mix.replay) sobre o total
 seq_len: 4096              # exemplos maiores sao descartados (nenhum previsto: o orcamento do dataset limita o prompt a 2.048)
 micro_tokens: 4096         # orcamento de tokens PADDED de uma linha (micro-batch): n_exemplos x comprimento_maximo <= micro_tokens
 max_examples_per_row: 32
 shard_examples: 10000
 
-# Mistura (fracao do pool). Fase 02 §3.3 B: 48 FIM · 18 completion · 20 chat · 6 correcao · 4 negativos · 4 replay.
-# Replay = none (sem fonte local licenciada, ver `replay` abaixo): os 4% foram para FIM (+2) e completion (+2).
+# Mistura. Componentes do Mongo: fracao do pool NAO-replay (por exemplos; somam 1.0). `replay`: fracao do TOTAL de TOKENS do corpus
+# (Fase 02 §3.2/§3.3: 10-15% de replay; G2.5). O total fica em ~37 M tokens (o Mongo cai ~12% vs. o corpus sem replay).
 mix:
   fim_ctx: 0.40            # FIM PSM Qwen com o prompt `editor-context-v1` ja renderizado em v2c (cabecalho 92% / sem 8%)
   fim_raw: 0.10            # MESMOS registros (outros ids) renderizados em FIM cru: so prefixo/sufixo, sem cabecalho de contexto
@@ -27,7 +27,7 @@ mix:
   explain: 0.02            # explicacao curta em comentario (<= 5% do chat, Fase 03)
   correction: 0.06
   negative: 0.04           # pedido sobre colecao/campo/API inexistente -> recusa curta com alternativas
-  replay: 0.00             # 0 = sem replay (ver bloco abaixo)
+  replay: 0.12             # fracao dos TOKENS totais (ver bloco `replay`); 0 = sem replay
 
 completion:
   max_chars: 240           # len(middle)+len(suffix) maximo do alvo derivado (~<= 80 tokens; limite do contrato: 96)
@@ -45,13 +45,16 @@ chat:
   json_escaping: dotnet
 
 replay:
-  status: none
-  # Nenhuma fonte local de JS/TS/JSON generico com licenca verificada: data/sources/ esta vazio, o repositorio da IDE nao esta
-  # neste workspace e BaseRepos/ so tem pesos. Para ligar: apontar `source` para um JSONL {"id","text","license"} permissivo
-  # (MIT/Apache/BSD, licenca por linha), definir mix.replay (0.04) e reduzir fim_ctx/completion na mesma proporcao.
-  source: null
-  fim_fraction: 0.5        # com source: 50% FIM PSM (corte aleatorio por caractere) / 50% causal (perda em todos os tokens)
-  max_chars: 6000
+  status: enabled
+  # Fonte: data/replay/v1 (scripts/data/build_replay.py): JS/TS de node_modules ja instalados no disco (MIT/Apache-2.0/BSD/ISC verificados
+  # por pacote), holdout POR PACOTE para o G2.5 (generic_js_fim_eval). Atribuicao por pacote em data/replay/v1/LICENSES.md.
+  source_dir: data/replay/v1
+  train_file: replay_train.jsonl
+  eval_file: generic_js_fim_eval.jsonl      # 500 cortes: so para o G2.5 (nunca entra no treino)
+  monitor_file: generic_js_fim_monitor.jsonl  # 100 cortes de outros arquivos dos pacotes holdout: val_loss_generic / gen no treino
+  fim_fraction: 0.5        # por trecho: 50% FIM PSM cru (corte sintatico, middle <= 96 tokens) / 50% causal (perda em todos os tokens)
+  fim_max_middle_tokens: 96
+  window_chars: 4000       # trechos consecutivos de arquivo, alinhados por linha (~1.100 tokens)
 
 validation_subset:         # so split `val`; usado pelo treino (val_loss e FIM EM/mongo_valid rapido)
   fim: 600

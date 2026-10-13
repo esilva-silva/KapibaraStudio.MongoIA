@@ -1,6 +1,6 @@
 # Corpus de SFT do KapiTeacher-Mongo-7B (dataset v2c)
 
-Gerado por `scripts/teacher/build_teacher_corpus.py` em 2026-10-13T18:45:22Z (git `be8cac0c559c`, seed 20261008), 55.8 s. Config `Repos\KapiTeacher-Mongo-7B\configs\corpus_v2c.yaml` sha256 `1f048d8b28c38ca8`. Saida: `data\teacher\v2c` (gitignored; manifest.json sha256 `a6cb47bd38244cc0`).
+Gerado por `scripts/teacher/build_teacher_corpus.py` em 2026-10-13T19:19:18Z (git `21148eb10d61`, seed 20261008), 42.2 s. Config `Repos\KapiTeacher-Mongo-7B\configs\corpus_v2c.yaml` sha256 `5f295b4a24c28d96`. Saida: `data\teacher\v2c` (gitignored; manifest.json sha256 `10e9f8ae0c028007`).
 
 ## 1. Origem e hashes
 
@@ -22,29 +22,38 @@ Gerado por `scripts/teacher/build_teacher_corpus.py` em 2026-10-13T18:45:22Z (gi
 | fim-00009.jsonl | `741389b41d063c75` | True |
 | fim-00010.jsonl | `d237aab2d8f5e55b` | True |
 
-## 2. Mistura (fracao do corpus)
+## 2. Mistura
 
-| componente | alvo | obtido | exemplos | tokens | tokens do alvo | disponivel em train |
-|---|---:|---:|---:|---:|---:|---:|
-| chat | 0.150 | 0.151 | 21000 | 5929705 | 1566284 | 127006 |
-| chat_multiturn | 0.030 | 0.030 | 4200 | 1441514 | 327699 | 22821 |
-| completion | 0.200 | 0.196 | 27258 | 7295327 | 1002657 | 873260 |
-| correction | 0.060 | 0.060 | 8400 | 3303388 | 720594 | 61485 |
-| explain | 0.020 | 0.020 | 2800 | 1084042 | 321592 | 12591 |
-| fim_ctx | 0.400 | 0.402 | 56000 | 15661997 | 896681 | 958615 |
-| fim_raw | 0.100 | 0.101 | 14000 | 1327499 | 223342 | 894793 |
-| negative | 0.040 | 0.040 | 5600 | 1103477 | 169289 | 22607 |
+Fracoes `alvo` dos componentes do Mongo sao relativas ao conjunto NAO-replay (por exemplos); `replay` e fracao do TOTAL de tokens (`mix.replay`); a coluna `% tokens` e a participacao real no total do corpus.
 
-Alvos nao atingidos: nenhum. Descartes na tokenizacao/guardas: {'completion_gt_96': 742}.
+| componente | alvo | obtido (exemplos) | exemplos | tokens | % tokens | tokens do alvo | disponivel em train |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| chat | 0.150 | 0.142 | 18450 | 5218796 | 14.1% | 1379200 | 127006 |
+| chat_multiturn | 0.030 | 0.029 | 3690 | 1264949 | 3.4% | 287458 | 22821 |
+| completion | 0.200 | 0.185 | 23949 | 6412051 | 17.3% | 883062 | 873260 |
+| correction | 0.060 | 0.057 | 7380 | 2904874 | 7.8% | 633491 | 61485 |
+| explain | 0.020 | 0.019 | 2460 | 954582 | 2.6% | 283060 | 12591 |
+| fim_ctx | 0.400 | 0.380 | 49200 | 13768164 | 37.1% | 786994 | 963715 |
+| fim_raw | 0.100 | 0.095 | 12300 | 1169758 | 3.2% | 196541 | 897883 |
+| negative | 0.040 | 0.038 | 4920 | 970908 | 2.6% | 149247 | 22607 |
+| replay_causal | 0.120 | 0.028 | 3607 | 2214500 | 6.0% | 2214500 | - |
+| replay_fim | 0.120 | 0.028 | 3612 | 2239487 | 6.0% | 39380 | - |
 
-**Replay: `none`**. sem fonte local de codigo generico com licenca verificada
-Impacto em G2.5 (queda <= 3 p.p. no Generic-JS FIM): sem replay o unico freio ao esquecimento e o LoRA (r=64, lr 1e-4, 1 epoca, base congelada em NF4) e os 10% de FIM cru (+ ~3% de FIM sem cabecalho nos dados), que mantem o infilling nativo; o risco de G2.5 e **medio** e nao pode ser medido hoje (nao existe o conjunto Generic-JS FIM nem fonte de replay). Ver README_job.md.
+Alvos nao atingidos: nenhum. Descartes na tokenizacao/guardas: {'completion_gt_96': 651, 'replay_chunk_contains_eval_cut': 83}.
+
+**Replay: `enabled`** - codigo JS/TS generico de terceiros, licencas permissivas (MIT/Apache-2.0/BSD/ISC), fonte local `data/replay/v1` (sha256 do replay_train `f7d1af862401c313`, do eval `8827d1e4078a9f21`; inventario por arquivo e atribuicoes em `manifest.json`/`LICENSES.md` dessa pasta).
+
+- 7219 trechos de 4429 arquivos / 555 pacotes: **4,453,987 tokens = 12.0% do corpus** (alvo 12%; orcamento 4,454,193; disponivel 4,455,143). Por tipo: {'fim': 3612, 'causal': 3607} (tokens {'fim': 2239487, 'causal': 2214500}). Janela 4000 caracteres, alinhada por linha.
+- `replay_fim`: FIM PSM cru (`<|fim_prefix|>..<|fim_suffix|>..<|fim_middle|>` -> middle <= 96 tokens, corte por limite sintatico com a logica de `gen_fim.candidates/pick_end` sobre spans de lexer JS); `replay_causal`: trecho em sequencia, perda em todos os tokens (EOS so no ultimo trecho do arquivo).
+- Licencas (tokens): {'Apache-2.0': 787576, 'MIT': 2771637, 'ISC': 481528, 'BSD-3-Clause': 191812, '(Apache-2.0 AND BSD-3-Clause)': 159064, '(BSD-2-Clause OR MIT OR Apache-2.0)': 1979, 'Apache 2.0': 9883, 'BSD-2-Clause': 49617, '(MIT OR WTFPL)': 768, '(MIT OR Apache-2.0)': 123}.
+- Isolamento do replay x `generic_js_fim_eval` (500 cortes) / monitor / val-test-bench do Mongo: pacotes em comum 0, arquivos (sha256) em comum 0, trechos que contem um corte de avaliacao (contexto+middle) 0, trechos com hash igual ao conteudo val/test/bench do Mongo 0 -> **OK**.
+- Impacto em G2.5: o replay de FIM cru e de codigo generico alimenta o freio ao esquecimento; a medicao e `generic_js_fim_eval` (adapter - base >= -3 p.p.). Ver README_job.md.
 
 ## 3. Tamanho
 
-- Exemplos: **139258** · tokens reais: **37,146,949** (media 266.7/ex.) · tokens de alvo (com perda): 5,228,138 (14.1%) · linhas (micro-batches de <= 4096 tokens padded): 9,681 · tokens padded 37,220,519 (padding 0.2%).
-- Shards: 14 x ate 10000 exemplos; sha256 de cada um em `manifest.json`.
-- Validacao do treino (split `val`): 800 exemplos / 235,323 tokens para val_loss; 200 FIM para geracao rapida (EM / mongo_valid).
+- Exemplos: **129568** · tokens reais: **37,118,069** (media 286.5/ex.) · tokens de alvo (com perda): 6,852,933 (18.5%) · linhas (micro-batches de <= 4096 tokens padded): 9,737 · tokens padded 37,195,214 (padding 0.2%).
+- Shards: 13 x ate 10000 exemplos; sha256 de cada um em `manifest.json`.
+- Validacao do treino (split `val`): 900 exemplos / 298,610 tokens para val_loss; 200 FIM para geracao rapida (EM / mongo_valid).
 
 ## 4. G2.7 - isolamento (0 exemplos de test/bench/blind/val no treino)
 
@@ -60,7 +69,7 @@ Verificado em dois momentos: na leitura (indice completo de todos os shards v2c)
 | registros train com `split_role`!=train ou dominio holdout | 0 |
 | conteudo identico a val/test/bench (hash de prefix+suffix+middle / instruction+editor+output) | descartados: 0 |
 | prompt identico a item selado do blind (hash do manifesto) | descartados: 0; blind selado: False (0 hashes). Conteudo do blind nunca lido |
-| **corpus final**: ids no corpus x train/val/test/bench ids | 139258 de 139258 em train; val 0; test 0; bench 0; duplicados/problemas 0 |
+| **corpus final**: ids no corpus x train/val/test/bench ids | 122349 de 122349 do Mongo em train (+ 7219 de replay, ids `rpl-`); val 0; test 0; bench 0; duplicados/problemas 0 |
 
 **G2.7: APROVADO**
 

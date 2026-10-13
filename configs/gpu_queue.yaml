@@ -49,13 +49,14 @@ jobs:
   #   C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe -I scripts/teacher/train_teacher.py \
   #       --config Repos/KapiTeacher-Mongo-7B/configs/sft_v2c.yaml --resume auto
   - id: J09-teacher-sft-v2c
-    title: "KapiTeacher-Mongo-7B SFT QLoRA it.1 (corpus v2c, 1 epoca)"
+    title: "KapiTeacher-Mongo-7B SFT QLoRA it.1 (corpus v2c + replay 12%, sem CPT, 1 epoca)"
     status: ready
     command: ["{python}", "-I", "scripts/teacher/train_teacher.py", "--config", "Repos/KapiTeacher-Mongo-7B/configs/sft_v2c.yaml",
               "--resume", "auto"]
     depends_on: []
     requires_files:
       - data/teacher/v2c/manifest.json
+      - data/replay/v1/manifest.json
       - Repos/KapiTeacher-Mongo-7B/configs/sft_v2c.yaml
     watch_files:                       # avanco = mtime mais recente entre estes
       - Repos/KapiTeacher-Mongo-7B/reports/sft_v2c/metrics.jsonl
@@ -65,7 +66,7 @@ jobs:
     watchdog_minutes: 15
     window: any
     pause_exit_codes: [75]             # 75 = pausa cooperativa (nao conta como falha)
-    estimate_hours: {measured_tok_s: 506, conservative_tok_s: 360, tokens: 37146949, train_hours: 20.4, with_evals_hours: 22, conservative_hours: 31, cut_order: "README_job.md §6"}
+    estimate_hours: {measured_tok_s: 506, conservative_tok_s: 360, tokens: 37099525, steps: 811, train_hours: 20.4, with_evals_hours: 22.7, conservative_train_hours: 28.6, conservative_hours: 30.9, budget_hours: 34, replay_token_share: 0.12, cut_order: "README_job.md §6"}
   # ---------------------------------------------------------------------------------------------------------------------------------
   # J11 (Fase 05 §9.2): avaliacao do professor (G2.2/G2.3/G2.5) no val v2c; so apos o J09. Nao inicia sozinho antes do adapter final.
   - id: J11-teacher-eval-val
@@ -87,3 +88,25 @@ jobs:
     watchdog_minutes: 20
     window: any
     estimate_hours: {hours: 1.0}
+  # ---------------------------------------------------------------------------------------------------------------------------------
+  # J11b: G2.5 (Generic-JS FIM, 500 cortes de pacotes npm holdout, data/replay/v1). O baseline do base (NF4) ja existe em
+  # reports/baseline_base/Qwen2.5-Coder-7B-generic-js; aqui o adapter final na MESMA amostra. Sem Mongo. So apos o J09.
+  - id: J11b-teacher-eval-generic-js
+    title: "G2.5: adapter final no generic_js_fim_eval (500 cortes FIM)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/teacher/eval_teacher.py", "--model", "BaseRepos/Qwen2.5-Coder-7B", "--adapter",
+              "Repos/KapiTeacher-Mongo-7B/adapters/sft_v2c/final", "--data-version", "generic-js", "--split", "eval",
+              "--contract", "fim-raw", "--n", "500", "--load", "nf4", "--name", "sft_v2c-final-generic-js", "--resume",
+              "--ids-from", "Repos/KapiTeacher-Mongo-7B/reports/baseline_base/Qwen2.5-Coder-7B-generic-js/sample_ids.json",
+              "--out-root", "Repos/KapiTeacher-Mongo-7B/reports/eval"]
+    depends_on: [J09-teacher-sft-v2c]
+    requires_files:
+      - Repos/KapiTeacher-Mongo-7B/adapters/sft_v2c/final/adapter_model.safetensors
+      - Repos/KapiTeacher-Mongo-7B/reports/baseline_base/Qwen2.5-Coder-7B-generic-js/summary.json
+    watch_files:
+      - Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2c-final-generic-js/predictions.jsonl
+    done_marker: Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2c-final-generic-js/summary.json
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    estimate_hours: {hours: 0.3}

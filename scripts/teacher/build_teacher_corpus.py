@@ -37,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "data"))
 import blind_guard  # noqa: E402
 import render_contract as rc  # noqa: E402
+import replay_cuts  # noqa: E402
 
 FIM_PREFIX, FIM_SUFFIX, FIM_MIDDLE = rc.QWEN_FIM
 EOS_TEXT = "<|endoftext|>"
@@ -125,13 +126,55 @@ def render_fim(rec: dict, component: str) -> tuple[str, str]:
     raise ValueError(component)
 
 
-def render_replay(row: dict, cfg: dict, seed: int) -> tuple[str, str]:
-    text = row["text"][: cfg["replay"].get("max_chars", 6000)]
-    u = unit(seed, "replay-kind", row["id"])
-    if u / 2**64 < cfg["replay"].get("fim_fraction", 0.5) and len(text) > 8:
-        a, b = sorted(random.Random(unit(seed, "replay-cut", row["id"])).sample(range(1, len(text)), 2))
-        return f"{FIM_PREFIX}{text[:a]}{FIM_SUFFIX}{text[b:]}{FIM_MIDDLE}", text[a:b]
-    return "", text  # causal: perda em todos os tokens
+class _TokCounter:
+    """Interface `.count` (replay_cuts.make_cut) sobre um `tokenizers.Tokenizer` ja carregado."""
+
+    def __init__(self, tok) -> None:
+        self._tok = tok
+
+    def count(self, text: str) -> int:
+        return len(self._tok.encode(text, add_special_tokens=False).ids) if text else 0
+
+
+def chunk_replay_doc(text: str, window_chars: int, min_chars: int = 300) -> list[str]:
+    """Janelas consecutivas alinhadas por linha (<= window_chars; uma linha maior que a janela fica sozinha)."""
+    chunks, cur, size = [], [], 0
+    for line in text.splitlines(keepends=True):
+        if cur and size + len(line) > window_chars:
+            chunks.append("".join(cur))
+            cur, size = [], 0
+        cur.append(line)
+        size += len(line)
+    if cur:
+        tail = "".join(cur)
+        if len(tail) >= min_chars or not chunks:
+            chunks.append(tail)
+        else:
+            chunks[-1] += tail
+    return chunks
+
+
+def render_replay_chunk(text: str, ident: str, cfg: dict, seed: int, tc) -> tuple[str, str, str]:
+    """-> (kind, prompt, target). `fim`: PSM cru com corte sintatico (middle <= 96 tokens; gen_fim.candidates/pick_end);
+    `causal`: trecho em sequencia, perda em todos os tokens."""
+    r = cfg["replay"]
+    if unit(seed, "replay-kind", ident) / 2**64 < float(r.get("fim_fraction", 0.5)):
+        rng = random.Random(unit(seed, "replay-cut", ident))
+        cut = replay_cuts.make_cut(text, rng, tc, max_tokens=int(r.get("fim_max_middle_tokens", 96)), min_prefix_chars=60)
+        if cut is None:  # lexer nao entendeu o trecho (fragmento/TS): corte por linha, do meio da linha ate o fim dela
+            lines = text.split(chr(10))
+            idx = [i for i, ln in enumerate(lines) if 12 <= len(ln.strip()) <= 240 and 0 < i < len(lines) - 1]
+            if idx:
+                i = idx[rng.randrange(len(idx))]
+                ln = lines[i]
+                col = len(ln) - len(ln.lstrip()) + rng.randrange(0, max(1, len(ln.strip()) // 2))
+                start = sum(len(x) + 1 for x in lines[:i]) + col
+                end = start + (len(ln) - col)
+                if tc.count(text[start:end]) <= int(r.get("fim_max_middle_tokens", 96)):
+                    cut = {"prefix": text[:start], "middle": text[start:end], "suffix": text[end:]}
+        if cut is not None and cut["middle"].strip():
+            return "fim", f"{FIM_PREFIX}{cut['prefix']}{FIM_SUFFIX}{cut['suffix']}{FIM_MIDDLE}", cut["middle"]
+    return "causal", "", text
 
 
 # -- fase 1: indice (somente leitura) ---------------------------------------------------------------------------------------------
@@ -280,12 +323,23 @@ def read_ids(path: Path) -> set[str]:
 def verify_output(out_dir: Path, splits_dir: Path) -> dict:
     train, val, test, bench = (read_ids(splits_dir / f"{n}.ids.txt") for n in ("train", "val", "test", "bench"))
     seen, comp, issues = set(), Counter(), []
+    replay_n = 0
     for meta_path in sorted(out_dir.glob("train-*.meta.jsonl")):
         with meta_path.open(encoding="utf-8") as handle:
             for line in handle:
                 m = json.loads(line)
                 i = m["id"]
                 comp[m["component"]] += 1
+                if m["component"].startswith("replay"):  # replay: ids `rpl-...` (fora dos splits do Mongo); isolamento no bloco `replay`
+                    replay_n += 1
+                    if not i.startswith("rpl-") or m.get("src") != "replay":
+                        issues.append((i, "replay com id/origem inesperados"))
+                    if i in train or i in val or i in test or i in bench:
+                        issues.append((i, "id de replay colide com id de split do Mongo"))
+                    if i in seen:
+                        issues.append((i, "id duplicado no corpus"))
+                    seen.add(i)
+                    continue
                 if i not in train:
                     issues.append((i, "nao esta em train.ids.txt"))
                 for name, ids in (("val", val), ("test", test), ("bench", bench)):
@@ -294,7 +348,7 @@ def verify_output(out_dir: Path, splits_dir: Path) -> dict:
                 if i in seen:
                     issues.append((i, "id duplicado no corpus"))
                 seen.add(i)
-    return {"examples": len(seen), "by_component": dict(comp), "issues": issues[:20], "n_issues": len(issues),
+    return {"examples": len(seen), "replay_examples": replay_n, "by_component": dict(comp), "issues": issues[:20], "n_issues": len(issues),
             "in_train_ids": len(seen & train), "in_val_ids": len(seen & val), "in_test_ids": len(seen & test), "in_bench_ids": len(seen & bench)}
 
 
@@ -441,20 +495,6 @@ def main() -> int:
     selected = {i: (c, False) for i, c in chosen.items()}
     selected.update(val_sel)
 
-    # ---- replay (so com fonte licenciada) ---------------------------------------------------------------------------------------------
-    replay_status = {"status": "none", "reason": cfg["replay"].get("reason", "sem fonte local de codigo generico com licenca verificada"),
-                     "examples": 0}
-    replay_items = []
-    if cfg["replay"].get("source") and float(mix.get("replay", 0)) > 0:
-        rp = ROOT / cfg["replay"]["source"]
-        blind_guard.check_path(rp)
-        rows = [json.loads(line) for line in rp.open(encoding="utf-8")]
-        rows = pick_lowest([(r["id"], r) for r in rows], int(round(n_target * float(mix["replay"]))), seed, "replay")
-        for ident, r in rows:
-            prompt, target = render_replay(r, cfg, seed)
-            replay_items.append((ident, prompt, target, r.get("license")))
-        replay_status = {"status": "enabled", "source": str(rp), "source_sha256": sha256_file(rp), "examples": len(replay_items)}
-
     # ---- renderizacao + tokenizacao por arquivo ---------------------------------------------------------------------------------------
     print(f"[4/6] renderizando/tokenizando {len(selected)} exemplos (train {len(chosen)} + val {len(val_sel)})", flush=True)
     by_file: dict[str, dict] = defaultdict(dict)
@@ -466,18 +506,108 @@ def main() -> int:
         for r in pool.imap_unordered(_render_shard, tasks):
             results += r["items"]
             dropped.update(r["dropped"])
-    if replay_items:
-        eos = EXPECTED_IDS["<|endoftext|>"]
-        for ident, prompt, target, lic in replay_items:
-            p_ids = tok.encode(prompt, add_special_tokens=False).ids if prompt else []
-            t_ids = tok.encode(target, add_special_tokens=False).ids + [eos]
-            if len(p_ids) + len(t_ids) <= cfg["seq_len"]:
-                results.append({"meta": {"id": ident, "component": "replay", "kind": "replay", "domain": None, "language": None,
-                                         "category": None, "n_prompt": len(p_ids), "n_target": len(t_ids), "src": "replay"},
-                                "ids": p_ids + t_ids, "loss_start": len(p_ids)})
+
+    # ---- replay: codigo generico licenciado (data/replay/v1), por orcamento de TOKENS sobre o total do corpus -------------------------------
+    eos = EXPECTED_IDS["<|endoftext|>"]
+    replay_status = {"status": "none", "examples": 0, "reason": cfg["replay"].get("reason", "desligado na config")}
+    replay_val: list[dict] = []
+    gen_generic: list[dict] = []
+    rcfg = cfg["replay"]
+    if rcfg.get("status") == "enabled" and float(mix.get("replay", 0)) > 0:
+        print("[4b/6] replay (fonte local licenciada)", flush=True)
+        rdir = ROOT / rcfg["source_dir"]
+        blind_guard.check_path(rdir)
+        docs = [json.loads(line) for line in (rdir / rcfg["train_file"]).open(encoding="utf-8")]
+        eval_rows = [json.loads(line) for line in (rdir / rcfg["eval_file"]).open(encoding="utf-8")]
+        monitor_rows = [json.loads(line) for line in (rdir / rcfg["monitor_file"]).open(encoding="utf-8")]
+        eval_pkgs = {r["package"] for r in eval_rows} | {r["package"] for r in monitor_rows}
+        eval_shas = {r["file_sha256"] for r in eval_rows} | {r["file_sha256"] for r in monitor_rows}
+        rep_manifest = json.loads((rdir / "manifest.json").read_text(encoding="utf-8"))
+        holdout_pkgs = {p["package"] for p in rep_manifest["packages"] if p["role"] == "eval_holdout"}
+        bad_docs = [d["id"] for d in docs if d["package"] in eval_pkgs or d["package"] in holdout_pkgs or d["sha256"] in eval_shas]
+        if bad_docs:
+            raise SystemExit(f"G2.7/replay: {len(bad_docs)} documentos de replay em pacote/arquivo do holdout generic_js ({bad_docs[:3]})")
+        tcount = _TokCounter(tok)
+        chunks = []
+        for d in docs:
+            parts = chunk_replay_doc(d["text"], int(rcfg.get("window_chars", 4000)))
+            for n, text in enumerate(parts):
+                chunks.append({"id": f"{d['id']}-{n:03d}", "text": text, "last": n == len(parts) - 1, "doc": d})
+        for c in chunks:
+            c["kind"], c["prompt"], c["target"] = render_replay_chunk(c["text"], c["id"], cfg, seed, tcount)
+        enc_p = tok.encode_batch([c["prompt"] for c in chunks], add_special_tokens=False)
+        enc_t = tok.encode_batch([c["target"] for c in chunks], add_special_tokens=False)
+        for c, ep, et in zip(chunks, enc_p, enc_t):
+            c["p_ids"] = ep.ids if c["prompt"] else []
+            c["t_ids"] = et.ids + ([eos] if (c["kind"] == "fim" or c["last"]) else [])
+            c["tokens"] = len(c["p_ids"]) + len(c["t_ids"])
+        # trechos que contem contexto+middle de um corte de avaliacao (boilerplate/helpers vendorizados entre pacotes): removidos do treino
+        needles = [r["prefix"][-80:] + r["middle"] + r["suffix"][:80] for r in eval_rows + monitor_rows]
+        contaminated = {c["id"] for c in chunks if any(n in c["text"] for n in needles)}
+        dropped["replay_chunk_contains_eval_cut"] = len(contaminated)
+        chunks = [c for c in chunks if c["id"] not in contaminated]
+        train_nr = [r for r in results if r["meta"]["id"] in chosen]
+        t_nr = sum(len(r["ids"]) for r in train_nr)
+        share = float(mix["replay"])
+        budget = int(round(t_nr * share / (1 - share)))
+        picked, used = [], 0
+        for c in sorted(chunks, key=lambda c: unit(seed, "replay-pick", c["id"])):
+            if c["tokens"] > cfg["seq_len"]:
+                dropped["replay_too_long"] += 1
+                continue
+            if used + c["tokens"] > budget:
+                continue
+            picked.append(c)
+            used += c["tokens"]
+        # isolamento do replay (G2.7 estendido): nenhum trecho contem contexto+middle de um corte de avaliacao; hash de conteudo vs Mongo
+        sub_hits = sum(1 for c in picked if any(n in c["text"] for n in needles))
+        mongo_hits = sum(1 for c in picked
+                         if int.from_bytes(hashlib.sha1(c["text"].encode("utf-8", "surrogatepass")).digest()[:8], "big") in eval_content)
+        pk_overlap = sorted({c["doc"]["package"] for c in picked} & (eval_pkgs | holdout_pkgs))
+        rep_iso = {"package_overlap_with_generic_eval": pk_overlap,
+                   "file_sha256_overlap_with_generic_eval": len({c["doc"]["sha256"] for c in picked} & eval_shas),
+                   "chunks_containing_eval_cut": sub_hits, "chunks_matching_mongo_eval_content": mongo_hits,
+                   "source_manifest_isolation": rep_manifest.get("isolation")}
+        if pk_overlap or rep_iso["file_sha256_overlap_with_generic_eval"] or sub_hits or mongo_hits:
+            raise SystemExit(f"G2.7/replay: vazamento replay x generic_js_fim_eval/val/test/bench: {rep_iso}")
+        for c in picked:
+            results.append({"meta": {"id": c["id"], "component": f"replay_{c['kind']}", "kind": c["kind"], "domain": c["doc"]["package"],
+                                     "language": "ts" if c["doc"]["ext"] in (".ts", ".tsx") else "js", "category": c["doc"]["license"],
+                                     "n_prompt": len(c["p_ids"]), "n_target": len(c["t_ids"]), "src": "replay"},
+                            "ids": c["p_ids"] + c["t_ids"], "loss_start": len(c["p_ids"])})
+        # val: 100 cortes do monitor (outros arquivos dos pacotes holdout) em FIM cru, so para val_loss_generic / val_gen_generic
+        for r in monitor_rows:
+            before, after = rc.bound_window(r["prefix"], r["suffix"])
+            prompt = rc.qwen_fim_text(before, after)
+            p_ids = tok.encode(prompt, add_special_tokens=False).ids
+            t_ids = tok.encode(r["middle"], add_special_tokens=False).ids + [eos]
+            replay_val.append({"meta": {"id": r["id"], "component": "replay_fim", "kind": "fim", "domain": r["package"], "language": "js",
+                                        "category": r["license"], "n_prompt": len(p_ids), "n_target": len(t_ids), "src": "monitor"},
+                               "ids": p_ids + t_ids, "loss_start": len(p_ids)})
+            gen_generic.append({"id": r["id"], "prompt": prompt, "target": r["middle"], "prefix": r["prefix"], "suffix": r["suffix"],
+                                "dialect": "js", "cut_kind": r["cut_kind"], "domain": r["package"]})
+        kinds = Counter(c["kind"] for c in picked)
+        tok_by_kind: Counter = Counter()
+        lic_tokens: Counter = Counter()
+        for c in picked:
+            tok_by_kind[c["kind"]] += c["tokens"]
+            lic_tokens[c["doc"]["license"]] += c["tokens"]
+        replay_status = {
+            "status": "enabled", "source_dir": rcfg["source_dir"],
+            "files": {n: sha256_file(rdir / n) for n in (rcfg["train_file"], rcfg["eval_file"], rcfg["monitor_file"], "manifest.json",
+                                                         "LICENSES.md", "files.jsonl")},
+            "token_share_target": share, "token_budget": budget, "tokens": used, "non_replay_tokens": t_nr,
+            "examples": len(picked), "by_kind": dict(kinds), "tokens_by_kind": dict(tok_by_kind),
+            "available_chunks": len(chunks), "available_tokens": sum(c["tokens"] for c in chunks),
+            "docs_used": len({c["doc"]["id"] for c in picked}), "packages_used": len({c["doc"]["package"] for c in picked}),
+            "tokens_by_license": dict(lic_tokens), "window_chars": rcfg.get("window_chars", 4000),
+            "fim_fraction": rcfg.get("fim_fraction", 0.5), "isolation": rep_iso, "monitor_examples": len(replay_val),
+        }
+        print(f"      replay: {len(picked)} trechos / {used:,} tokens (alvo {budget:,}; disponivel {replay_status['available_tokens']:,}) "
+              f"sobre {t_nr:,} tokens nao-replay", flush=True)
     results.sort(key=lambda r: r["meta"]["id"])
-    train_ex = [r for r in results if r["meta"]["id"] in chosen or r["meta"]["component"] == "replay"]
-    val_ex = [r for r in results if r["meta"]["id"] in val_sel]
+    train_ex = [r for r in results if r["meta"]["id"] in chosen or r["meta"]["component"].startswith("replay")]
+    val_ex = [r for r in results if r["meta"]["id"] in val_sel] + replay_val
 
     # ---- shards ------------------------------------------------------------------------------------------------------------------------
     print(f"[5/6] gravando {len(train_ex)} exemplos de treino em shards de {cfg['shard_examples']}", flush=True)
@@ -496,6 +626,9 @@ def main() -> int:
     gen = [r["gen"] for r in val_ex if "gen" in r][: vs["gen"]]
     with (out_dir / "val" / "val_gen.jsonl").open("w", encoding="utf-8", newline="\n") as handle:
         for g in gen:
+            handle.write(json.dumps(g, ensure_ascii=False) + "\n")
+    with (out_dir / "val" / "val_gen_generic.jsonl").open("w", encoding="utf-8", newline="\n") as handle:  # monitor generic_js (replay)
+        for g in gen_generic:
             handle.write(json.dumps(g, ensure_ascii=False) + "\n")
 
     # ---- manifesto + verificacao + relatorio -------------------------------------------------------------------------------------------
@@ -535,7 +668,9 @@ def main() -> int:
         "micro_tokens": cfg["micro_tokens"], "seq_len": cfg["seq_len"],
         "val": {"loss_file": "val/val_loss.npz", "loss_sha256": val_shard["sha256"], "examples": val_shard["examples"],
                 "tokens": val_shard["tokens"], "gen_file": "val/val_gen.jsonl",
-                "gen_sha256": sha256_file(out_dir / "val" / "val_gen.jsonl"), "gen_examples": len(gen)},
+                "gen_sha256": sha256_file(out_dir / "val" / "val_gen.jsonl"), "gen_examples": len(gen),
+                "gen_generic_file": "val/val_gen_generic.jsonl", "gen_generic_examples": len(gen_generic),
+                "gen_generic_sha256": sha256_file(out_dir / "val" / "val_gen_generic.jsonl")},
         "shards": shards, "isolation": iso, "verification": ver,
         "chat_template": {"name": cfg["chat"]["template"], "head": CHAT_HEAD, "tail": CHAT_TAIL,
                           "include_known_collections": cfg["chat"]["include_known_collections"],
@@ -548,6 +683,36 @@ def main() -> int:
     ok = ver["n_issues"] == 0
     print(f"OK={ok} exemplos={len(train_ex)} tokens={tokens} shards={len(shards)} em {time.time() - t0:.0f}s")
     return 0 if ok else 3
+
+
+def replay_report_lines(m: dict) -> list[str]:
+    r = m["replay"]
+    if r["status"] != "enabled":
+        return [f"**Replay: `{r['status']}`**. {r.get('reason', '')}",
+                "Impacto em G2.5 (queda <= 3 p.p. no Generic-JS FIM): sem replay o unico freio ao esquecimento e o LoRA (r=64, lr 1e-4, 1 epoca, "
+                "base congelada em NF4) e os 10% de FIM cru; o risco de G2.5 nao e mitigado."]
+    iso = r["isolation"]
+    ok = (not iso["package_overlap_with_generic_eval"] and not iso["file_sha256_overlap_with_generic_eval"]
+          and not iso["chunks_containing_eval_cut"] and not iso["chunks_matching_mongo_eval_content"])
+    return [
+        f"**Replay: `enabled`** - codigo JS/TS generico de terceiros, licencas permissivas (MIT/Apache-2.0/BSD/ISC), fonte local `{r['source_dir']}` "
+        f"(sha256 do replay_train `{r['files']['replay_train.jsonl'][:16]}`, do eval `{r['files']['generic_js_fim_eval.jsonl'][:16]}`; "
+        "inventario por arquivo e atribuicoes em `manifest.json`/`LICENSES.md` dessa pasta).",
+        "",
+        f"- {r['examples']} trechos de {r['docs_used']} arquivos / {r['packages_used']} pacotes: **{r['tokens']:,} tokens = "
+        f"{r['tokens'] / max(1, r['tokens'] + r['non_replay_tokens']):.1%} do corpus** (alvo {r['token_share_target']:.0%}; orcamento {r['token_budget']:,}; "
+        f"disponivel {r['available_tokens']:,}). Por tipo: {r['by_kind']} (tokens {r['tokens_by_kind']}). Janela {r['window_chars']} caracteres, alinhada por linha.",
+        f"- `replay_fim`: FIM PSM cru (`<|fim_prefix|>..<|fim_suffix|>..<|fim_middle|>` -> middle <= 96 tokens, corte por limite sintatico com a "
+        "logica de `gen_fim.candidates/pick_end` sobre spans de lexer JS); `replay_causal`: trecho em sequencia, perda em todos os tokens "
+        "(EOS so no ultimo trecho do arquivo).",
+        f"- Licencas (tokens): {r['tokens_by_license']}.",
+        f"- Isolamento do replay x `generic_js_fim_eval` (500 cortes) / monitor / val-test-bench do Mongo: pacotes em comum "
+        f"{len(iso['package_overlap_with_generic_eval'])}, arquivos (sha256) em comum {iso['file_sha256_overlap_with_generic_eval']}, trechos que contem "
+        f"um corte de avaliacao (contexto+middle) {iso['chunks_containing_eval_cut']}, trechos com hash igual ao conteudo val/test/bench do Mongo "
+        f"{iso['chunks_matching_mongo_eval_content']} -> **{'OK' if ok else 'VIOLADO'}**.",
+        "- Impacto em G2.5: o replay de FIM cru e de codigo generico alimenta o freio ao esquecimento; a medicao e `generic_js_fim_eval` "
+        "(adapter - base >= -3 p.p.). Ver README_job.md.",
+    ]
 
 
 def write_report(path: Path, m: dict, out_dir: Path) -> None:
@@ -565,17 +730,18 @@ def write_report(path: Path, m: dict, out_dir: Path) -> None:
          "| arquivo de origem | sha256 (calculado) | confere com o manifest do dataset |", "|---|---|---|"]
     for name, f in m["source"]["files"].items():
         L.append(f"| {name} | `{f['sha256'][:16]}` | {f['match']} |")
-    L += ["", "## 2. Mistura (fracao do corpus)", "", "| componente | alvo | obtido | exemplos | tokens | tokens do alvo | disponivel em train |",
-          "|---|---:|---:|---:|---:|---:|---:|"]
+    L += ["", "## 2. Mistura", "",
+          "Fracoes `alvo` dos componentes do Mongo sao relativas ao conjunto NAO-replay (por exemplos); `replay` e fracao do TOTAL de tokens "
+          "(`mix.replay`); a coluna `% tokens` e a participacao real no total do corpus.", "",
+          "| componente | alvo | obtido (exemplos) | exemplos | tokens | % tokens | tokens do alvo | disponivel em train |",
+          "|---|---:|---:|---:|---:|---:|---:|---:|"]
+    total_tokens = max(1, sum(v["tokens"] for v in c["by_component"].values()))
     for k, v in sorted(c["by_component"].items()):
-        L.append(f"| {k} | {m['mix']['target'].get(k, 0):.3f} | {m['mix']['achieved'].get(k, 0):.3f} | {v['examples']} | {v['tokens']} | "
+        tgt = m["mix"]["target"].get("replay", 0) if k.startswith("replay") else m["mix"]["target"].get(k, 0)
+        L.append(f"| {k} | {tgt:.3f} | {m['mix']['achieved'].get(k, 0):.3f} | {v['examples']} | {v['tokens']} | {v['tokens'] / total_tokens:.1%} | "
                  f"{v['target_tokens']} | {m['mix']['available_in_train'].get(k, '-')} |")
     L += ["", f"Alvos nao atingidos: {m['mix']['short_of_target'] or 'nenhum'}. Descartes na tokenizacao/guardas: {c['dropped'] or 'nenhum'}.", "",
-          f"**Replay: `{m['replay']['status']}`**. " + (m['replay'].get('reason', '') if m['replay']['status'] == 'none' else
-                                                       f"{m['replay']['examples']} exemplos de {m['replay'].get('source')}"),
-          "Impacto em G2.5 (queda <= 3 p.p. no Generic-JS FIM): sem replay o unico freio ao esquecimento e o LoRA (r=64, lr 1e-4, 1 epoca, "
-          "base congelada em NF4) e os 10% de FIM cru (+ ~3% de FIM sem cabecalho nos dados), que mantem o infilling nativo; o risco de G2.5 e "
-          "**medio** e nao pode ser medido hoje (nao existe o conjunto Generic-JS FIM nem fonte de replay). Ver README_job.md.", "",
+          *replay_report_lines(m), "",
           "## 3. Tamanho", "",
           f"- Exemplos: **{c['examples']}** · tokens reais: **{c['tokens']:,}** (media {c['mean_tokens_per_example']}/ex.) · "
           f"tokens de alvo (com perda): {c['target_tokens']:,} ({c['target_tokens'] / max(1, c['tokens']):.1%}) · linhas (micro-batches de "
@@ -596,7 +762,7 @@ def write_report(path: Path, m: dict, out_dir: Path) -> None:
           f"| registros train com `split_role`!=train ou dominio holdout | {iso['train_records_with_wrong_role_or_holdout']} |",
           f"| conteudo identico a val/test/bench (hash de prefix+suffix+middle / instruction+editor+output) | descartados: {c['dropped'].get('content_in_eval', 0)} |",
           f"| prompt identico a item selado do blind (hash do manifesto) | descartados: {c['dropped'].get('blind', 0)}; blind selado: {iso['blind']['sealed_manifest']} ({iso['blind']['prompt_hashes']} hashes). Conteudo do blind nunca lido |",
-          f"| **corpus final**: ids no corpus x train/val/test/bench ids | {ver['in_train_ids']} de {ver['examples']} em train; val {ver['in_val_ids']}; test {ver['in_test_ids']}; bench {ver['in_bench_ids']}; duplicados/problemas {ver['n_issues']} |",
+          f"| **corpus final**: ids no corpus x train/val/test/bench ids | {ver['in_train_ids']} de {ver['examples'] - ver.get('replay_examples', 0)} do Mongo em train (+ {ver.get('replay_examples', 0)} de replay, ids `rpl-`); val {ver['in_val_ids']}; test {ver['in_test_ids']}; bench {ver['in_bench_ids']}; duplicados/problemas {ver['n_issues']} |",
           "", f"**G2.7: {'APROVADO' if ver['n_issues'] == 0 and ver['in_val_ids'] + ver['in_test_ids'] + ver['in_bench_ids'] == 0 else 'REPROVADO'}**", "",
           "## 5. Formatos renderizados", "",
           "- `fim_ctx`: `prompt` v2c (contrato `editor-context-v1`, CRLF fixo, ModelPrefix, janelas 4096/1024 UTF-16) + `<|fim_middle|>`; alvo = `middle` + `<|endoftext|>`.",
