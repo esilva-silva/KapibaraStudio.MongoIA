@@ -229,7 +229,7 @@ Recomendação: só respostas, k=32, sobre o pool do T1, **na mesma passada do s
 | Gate | Critério mensurável | Conjunto |
 |---|---|---|
 | G2.1 Checkpoint | hashes = HF (revisão fixada); `config.json` e IDs FIM = tabela do §2; paridade de IDs Python × C# (`QwenFimPromptBuilder` + tokenizer .NET da IDE) = 100% em 400 prompts; FIM sanity 20/20 sem marcadores; padding do vocab mascarado | §3.1 |
-| G2.2 Ganho sobre o base | FIM-acc ≥ base **do mesmo tamanho** + 15 p.p.; exec-valid autocomplete ≥ 0,95; campos inexistentes ≤ 2% | `val` |
+| G2.2 Ganho sobre o base | FIM-acc ≥ base **do mesmo tamanho** + 15 p.p.; exec-valid autocomplete ≥ 0,95 **do teto do validador** (exec-valid do `middle` de referência no mesmo conjunto; recalibrado em 2026-10-15, o absoluto 0,95 é inatingível: teto medido 0,6255 no val v2c); campos inexistentes ≤ 2% | `val` |
 | G2.3 Chat curto (código) | exec-equivalência ≥ 0,85 no `val` chat e ≥ 0,75 no `blind`; 0% Markdown/conversacional | `val`, `blind` |
 | G2.4 Supera os alunos | FIM-acc e exec-valid ≥ melhor student **treinado sem professor** (baseline da Fase 05, mesmo dado) + 5 p.p.; se não, a destilação vira só filtragem/validação (documentar) | `val` |
 | G2.5 Sem esquecimento grave | queda ≤ 3 p.p. no Generic-JS FIM em relação ao base | §3.2 |

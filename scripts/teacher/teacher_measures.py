@@ -43,6 +43,12 @@ def main() -> int:
     h, hb = ad["headline"], base["headline"]
     metrics["fim_acc_gain_vs_base_pp"] = round((h["normalized_match"] - hb["normalized_match"]) * 100, 2)
     metrics["exec_valid_autocomplete"] = h["exec_valid"]
+    # recalibracao do G2.2 (2026-10-15): o validador executa so um subconjunto do Console; o proprio `middle` de referencia
+    # tem exec-valid < 1 (teto). O gate passa a ser relativo ao teto medido no mesmo conjunto/validador.
+    ceil = (ad.get("reference_ceiling") or {}).get("exec_valid")
+    if ceil:
+        metrics["reference_ceiling_exec_valid"] = ceil
+        metrics["exec_valid_vs_ceiling"] = round(h["exec_valid"] / ceil, 4)
     if h.get("nonexistent_fields_rate") is not None:
         metrics["nonexistent_fields_rate_pct"] = round(h["nonexistent_fields_rate"] * 100, 2)
     if a.student_summary:
