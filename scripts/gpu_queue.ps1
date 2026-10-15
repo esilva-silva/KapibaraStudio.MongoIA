@@ -159,7 +159,8 @@ function Invoke-Job($job) {
         $code = $null; $stalled = $false
         while ($true) {
             Start-Sleep -Seconds $Poll
-            @{ t = (Get-Date).ToString("s"); job = $id; pid = $proc.Id; attempt = $attempt } | ConvertTo-Json | Set-Content (Join-Path $QueueDir "heartbeat.json") -Encoding utf8
+            # o heartbeat e informativo: arquivo em uso por outro processo (leitura, antivirus) nao pode derrubar a fila
+            try { @{ t = (Get-Date).ToString("s"); job = $id; pid = $proc.Id; attempt = $attempt } | ConvertTo-Json | Set-Content (Join-Path $QueueDir "heartbeat.json") -Encoding utf8 -ErrorAction Stop } catch { }
             if ($proc.HasExited) { $code = $proc.ExitCode; break }
             if ($watch.Count -gt 0) {
                 $last = Get-LatestWrite $watch $launch
