@@ -121,7 +121,9 @@ def family(f) -> str:
 
 
 # -- uma linha -----------------------------------------------------------------------------------------------------------------------
-def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
+def make_context(rec: dict, cfg: dict, pools: Pools, seed, force_kind: str | None = None) -> dict:
+    """`force_kind` (none|irrelevant|full): sobrescreve o `context_kind` sorteado (o sorteio e consumido do mesmo jeito, entao o
+    resto do fluxo aleatorio do registro nao muda). Usado pelo corpus v2d do professor (build_teacher_corpus.py)."""
     ec = cfg["editor_context"]
     rid = rec["id"]
     rng = _rng(seed, rid)
@@ -138,6 +140,10 @@ def make_context(rec: dict, cfg: dict, pools: Pools, seed) -> dict:
         kind = "irrelevant"
     else:
         kind = "full"
+    if force_kind is not None:
+        if force_kind not in ("none", "irrelevant", "full"):
+            raise ValueError(f"force_kind invalido: {force_kind}")
+        kind = force_kind
 
     root_form = snippet[1]
     conn = "local" if root_form == "pool" else rng.choice(ec["connections"])
@@ -295,13 +301,13 @@ def _finish_chunk(out: list[dict], cfg: dict, tokenizer) -> None:
         blind_guard.check_text(r["prompt"])
 
 
-def iter_generate(fim, pools: Pools, cfg: dict, tokenizer=None, seed=None, chunk: int = 4000, progress=False):
+def iter_generate(fim, pools: Pools, cfg: dict, tokenizer=None, seed=None, chunk: int = 4000, progress=False, force_kind=None):
     """Streaming: consome `fim` (iteravel) e gera registros com contexto em blocos de `chunk` (memoria constante)."""
     seed = cfg.get("seed", 20261008) if seed is None else seed
     buf: list[dict] = []
     done = 0
     for rec in fim:
-        r = build_record(rec, make_context(rec, cfg, pools, seed), cfg)
+        r = build_record(rec, make_context(rec, cfg, pools, seed, force_kind), cfg)
         # guarda do conjunto cego (so a API do guard)
         blind_guard.check_record(r)
         blind_guard.check_text(blind_guard.prompt_text({"kind": "autocomplete", "prefix": r["prefix"], "suffix": r["suffix"]}))
@@ -321,17 +327,17 @@ def iter_generate(fim, pools: Pools, cfg: dict, tokenizer=None, seed=None, chunk
 _WS: dict = {}
 
 
-def _ctx_init(pools, cfg, tok_path, seed):
+def _ctx_init(pools, cfg, tok_path, seed, force_kind=None):
     import os
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-    _WS.update(pools=pools, cfg=cfg, seed=seed, tok=rc.Tokenizer(tok_path) if tok_path else None)
+    _WS.update(pools=pools, cfg=cfg, seed=seed, force_kind=force_kind, tok=rc.Tokenizer(tok_path) if tok_path else None)
 
 
 def _ctx_run(chunk):
     cfg, pools, seed = _WS["cfg"], _WS["pools"], _WS["seed"]
     out = []
     for rec in chunk:
-        r = build_record(rec, make_context(rec, cfg, pools, seed), cfg)
+        r = build_record(rec, make_context(rec, cfg, pools, seed, _WS.get("force_kind")), cfg)
         blind_guard.check_record(r)
         blind_guard.check_text(blind_guard.prompt_text({"kind": "autocomplete", "prefix": r["prefix"], "suffix": r["suffix"]}))
         out.append(r)
@@ -339,12 +345,13 @@ def _ctx_run(chunk):
     return out
 
 
-def iter_generate_parallel(fim, pools: Pools, cfg: dict, tok_path, seed=None, workers: int = 1, chunk: int = 2000, progress=False):
+def iter_generate_parallel(fim, pools: Pools, cfg: dict, tok_path, seed=None, workers: int = 1, chunk: int = 2000, progress=False,
+                           force_kind=None):
     """Mesmo resultado de `iter_generate` (cada registro depende so de id+seed), em `workers` processos; ordem preservada."""
     import par
     seed = cfg.get("seed", 20261008) if seed is None else seed
     done = 0
-    for recs in par.ordered_map(_ctx_run, par.chunked(fim, chunk), workers, _ctx_init, (pools, cfg, tok_path, seed)):
+    for recs in par.ordered_map(_ctx_run, par.chunked(fim, chunk), workers, _ctx_init, (pools, cfg, tok_path, seed, force_kind)):
         done += len(recs)
         if progress and (done // chunk) % 25 == 0:
             print(f"  contexto {done}", flush=True)
@@ -482,6 +489,8 @@ def main(argv=None):
     ap.add_argument("--out")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--no-tokenizer", action="store_true")
+    ap.add_argument("--force-context-kind", choices=["none", "irrelevant", "full"],
+                    help="forca o context_kind de TODOS os registros (padrao: sorteio por none_ratio/irrelevant_ratio)")
     ap.add_argument("--workers", type=int, help="processos (padrao: nucleos - 2, max 10); saida identica para qualquer N")
     ap.add_argument("--shard-size", type=int, default=0, help="linhas por shard (fim_ctx-00000.jsonl, ...); 0 = arquivo unico")
     ap.add_argument("--report", action="store_true", help="grava reports/datasets/<ver>-editor-context-report.md")
@@ -520,9 +529,9 @@ def main(argv=None):
     import par
     workers = a.workers if a.workers is not None else par.default_workers()
     if workers > 1:
-        gen = iter_generate_parallel(fim_stream(), pools, cfg, tok_path, workers=workers, progress=True)
+        gen = iter_generate_parallel(fim_stream(), pools, cfg, tok_path, workers=workers, progress=True, force_kind=a.force_context_kind)
     else:
-        gen = iter_generate(fim_stream(), pools, cfg, tok, progress=True)
+        gen = iter_generate(fim_stream(), pools, cfg, tok, progress=True, force_kind=a.force_context_kind)
     for r in gen:
         w.write(r)
         acc.add(r)

@@ -168,3 +168,45 @@ Nunca cortar: verificacao G2.7, avaliacao final (Mongo e generic-js), checkpoint
 4. Teto de **34 h** mantido (`budget.hours`). Falta decidir so se o J04b (baseline do base no v2c, ~35 min) roda antes do J09 (esta primeiro na fila;
    use `-Only` para pular).
 5. Energia/sistema: nobreak, sem suspensao, monitor na iGPU (libera ~0,5–1 GB de VRAM) — decisoes suas (Fase 05 §9.6/§9.8).
+
+## 8. Iteracao 2 (J09b, `sft_v2d`): preparada, NAO iniciada
+
+Origem: `reports\error_analysis_sft_v2c.md`. Decisoes do usuario (2026-10-15, antes de retreinar): (1) o gate de campos inexistentes e medido em
+`context_kind=full` (`G2.2.nonexistent_fields_full`, <= 2%, bloqueante); a taxa geral (`G2.2.nonexistent_fields`) e as de `none`/`irrelevant`
+ficam informativas; (2) mais dados `none`/`irrelevant`, com alvo conservador.
+
+**Referencia da it.1 com o gate novo** (`reports\eval\sft_v2c-final\{measures,gates}.json`; antigos em `*.pre_full_gate.json`): full 2,06% (34/1.647; **reprova por 0,06 p.p.**),
+none 12,26% (n=155), irrelevant 14,14% (n=198), geral 4,05%. `exec_valid_vs_ceiling` 0,9265 segue reprovado.
+
+### 8.1 Corpus v2d (`configs\corpus_v2d.yaml`, `data\teacher\v2d`, relatorio `reports\corpus_manifest_v2d.md`)
+- So `train` do v2c; val/test/bench/blind nunca; G2.7 aprovado (0 vazamentos). `val_seed` igual ao da v2c (val_loss comparavel). Seed de treino novo (20261015).
+- 48.381 exemplos, 13,49 M tokens, 295 passos. Mistura por componente e replay 12% iguais a v2c.
+- none+irrelevant: 28,2% dos FIM com cabecalho (v2c ~17%): 5.518 cortes `full` re-renderizados com `gen_editor_context.py --force-context-kind` (mesma funcao `make_context(force_kind=)`).
+- Conservador: cortes de none/irrelevant cujo `middle` tem campo/colecao/banco do schema invisivel no prefixo/sufixo sao descartados (pool: 78 mil none/irrelevant em fim_ctx e 117 mil em completion); `full` com campo invisivel nao e convertido.
+- Pesos: ObjectBody/multiline, StatementStart, PropertyKey, FieldReferenceString x2; saas/iot/gaming/logistics x1,5.
+- Reconstruir: `& $PY -I scripts\teacher\build_teacher_corpus.py --config Repos\KapiTeacher-Mongo-7B\configs\corpus_v2d.yaml --report Repos\KapiTeacher-Mongo-7B\reports\corpus_manifest_v2d.md` (~45 s); `--verify-only` confere G2.7.
+- Auditoria de schemas (so relatorio): `reports\schema_audit_v2d.md` (`scripts\teacher\audit_schemas.py`).
+
+### 8.2 Job J09b (`configs\sft_v2d.yaml`)
+Aquecimento (`model.init_adapter` = `adapters\sft_v2c\final`; LoRA identico, otimizador/LR/passo do zero; o sha256 do adapter entra no fingerprint). LR de pico **5e-5**
+(metade da it.1), cosseno ate 5e-6, warmup 3%: o adapter ja domina sintaxe/comprimento/G2.5; com ~1/3 dos tokens da it.1 e Adam novo, 1e-4 arriscaria esquecer
+(G2.5) e 5e-5 ainda move o suficiente os pesos de campo. `budget.hours: 16`; mesmas avaliacoes periodicas; saidas `adapters\sft_v2d\{best,final}`.
+Horas: 7,4 h (506 tok/s) / 10,4 h (360 tok/s) de treino + ~2,3 h de avaliacoes = **~9,7 h / ~12,7 h**.
+Smoke (`--run-name sft_v2d_smoke`, 1 linha/passo): carregou o adapter (sum|lora_B| != 0), 12 passos + eval curto, retomou do passo 12 ate 16; checkpoints/adapter do smoke removidos.
+
+Iniciar: `.\scripts\gpu_queue.ps1 -Start -Only J09b-teacher-sft-v2d` (depois J11c val v2c e J11d generic-js, `waiting`), ou o comando manual
+`& $PY -I scripts\teacher\train_teacher.py --config Repos\KapiTeacher-Mongo-7B\configs\sft_v2d.yaml --resume auto`. Commitar antes os configs/gates.
+
+### 8.3 Avaliar e decidir
+```powershell
+$E = "Repos\KapiTeacher-Mongo-7B\reports\eval"
+& $PY -I scripts\teacher\teacher_measures.py --adapter-summary $E\sft_v2d-final\summary.json --base-summary $E\base-v2c\summary.json `
+      --generic-base Repos\KapiTeacher-Mongo-7B\reports\baseline_base\Qwen2.5-Coder-7B-generic-js\summary.json --generic-adapter $E\sft_v2d-final-generic-js\summary.json `
+      --corpus-manifest data\teacher\v2d\manifest.json --out $E\sft_v2d-final\measures.json
+& $PY -I scripts\eval\check_gates.py --tier TEACHER --gates configs\gates.teacher.yaml --measures $E\sft_v2d-final\measures.json --out $E\sft_v2d-final\gates.json
+& $PY -I scripts\eval\compare_models.py <args do script: v2c x v2d, mesmas ids, pareado>   # ver --help
+```
+Aceitar o v2d se: `G2.2.nonexistent_fields_full` <= 2%, `exec_valid_vs_ceiling` >= 0,95 (ou melhora clara sobre 0,9265), `G2.2.fim_acc_gain` >= +15 p.p. sem queda
+significativa vs v2c no pareado, G2.5 >= -3 p.p. e G2.7 = 0. Informativos: taxas none/irrelevant (esperado cair) e fim_acc em none/irrelevant (pode cair: o alvo agora e conservador).
+Se o full continuar > 2% ou o G2.5 cair, nao treinar a it.3 as cegas: reanalisar (`error_analysis`) e considerar mais dados `full` em PropertyKey/multiline.
+Riscos: modelo mais conservador em none/irrelevant; `fim_raw` (10%) ainda contem cortes com campo invisivel; contextos `irrelevant` forcados nao reproduzem a conexao `local` dos snippets `pool` (~2,5% diferem do v2c).

@@ -1,0 +1,76 @@
+# corpus_v2d.yaml - 2a iteracao do SFT do professor (J09b): aquecimento sobre o adapter v2c, corpus de ~13 M tokens com mais exemplos
+# sem schema visivel (conservadores), sobre-amostragem dos papeis de cursor com maior taxa de erro e +50% de peso nos dominios
+# saas/iot/gaming/logistics. Decisoes do usuario (2026-10-15) em reports/error_analysis_sft_v2c.md §4 e README_job.md §8.
+# Lido por scripts/teacher/build_teacher_corpus.py --config <este arquivo> --report Repos/KapiTeacher-Mongo-7B/reports/corpus_manifest_v2d.md. Somente split `train` entra no corpus; `val` gera apenas o mini-conjunto de
+# validacao do treino (val_loss/val_gen); test/bench/blind NUNCA sao lidos para treinar (G2.7, verificado no codigo).
+version: teacher-corpus/1
+dataset_version: v2c
+seed: 20261015             # novo sorteio (a v2c ja foi vista pelo adapter de partida); o replay tambem muda de subconjunto
+val_seed: 20261008         # val_loss/val_gen IDENTICOS aos da v2c (comparavel entre iteracoes)
+tokenizer: BaseRepos/Qwen2.5-Coder-7B/tokenizer.json
+source_dir: data/validated/v2c
+splits_dir: data/splits/v2c
+out_dir: data/teacher/v2d
+
+# Pool total de exemplos (o treino consome um prefixo por orcamento de tokens/horas; a ordem das shards ja e aleatoria).
+target_examples: 46000    # pool NAO-replay (v2c: 123000); o replay entra por orcamento de tokens (mix.replay) sobre o total -> ~13 M tokens
+seq_len: 4096              # exemplos maiores sao descartados (nenhum previsto: o orcamento do dataset limita o prompt a 2.048)
+micro_tokens: 4096         # orcamento de tokens PADDED de uma linha (micro-batch): n_exemplos x comprimento_maximo <= micro_tokens
+max_examples_per_row: 32
+shard_examples: 10000
+
+# Mistura. Componentes do Mongo: fracao do pool NAO-replay (por exemplos; somam 1.0). `replay`: fracao do TOTAL de TOKENS do corpus
+# (Fase 02 §3.2/§3.3: 10-15% de replay; G2.5). O total fica em ~37 M tokens (o Mongo cai ~12% vs. o corpus sem replay).
+mix:
+  fim_ctx: 0.40            # FIM PSM Qwen com o prompt `editor-context-v1` ja renderizado em v2c (cabecalho 92% / sem 8%)
+  fim_raw: 0.10            # MESMOS registros (outros ids) renderizados em FIM cru: so prefixo/sufixo, sem cabecalho de contexto
+  completion: 0.20         # sufixo vazio: contexto do cursor + alvo = middle + sufixo original (so restos curtos, <= max_chars)
+  chat: 0.15               # chat curto (instrucao + codigo) pt-BR/en ~50/50
+  chat_multiturn: 0.03     # turno de refinamento (o codigo anterior ja esta em context.editor)
+  explain: 0.02            # explicacao curta em comentario (<= 5% do chat, Fase 03)
+  correction: 0.06
+  negative: 0.04           # pedido sobre colecao/campo/API inexistente -> recusa curta com alternativas
+  replay: 0.12             # fracao dos TOKENS totais (ver bloco `replay`); 0 = sem replay
+
+completion:
+  max_chars: 240           # len(middle)+len(suffix) maximo do alvo derivado (~<= 80 tokens; limite do contrato: 96)
+
+fim_raw:
+  # Janelas do contrato (render_contract.bound_window): 4096 caracteres antes / 1024 depois do cursor (UTF-16).
+  contexts: [full, irrelevant]
+
+chat:
+  template: teacher-chat-v1   # FIM Qwen com sufixo vazio; prefixo no formato local-agent-fim-v0 da IDE (sem Qwen chat template)
+  include_known_collections: true   # linha extra "Colecoes disponiveis" (necessaria aos negativos); decisao pendente com a IDE
+  context_max_chars: 8192
+  # dotnet = System.Text.Json padrao (nao-ASCII e aspas viram uXXXX, como o JSON do contrato local-agent-fim-v0 da IDE; infla tokens);
+  # plain = json.dumps(ensure_ascii=False). Decidir com a IDE/ContractProbe antes de congelar o corpus.
+  json_escaping: dotnet
+
+replay:
+  status: enabled
+  # Fonte: data/replay/v1 (scripts/data/build_replay.py): JS/TS de node_modules ja instalados no disco (MIT/Apache-2.0/BSD/ISC verificados
+  # por pacote), holdout POR PACOTE para o G2.5 (generic_js_fim_eval). Atribuicao por pacote em data/replay/v1/LICENSES.md.
+  source_dir: data/replay/v1
+  train_file: replay_train.jsonl
+  eval_file: generic_js_fim_eval.jsonl      # 500 cortes: so para o G2.5 (nunca entra no treino)
+  monitor_file: generic_js_fim_monitor.jsonl  # 100 cortes de outros arquivos dos pacotes holdout: val_loss_generic / gen no treino
+  fim_fraction: 0.5        # por trecho: 50% FIM PSM cru (corte sintatico, middle <= 96 tokens) / 50% causal (perda em todos os tokens)
+  fim_max_middle_tokens: 96
+  window_chars: 4000       # trechos consecutivos de arquivo, alinhados por linha (~1.100 tokens)
+
+validation_subset:         # so split `val`; usado pelo treino (val_loss e FIM EM/mongo_valid rapido)
+  fim: 600
+  chat: 200
+  gen: 200                 # subconjunto do fim acima para geracao greedy (EM / mongo_valid)
+
+# --- v2d: o que muda em relacao ao v2c (a mistura por componente, replay 12%, chat/correcao/negativos ficam IGUAIS) ---
+v2d:
+  context_force:
+    # fracao de none+irrelevant entre os exemplos FIM com cabecalho (fim_ctx + completion). v2c: ~17%. O excedente sobre o natural e
+    # obtido re-renderizando cortes `full` de TREINO (mesmo id) com contexto forcado none/irrelevant (proporcao natural entre os dois).
+    target_share: 0.28
+    conservative: true     # none/irrelevant so com cortes cujo middle usa campo visivel no prefixo/sufixo ou nenhum nome do schema
+  role_weights: {ObjectBody: 2.0, StatementStart: 2.0, PropertyKey: 2.0, FieldReferenceString: 2.0}   # value/operator ficam em 1.0
+  cut_kind_weights: {multiline: 2.0}
+  domain_weights: {saas: 1.5, iot: 1.5, gaming: 1.5, logistics: 1.5}

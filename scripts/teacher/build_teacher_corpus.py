@@ -20,6 +20,7 @@ import argparse
 import hashlib
 import heapq
 import json
+import math
 import multiprocessing as mp
 import os
 import random
@@ -36,6 +37,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "data"))
 import blind_guard  # noqa: E402
+import gen_editor_context as gec  # noqa: E402  (make_context(..., force_kind=...): contexto forcado do corpus v2d)
 import render_contract as rc  # noqa: E402
 import replay_cuts  # noqa: E402
 
@@ -68,6 +70,62 @@ def content_hash(rec: dict) -> int:
         ctx = rec.get("context") or {}
         text = f"{rec['instruction']}\x00{ctx.get('editor') or ''}\x00{rec['output']}"
     return int.from_bytes(hashlib.sha1(text.encode("utf-8", "surrogatepass")).digest()[:8], "big")
+
+
+# -- v2d: necessidade de campo/colecao invisivel (corte conservador em contextos none/irrelevant) --------------------------------
+_NAME_TOKEN = re.compile(r"(?<![\w$])[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_0-9][A-Za-z0-9_]*)*")
+
+
+def field_need(target: str, visible: str, names: frozenset | set) -> int:
+    """0 = o alvo nao contem nomes do schema (estrutura/valores/operadores); 1 = contem, mas todos aparecem no texto visivel;
+    2 = algum nome de campo/colecao/banco do schema esta no alvo e NAO aparece no texto visivel (o modelo teria de adivinhar)."""
+    need = 0
+    for token in _NAME_TOKEN.findall(target):
+        segs = token.split(".")
+        hit = [token] if token in names else [x for x in segs if x in names]
+        if not hit:
+            continue
+        need = 1
+        if re.search(r"(?<![\w$])" + re.escape(token) + r"(?![\w])", visible):
+            continue
+        for seg in hit:
+            if not re.search(r"(?<![\w$])" + re.escape(seg) + r"(?![\w])", visible):
+                return 2
+    return need
+
+
+def schema_name_sets(schemas) -> dict:
+    """(schema_id completo, colecao) -> nomes que um corte revela do schema: caminhos, cada segmento, colecao e banco."""
+    out = {}
+    for sch in schemas:
+        for coll in sch.colls:
+            names = {coll.name, sch.schema_id}
+            for path in coll.fields:
+                names.add(path)
+                names.update(path.split("."))
+            out[(sch.full_id, coll.name)] = frozenset(names)
+    return out
+
+
+class _StubPools:
+    """So o que gen_editor_context.make_context usa para context_kind none/irrelevant (nunca `full`: sem recent_commands)."""
+
+    def __init__(self, schemas) -> None:
+        self.snippet_by_id: dict = {}
+        self.schemas = {s.full_id: s for s in schemas}
+        self.sorted_schemas = sorted(schemas, key=lambda s: s.full_id)
+        self.public = [s for s in self.sorted_schemas if not s.holdout]
+
+    def distractor_schemas(self, rec: dict):
+        pool = self.sorted_schemas if rec["split"] in ("test", "bench") else self.public
+        return [s for s in pool if s.full_id != rec["schema_id"]]
+
+
+def forced_prompt(rec: dict, kind: str) -> str:
+    """Re-renderiza o prompt `editor-context-v1` de um registro com `context_kind` forcado (none|irrelevant)."""
+    r = gec.build_record(rec, gec.make_context(rec, DCFG, STUB, DCFG["seed"], kind), DCFG)
+    gec._finish_chunk([r], DCFG, RC_TOK)  # noqa: SLF001  (orcamento de 2048 tokens + guarda do blind, como na geracao v2c)
+    return r["prompt"]
 
 
 _ESC = re.compile(r"[^ -~]|[\"&'+<>`\\]")
@@ -195,8 +253,16 @@ def _scan_shard(path: str) -> dict:
                 eligible = False
                 if rec["type"] == "fim":
                     eligible = len(rec["middle"]) + len(rec["suffix"]) <= CFG["completion"]["max_chars"]
+                role = dom = None
+                need_fim = need_comp = 0
+                if rec["type"] == "fim":
+                    role, dom = rec.get("cursor_role"), rec.get("domain")
+                    if NAMES is not None:
+                        names = NAMES.get((rec["schema_id"], rec["collection"]), frozenset())
+                        need_fim = field_need(rec["middle"], rec["prefix"] + rec["suffix"], names)
+                        need_comp = field_need(rec["middle"] + rec["suffix"], rec["prefix"], names) if eligible else 0
                 out["train"].append((rec["id"], rec["type"], rec.get("kind") if rec["type"] == "chat" else rec["cut_kind"],
-                                     eligible, rec.get("context_kind"), rec.get("category") or ""))
+                                     eligible, rec.get("context_kind"), rec.get("category") or "", role, dom, need_fim, need_comp))
             else:
                 out["eval_ids"][rec["id"]] = split
                 out["eval_content"][content_hash(rec)] = split
@@ -210,15 +276,25 @@ def _scan_shard(path: str) -> dict:
 
 # -- fase 2: renderizacao + tokenizacao -------------------------------------------------------------------------------------------
 _TOK = None
+NAMES = None      # v2d: (schema_id, colecao) -> nomes do schema (field_need)
+DCFG = STUB = RC_TOK = None   # v2d: config do dataset, pools minimos e tokenizer do renderer (contexto forcado)
 
 
 def _init_worker(cfg: dict, tok_path: str, blind_prompts: frozenset = frozenset()) -> None:
-    global CFG, _TOK, BLIND_PROMPTS
+    global CFG, _TOK, BLIND_PROMPTS, NAMES, DCFG, STUB, RC_TOK
     CFG = cfg
     BLIND_PROMPTS = blind_prompts
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     from tokenizers import Tokenizer
     _TOK = Tokenizer.from_file(tok_path)
+    if cfg.get("v2d"):
+        from gen_snippets import load_config as load_dataset_config
+        from gen_snippets import load_schemas
+        DCFG = load_dataset_config(None)
+        schemas = load_schemas(ROOT / DCFG.get("schemas_dir", "data/schemas"))
+        NAMES = schema_name_sets(schemas)
+        STUB = _StubPools(schemas)
+        RC_TOK = rc.Tokenizer(tok_path)
 
 
 def _render_shard(args: tuple) -> dict:
@@ -232,8 +308,10 @@ def _render_shard(args: tuple) -> dict:
             if ident not in selected:
                 continue
             rec = json.loads(line)
-            comp, is_val = selected[ident]
+            comp, is_val, force = selected[ident]
             if rec["type"] == "fim":
+                if force:   # v2d: mesmo corte, contexto forcado (none|irrelevant); id/split inalterados (G2.7 intacto)
+                    rec = {**rec, "prompt": forced_prompt(rec, force)}
                 prompt, target = render_fim(rec, comp)
             else:
                 prompt, target = render_chat_prompt(rec, cfg), rec["output"]
@@ -244,7 +322,7 @@ def _render_shard(args: tuple) -> dict:
                 if blind_guard.prompt_sha256(prompt + "\x00" + target) in BLIND_PROMPTS:
                     dropped["blind"] += 1
                     continue
-            items.append({"id": ident, "component": comp, "val": is_val, "prompt": prompt, "target": target, "rec": rec})
+            items.append({"id": ident, "component": comp, "val": is_val, "prompt": prompt, "target": target, "rec": rec, "force": force})
     if not items:
         return {"path": path, "items": [], "dropped": dropped}
     enc_p = tok.encode_batch([i["prompt"] for i in items], add_special_tokens=False) if any(i["prompt"] for i in items) else None
@@ -264,6 +342,9 @@ def _render_shard(args: tuple) -> dict:
         meta = {"id": item["id"], "component": item["component"], "kind": rec.get("cut_kind") or rec.get("kind"),
                 "domain": rec.get("domain"), "language": rec.get("language"), "category": rec.get("category"),
                 "n_prompt": len(p_ids), "n_target": len(t_ids), "src": Path(path).name}
+        if cfg.get("v2d") and rec["type"] == "fim":
+            meta.update({"ctx": item["force"] or rec.get("context_kind"), "role": rec.get("cursor_role"), "forced": bool(item["force"]),
+                         "natural_ctx": rec.get("context_kind")})
         row = {"meta": meta, "ids": p_ids + t_ids, "loss_start": len(p_ids)}
         if item["val"] and rec["type"] == "fim":
             row["gen"] = {"id": item["id"], "prompt": item["prompt"], "target": rec["middle"], "prefix": rec["prefix"],
@@ -475,11 +556,59 @@ def main() -> int:
     avail = Counter()
     pop = {"completion": [r for r in fim_all if r[3]],
            "fim_raw": [r for r in fim_all if r[4] in cfg["fim_raw"]["contexts"]], "fim_ctx": fim_all}
+    v2d = cfg.get("v2d")
+    v2d_stats: dict = {}
+    pick = pick_lowest
+    if v2d:
+        # (c) pesos: papel do cursor / corte x2 e dominios x1,5; amostragem ponderada sem reposicao (Efraimidis-Spirakis, deterministica)
+        w_role, w_cut, w_dom = v2d.get("role_weights", {}), v2d.get("cut_kind_weights", {}), v2d.get("domain_weights", {})
+
+        def weight(r: tuple) -> float:
+            return max(float(w_role.get(r[6], 1.0)), float(w_cut.get(r[2], 1.0))) * float(w_dom.get(r[7], 1.0))
+
+        def pick(pool: list[tuple], n: int, seed_: int, salt: str) -> list[tuple]:  # noqa: F811
+            return heapq.nsmallest(n, pool, key=lambda t: -math.log((unit(seed_, salt, t[0]) + 0.5) / 2**64) / weight(t))
+
+        # (a) conservador: corte que exige campo/colecao invisivel em none/irrelevant sai do pool (nao ensina a adivinhar)
+        need_idx = {"fim_ctx": 8, "completion": 9}
+        discards = {c: Counter() for c in need_idx}
+        for comp, idx in need_idx.items():
+            kept = []
+            for r in pop[comp]:
+                if r[4] in ("none", "irrelevant") and r[idx] == 2:
+                    discards[comp][r[4]] += 1
+                else:
+                    kept.append(r)
+            v2d_stats["pool_before_" + comp] = Counter(r[4] for r in pop[comp])
+            pop[comp] = kept
+        v2d_stats["natural_discards"] = {c: dict(v) for c, v in discards.items()}
     for comp in ("completion", "fim_raw", "fim_ctx"):
         pool = [r for r in pop[comp] if r[0] not in chosen]
         avail[comp] = len(pool)
-        for r in pick_lowest(pool, want.get(comp, 0), seed, comp):
+        for r in pick(pool, want.get(comp, 0), seed, comp):
             chosen[r[0]] = comp
+    force_map: dict[str, str] = {}
+    if v2d:
+        # (a) forca none/irrelevant em cortes `full` ate o alvo `target_share` dos exemplos FIM com cabecalho (fim_ctx + completion)
+        row_of = {r[0]: r for r in fim_all}
+        sel = [(i, c) for i, c in chosen.items() if c in ("fim_ctx", "completion")]
+        cur = Counter(row_of[i][4] for i, _ in sel)
+        share = float(v2d["context_force"]["target_share"])
+        need_total = max(0, int(round(share * len(sel))) - cur["none"] - cur["irrelevant"])
+        idx_of = {"fim_ctx": 8, "completion": 9}
+        eligible_full = [i for i, c in sel if row_of[i][4] == "full" and row_of[i][idx_of[c]] <= 1]
+        blocked_full = sum(1 for i, c in sel if row_of[i][4] == "full" and row_of[i][idx_of[c]] == 2)
+        p_irr = cur["irrelevant"] / max(1, cur["none"] + cur["irrelevant"])
+        for i in heapq.nsmallest(need_total, eligible_full, key=lambda t: unit(seed, "force-pick", t)):
+            force_map[i] = "irrelevant" if unit(seed, "force-kind", i) / 2**64 < p_irr else "none"
+        v2d_stats.update({"fim_ctx_like_examples": len(sel), "natural_context_in_selection": dict(cur), "target_share": share,
+                          "forced_needed": need_total, "forced": dict(Counter(force_map.values())),
+                          "forced_shortfall": max(0, need_total - len(force_map)), "full_eligible_for_forcing": len(eligible_full),
+                          "full_blocked_hidden_field": blocked_full,
+                          "pool_role_share": dict(Counter(r[6] for r in fim_all)),
+                          "weights": {"role": w_role, "cut_kind": w_cut, "domain": w_dom}})
+        print(f"      v2d: {len(sel)} exemplos FIM com cabecalho; natural none/irrelevant {cur['none']}/{cur['irrelevant']}; forcados "
+              f"{dict(Counter(force_map.values()))} (alvo {share:.0%}, faltaram {v2d_stats['forced_shortfall']})", flush=True)
     for comp in CHAT_KINDS:
         pool = [r for r in train_rows if r[1] == "chat" and r[2] == comp]
         avail[comp] = len(pool)
@@ -489,10 +618,11 @@ def main() -> int:
     short = {k: (want[k], sel_counts[k]) for k in want if sel_counts[k] < want[k]}
 
     vs = cfg["validation_subset"]
-    val_fim = pick_lowest([r for r in val_rows if r[1] == "fim"], vs["fim"], seed, "val-fim")
-    val_chat = pick_lowest([r for r in val_rows if r[1] == "chat"], vs["chat"], seed, "val-chat")
-    val_sel = {r[0]: ("fim_ctx" if r[1] == "fim" else "chat", True) for r in val_fim + val_chat}
-    selected = {i: (c, False) for i, c in chosen.items()}
+    vseed = int(cfg.get("val_seed", seed))   # v2d mantem o subconjunto de validacao do v2c (val_loss comparavel entre iteracoes)
+    val_fim = pick_lowest([r for r in val_rows if r[1] == "fim"], vs["fim"], vseed, "val-fim")
+    val_chat = pick_lowest([r for r in val_rows if r[1] == "chat"], vs["chat"], vseed, "val-chat")
+    val_sel = {r[0]: ("fim_ctx" if r[1] == "fim" else "chat", True, None) for r in val_fim + val_chat}
+    selected = {i: (c, False, force_map.get(i)) for i, c in chosen.items()}
     selected.update(val_sel)
 
     # ---- renderizacao + tokenizacao por arquivo ---------------------------------------------------------------------------------------
@@ -647,6 +777,24 @@ def main() -> int:
         c["examples"] += 1
         c["tokens"] += len(r["ids"])
         c["target_tokens"] += r["meta"]["n_target"]
+    v2d_block = None
+    if v2d:
+        def dist(metas: list[dict], key: str) -> dict:
+            c = Counter(m.get(key) for m in metas)
+            return {str(k): {"n": v, "share": round(v / max(1, len(metas)), 4)} for k, v in sorted(c.items(), key=lambda kv: -kv[1])}
+
+        metas = [r["meta"] for r in train_ex if not r["meta"]["component"].startswith("replay")]
+        allfim = [m for m in metas if "role" in m]
+        header = [m for m in allfim if m["component"] in ("fim_ctx", "completion")]
+        steps = math.ceil(sum(s_["rows"] for s_ in shards) / 12)
+        v2d_block = {**{k: (dict(v) if isinstance(v, Counter) else v) for k, v in v2d_stats.items()},
+                     "header_examples": len(header), "ctx_header_final": dist(header, "ctx"),
+                     "ctx_header_natural_kind_of_final": dist(header, "natural_ctx"),
+                     "forced_final": sum(1 for m in header if m["forced"]),
+                     "role_header": dist(header, "role"), "role_all_fim": dist(allfim, "role"), "cut_all_fim": dist(allfim, "kind"),
+                     "domain_all_fim": dist(allfim, "domain"), "domain_all_mongo": dist(metas, "domain"),
+                     "plan": {"rows": sum(s_["rows"] for s_ in shards), "steps_12_rows": steps, "tokens": tokens,
+                              "hours_at_506_tok_s": round(tokens / 506 / 3600, 1), "hours_at_360_tok_s": round(tokens / 360 / 3600, 1)}}
     manifest = {
         "schema": "teacher-corpus/1", "built_utc": time.strftime("%FT%TZ", time.gmtime()), "git_hash": git_hash(),
         "config": {"path": rel(cfg_path),
@@ -671,7 +819,7 @@ def main() -> int:
                 "gen_sha256": sha256_file(out_dir / "val" / "val_gen.jsonl"), "gen_examples": len(gen),
                 "gen_generic_file": "val/val_gen_generic.jsonl", "gen_generic_examples": len(gen_generic),
                 "gen_generic_sha256": sha256_file(out_dir / "val" / "val_gen_generic.jsonl")},
-        "shards": shards, "isolation": iso, "verification": ver,
+        "v2d": v2d_block, "shards": shards, "isolation": iso, "verification": ver,
         "chat_template": {"name": cfg["chat"]["template"], "head": CHAT_HEAD, "tail": CHAT_TAIL,
                           "include_known_collections": cfg["chat"]["include_known_collections"],
                           "escaping": "System.Text.Json JavaScriptEncoder.Default (\\uXXXX maiusculo)"},
@@ -715,9 +863,42 @@ def replay_report_lines(m: dict) -> list[str]:
     ]
 
 
+def v2d_report_lines(m: dict) -> list[str]:
+    v = m.get("v2d")
+    if not v:
+        return []
+
+    def table(title: str, d: dict, top: int = 20) -> list[str]:
+        return [f"**{title}**", "", "| valor | n | % |", "|---|---:|---:|",
+                *[f"| {k} | {x['n']} | {x['share']:.1%} |" for k, x in list(d.items())[:top]], ""]
+
+    nd = v["natural_discards"]
+    plan = v["plan"]
+    L = ["## 5b. Iteracao 2 (v2d): contexto, papeis e dominios", "",
+         f"- Exemplos FIM com cabecalho de contexto (`fim_ctx` + `completion`): **{v['header_examples']}**; alvo de `none`+`irrelevant` "
+         f"{v['target_share']:.0%} (v2c: ~17%). Natural na selecao (apos o corte conservador): {v['natural_context_in_selection']}; "
+         f"**forcados** (mesmo corte e id, so o cabecalho re-renderizado com `gen_editor_context.make_context(force_kind=...)`): "
+         f"{v['forced']} (faltaram {v['forced_shortfall']}).",
+         f"- **Descartes por contexto (corte conservador)**: cortes de `none`/`irrelevant` cujo `middle` exige campo/colecao/banco do schema "
+         f"invisivel no prefixo/sufixo foram removidos do pool: `fim_ctx` {nd.get('fim_ctx')}, `completion` {nd.get('completion')} "
+         f"(de {v.get('pool_before_fim_ctx')} no pool de treino). Cortes `full` com campo invisivel nao foram forcados a none/irrelevant: "
+         f"{v['full_blocked_hidden_field']} na selecao (permanecem `full`); elegiveis para forcar: {v['full_eligible_for_forcing']}.",
+         f"- Pesos: papel/corte {v['weights']['role']} / {v['weights']['cut_kind']}; dominio {v['weights']['domain']} (amostragem sem reposicao).", ""]
+    L += table("context_kind final dos exemplos com cabecalho", v["ctx_header_final"])
+    L += table("context_kind original (v2c) dos mesmos exemplos", v["ctx_header_natural_kind_of_final"])
+    L += table("cursor_role (exemplos com cabecalho)", v["role_header"])
+    L += table("cursor_role (todos os FIM)", v["role_all_fim"])
+    L += table("cut_kind (todos os FIM)", v["cut_all_fim"])
+    L += table("dominio (todos os FIM)", v["domain_all_fim"])
+    L += table("dominio (todos os componentes do Mongo)", v["domain_all_mongo"])
+    L += [f"- Plano: {plan['rows']} linhas -> **{plan['steps_12_rows']} passos** (12 linhas/passo), {plan['tokens']:,} tokens; "
+          f"treino ~{plan['hours_at_506_tok_s']} h a 506 tok/s, ~{plan['hours_at_360_tok_s']} h a 360 tok/s (sem avaliacoes).", ""]
+    return L
+
+
 def write_report(path: Path, m: dict, out_dir: Path) -> None:
     iso, ver, c = m["isolation"], m["verification"], m["counts"]
-    L = ["# Corpus de SFT do KapiTeacher-Mongo-7B (dataset v2c)", "",
+    L = [f"# Corpus de SFT do KapiTeacher-Mongo-7B ({out_dir.name}; dataset de origem {m['dataset_version']})", "",
          f"Gerado por `scripts/teacher/build_teacher_corpus.py` em {m['built_utc']} (git `{m['git_hash'][:12]}`, seed {m['seed']}), "
          f"{m['elapsed_s']} s. Config `{m['config']['path']}` sha256 `{m['config']['sha256'][:16]}`. Saida: `{rel(out_dir)}` "
          f"(gitignored; manifest.json sha256 `{m.get('manifest_sha256', '')[:16]}`).", "",
@@ -773,7 +954,7 @@ def write_report(path: Path, m: dict, out_dir: Path) -> None:
           "Sem Qwen chat template (modelo base). `context` = `Conexão (ID lógico)`/`Banco`/`Coleção`" +
           (" + `Coleções disponíveis`" if m['chat_template']['include_known_collections'] else "") + " + blocos `Seleção/Conteúdo do editor`.",
           "- Perda somente nos tokens do alvo + `<|endoftext|>`; prompt mascarado. Sem concatenacao entre exemplos.", "",
-          "## 6. Observacoes", "",
+          *v2d_report_lines(m), "## 6. Observacoes", "",
           "- O pool e uma amostra uniforme (menor hash estavel do id) de cada componente; nao ha sobre-amostragem `hard` (exige scoring do professor).",
           "- `chat_multiturn`: so o ultimo turno (o codigo do turno anterior ja esta em `context.editor`); `history` nao e usado.",
           "- Linhas (micro-batches) ja agrupadas por comprimento; o treino consome shards na ordem do manifesto e pode parar em qualquer ponto "

@@ -110,3 +110,66 @@ jobs:
     watchdog_minutes: 20
     window: any
     estimate_hours: {hours: 0.3}
+  # ---------------------------------------------------------------------------------------------------------------------------------
+  # J09b (it.2): aquecimento a partir de sft_v2c/final com o corpus v2d (13,5 M tokens, 295 passos, LR 5e-5). ENFILEIRADO, NAO INICIADO.
+  # Manual: python -I scripts/teacher/train_teacher.py --config Repos/KapiTeacher-Mongo-7B/configs/sft_v2d.yaml --resume auto
+  - id: J09b-teacher-sft-v2d
+    title: "KapiTeacher-Mongo-7B SFT it.2 (aquecimento do sft_v2c/final, corpus v2d + replay 12%, LR 5e-5)"
+    status: ready
+    command: ["{python}", "-I", "scripts/teacher/train_teacher.py", "--config", "Repos/KapiTeacher-Mongo-7B/configs/sft_v2d.yaml",
+              "--resume", "auto"]
+    depends_on: []
+    requires_files:
+      - data/teacher/v2d/manifest.json
+      - data/replay/v1/manifest.json
+      - Repos/KapiTeacher-Mongo-7B/configs/sft_v2d.yaml
+      - Repos/KapiTeacher-Mongo-7B/adapters/sft_v2c/final/adapter_model.safetensors
+    watch_files:
+      - Repos/KapiTeacher-Mongo-7B/reports/sft_v2d/metrics.jsonl
+      - Repos/KapiTeacher-Mongo-7B/reports/sft_v2d/heartbeat.json
+    done_marker: Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final/adapter_model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 15
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 506, conservative_tok_s: 360, tokens: 13485182, steps: 295, train_hours: 7.4, with_evals_hours: 9.7, conservative_train_hours: 10.4, conservative_hours: 12.7, budget_hours: 16, replay_token_share: 0.12}
+  # J11c: val v2c (MESMOS ids do base-v2c), adapter v2d final.
+  - id: J11c-teacher-eval-val-v2d
+    title: "Avaliacao do KapiTeacher it.2 no val v2c (FIM, adapter sft_v2d final, mesma amostra)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/teacher/eval_teacher.py", "--model", "BaseRepos/Qwen2.5-Coder-7B", "--adapter",
+              "Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final", "--data-version", "v2c", "--split", "val",
+              "--contract", "editor-context-v1", "--n", "2000", "--name", "sft_v2d-final", "--resume",
+              "--ids-from", "Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json",
+              "--out-root", "Repos/KapiTeacher-Mongo-7B/reports/eval"]
+    depends_on: [J09b-teacher-sft-v2d]
+    requires_files:
+      - Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final/adapter_model.safetensors
+      - Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json
+    watch_files:
+      - Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2d-final/predictions.jsonl
+    done_marker: Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2d-final/summary.json
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    estimate_hours: {hours: 1.0}
+  # J11d: G2.5 generic-js do adapter v2d.
+  - id: J11d-teacher-eval-generic-js-v2d
+    title: "G2.5: adapter sft_v2d final no generic_js_fim_eval (500 cortes FIM)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/teacher/eval_teacher.py", "--model", "BaseRepos/Qwen2.5-Coder-7B", "--adapter",
+              "Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final", "--data-version", "generic-js", "--split", "eval",
+              "--contract", "fim-raw", "--n", "500", "--load", "nf4", "--name", "sft_v2d-final-generic-js", "--resume",
+              "--ids-from", "Repos/KapiTeacher-Mongo-7B/reports/baseline_base/Qwen2.5-Coder-7B-generic-js/sample_ids.json",
+              "--out-root", "Repos/KapiTeacher-Mongo-7B/reports/eval"]
+    depends_on: [J09b-teacher-sft-v2d]
+    requires_files:
+      - Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final/adapter_model.safetensors
+      - Repos/KapiTeacher-Mongo-7B/reports/baseline_base/Qwen2.5-Coder-7B-generic-js/summary.json
+    watch_files:
+      - Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2d-final-generic-js/predictions.jsonl
+    done_marker: Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2d-final-generic-js/summary.json
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    estimate_hours: {hours: 0.3}

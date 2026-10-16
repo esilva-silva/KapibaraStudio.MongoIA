@@ -211,7 +211,8 @@ def phase_gen(args, out_dir: Path) -> None:
                 reference = row["middle"]
                 record = {"id": row["id"], "split": row["split"], "cut_kind": row["cut_kind"], "domain": row["domain"],
                           "dialect": row["dialect"], "schema_id": row.get("schema_id"), "collection": row.get("collection"),
-                          "cursor_role": row.get("cursor_role"), "prompt_tokens": len(ids), "generated_tokens": len(result["tokens"]),
+                          "cursor_role": row.get("cursor_role"), "context_kind": row.get("context_kind"),
+                          "prompt_tokens": len(ids), "generated_tokens": len(result["tokens"]),
                           "stop": result["stop"], "stop_token": result["tokens"][-1], "ttft_ms": round(result["ttft"] * 1000, 1),
                           "raw": raw, "prediction": pred, "prediction_ide32": pred32, "reference": reference,
                           "ide_rejected": ide_rejects(pred, result["stop"] in ("eos", "suffix")),
@@ -375,6 +376,10 @@ def phase_report(args, out_dir: Path) -> dict:
         "decoding": meta["decoding"], "max_new_tokens": meta["max_new_tokens"], "context_tokens": meta["context_tokens"],
         "headline": overall, "headline_ide32": aggregate(rows, "metrics_ide32", "exec_ide32"), "reference_ceiling": reference,
         "exec_stage_distribution": dict(stages), "by_cut_kind": group_by(rows, "cut_kind"), "by_domain": group_by(rows, "domain"),
+        # G2.2 (2026-10-15): campos inexistentes medidos em context_kind=full; none/irrelevant informativos. Predicoes antigas sem
+        # `context_kind` sao completadas por teacher_measures.py (join por id com data/validated/<versao>).
+        **({"by_context_kind": group_by(rows, "context_kind"), "by_cursor_role": group_by(rows, "cursor_role")}
+           if all(r.get("context_kind") for r in rows) else {}),
         "stop_reasons": dict(collections.Counter(r["stop"] for r in rows)),
         "ide_rejected_rate": mean(r["ide_rejected"] for r in rows), "ttft_ms_mean": mean(latency),
         "gpu_seconds": meta["gpu_seconds"], "generation_seconds": meta["generation_seconds"], "memory": meta["memory"], "gpu": meta["gpu"],

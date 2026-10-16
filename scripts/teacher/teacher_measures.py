@@ -16,9 +16,39 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+_ID_RE = re.compile(r'^\{"id":\s*"([^"]+)"')
+CONTEXT_KINDS = ("full", "irrelevant", "none")
+
+
+def context_kinds_by_id(ids: set[str], validated_dir: Path) -> dict[str, str]:
+    """`context_kind` de cada id lendo data/validated/<versao>/fim-*.jsonl (so o prefixo da linha e filtrado antes do parse)."""
+    found: dict[str, str] = {}
+    for shard in sorted(validated_dir.glob("fim-*.jsonl")):
+        with shard.open(encoding="utf-8") as handle:
+            for line in handle:
+                m = _ID_RE.match(line)
+                if m and m.group(1) in ids:
+                    found[m.group(1)] = json.loads(line).get("context_kind")
+        if len(found) == len(ids):
+            break
+    return found
+
+
+def nonexistent_by_context(pred_rows: list[dict], validated_dir: Path | None) -> dict:
+    """Taxa de campos inexistentes (stage=fields `campo/estrutura invalido`) por context_kind, sobre as predicoes do adapter."""
+    ids = {r["id"] for r in pred_rows if not r.get("context_kind")}
+    joined = context_kinds_by_id(ids, validated_dir) if ids and validated_dir else {}
+    groups: dict[str, list[bool]] = defaultdict(list)
+    for r in pred_rows:
+        kind = r.get("context_kind") or joined.get(r["id"])
+        if kind and r.get("exec"):
+            groups[kind].append(bool(r["exec"]["field_hallucination"]))
+    return {k: {"n": len(v), "nonexistent": sum(v), "rate_pct": round(100 * sum(v) / len(v), 2)} for k, v in groups.items() if v}
 
 
 def load(path: str | None) -> dict | None:
@@ -32,6 +62,8 @@ def main() -> int:
     ap.add_argument("--student-summary")
     ap.add_argument("--generic-base")
     ap.add_argument("--generic-adapter")
+    ap.add_argument("--predictions", help="predictions.jsonl do adapter (padrao: ao lado do --adapter-summary)")
+    ap.add_argument("--validated-dir", help="data/validated/<versao> para juntar context_kind (padrao: deduzido do dataset do summary)")
     ap.add_argument("--corpus-manifest", default=str(ROOT / "data" / "teacher" / "v2c" / "manifest.json"))
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
@@ -51,6 +83,23 @@ def main() -> int:
         metrics["exec_valid_vs_ceiling"] = round(h["exec_valid"] / ceil, 4)
     if h.get("nonexistent_fields_rate") is not None:
         metrics["nonexistent_fields_rate_pct"] = round(h["nonexistent_fields_rate"] * 100, 2)
+    # G2.2 (decisao de 2026-10-15): o gate bloqueante e a taxa em context_kind=full; geral/none/irrelevant sao informativos
+    pred_path = Path(a.predictions) if a.predictions else Path(a.adapter_summary).parent / "predictions.jsonl"
+    if pred_path.exists():
+        vdir = Path(a.validated_dir) if a.validated_dir else None
+        if vdir is None:
+            m = re.search(r"validated[\/]+([^\/]+)", ad["dataset"].get("path", ""))
+            vdir = ROOT / "data" / "validated" / (m.group(1) if m else "v2c")
+        pred_rows = [json.loads(line) for line in pred_path.open(encoding="utf-8")]
+        by_ctx = nonexistent_by_context(pred_rows, vdir)
+        for kind in CONTEXT_KINDS:
+            if kind in by_ctx:
+                metrics[f"nonexistent_fields_{kind}_rate_pct"] = by_ctx[kind]["rate_pct"]
+                metrics[f"n_context_{kind}"] = by_ctx[kind]["n"]
+        if "full" in by_ctx:   # nome da metrica do gate G2.2.nonexistent_fields_full
+            metrics["nonexistent_fields_full_rate_pct"] = by_ctx["full"]["rate_pct"]
+    else:
+        notes.append(f"AVISO: {pred_path} ausente; nonexistent_fields_full_rate_pct nao calculado (gate fica unevaluated)")
     if a.student_summary:
         st = load(a.student_summary)["headline"]
         metrics["fim_acc_vs_best_student_pp"] = round((h["normalized_match"] - st["normalized_match"]) * 100, 2)

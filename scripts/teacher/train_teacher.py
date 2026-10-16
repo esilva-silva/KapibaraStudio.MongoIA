@@ -149,10 +149,30 @@ def list_checkpoints(directory: Path) -> list[Path]:
                   key=lambda p: int(p.name.split("-")[1]))
 
 
-def fingerprint(cfg: dict, corpus: Corpus, model_sha: str, accum: int) -> dict:
+def init_adapter_info(cfg: dict) -> dict | None:
+    """Aquecimento (`model.init_adapter`): adapter PEFT de partida (ex.: SFT v2c `final` -> v2d). None = LoRA zerado (it.1)."""
+    path = cfg["model"].get("init_adapter")
+    if not path:
+        return None
+    directory = ROOT / path
+    weights = directory / "adapter_model.safetensors"
+    if not weights.exists():
+        raise SystemExit(f"model.init_adapter: {weights} nao existe")
+    peft_cfg = json.loads((directory / "adapter_config.json").read_text(encoding="utf-8"))
+    lora = cfg["lora"]
+    if (peft_cfg.get("r"), peft_cfg.get("lora_alpha"), sorted(peft_cfg.get("target_modules") or [])) != (
+            lora["r"], lora["alpha"], sorted(lora["targets"])):
+        raise SystemExit(f"model.init_adapter: r/alpha/targets de {directory} diferem do bloco lora da config")
+    return {"path": rel(directory), "sha256": sha256_file(weights), "r": peft_cfg.get("r"), "alpha": peft_cfg.get("lora_alpha"),
+            "base_model_name_or_path": peft_cfg.get("base_model_name_or_path")}
+
+
+def fingerprint(cfg: dict, corpus: Corpus, model_sha: str, accum: int, init_adapter: dict | None = None) -> dict:
     critical = {"lora": cfg["lora"], "optim": cfg["optim"], "loss": cfg["loss"], "micro_tokens": cfg["data"]["micro_tokens"],
                 "accum": accum, "seed": cfg["run"]["seed"], "model_quant": cfg["model"]["quant"], "attn": cfg["model"]["attn"]}
     parts = {"model_sha256": model_sha, "corpus_manifest_sha256": corpus.manifest_sha, "train_config_sha256": sha256_text(json.dumps(critical, sort_keys=True))}
+    if init_adapter:   # so entra no fingerprint com aquecimento: os checkpoints da it.1 (sem init_adapter) continuam retomaveis
+        parts["init_adapter_sha256"] = init_adapter["sha256"]
     parts["combined"] = sha256_text(json.dumps(parts, sort_keys=True))
     return parts
 
@@ -327,7 +347,8 @@ def main() -> int:
         d.mkdir(parents=True, exist_ok=True)
     model_dir = ROOT / cfg["model"]["path"]
     model_fp = model_fingerprint(model_dir)
-    fp = fingerprint(cfg, corpus, model_fp["model_sha256"], accum)
+    init_adapter = init_adapter_info(cfg)
+    fp = fingerprint(cfg, corpus, model_fp["model_sha256"], accum, init_adapter)
 
     # retomada
     resume_path = None
@@ -390,6 +411,16 @@ def main() -> int:
         lora = cfg["lora"]
         model = get_peft_model(model, LoraConfig(r=lora["r"], lora_alpha=lora["alpha"], lora_dropout=lora["dropout"], task_type="CAUSAL_LM",
                                                  target_modules=lora["targets"]))
+        if init_adapter and not resume_path:   # aquecimento: pesos LoRA do adapter anterior; otimizador/LR/passo comecam do zero
+            res = set_peft_model_state_dict(model, load_file(str(ROOT / init_adapter["path"] / "adapter_model.safetensors"), device="cpu"))
+            unexpected = list(getattr(res, "unexpected_keys", []) or [])
+            if unexpected:
+                raise SystemExit(f"model.init_adapter: {len(unexpected)} chaves inesperadas ({unexpected[:3]})")
+            b_norm = sum(float(p.detach().float().abs().sum()) for n, p in model.named_parameters() if "lora_B" in n)
+            if b_norm == 0.0:
+                raise SystemExit("model.init_adapter: lora_B zerado apos o carregamento (adapter nao aplicado)")
+            print(f"[{run}] aquecimento a partir de {init_adapter['path']} (sha256 {init_adapter['sha256'][:12]}; sum|lora_B|={b_norm:.1f})",
+                  flush=True)
         trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
         o = cfg["optim"]
         optimizer = bnb.optim.PagedAdamW8bit([p for p in model.parameters() if p.requires_grad], lr=o["lr"], betas=tuple(o["betas"]),
@@ -433,7 +464,7 @@ def main() -> int:
             "gates_yaml_sha256": sha256_file(ROOT / cfg["paths"]["gates"]),
             "base_model": {"path": rel(model_dir), "repo_id": lock_entry.get("repo_id"), "revision": lock_entry.get("revision"),
                            "model_sha256": model_fp["model_sha256"], "weights_gb_on_gpu": round(weights_gb, 2)},
-            "fingerprint": fp, "libraries": libs, "environment": environment_report({k: gpu.get(k) for k in
+            "init_adapter": init_adapter, "fingerprint": fp, "libraries": libs, "environment": environment_report({k: gpu.get(k) for k in
                                                                                      ("device_name", "gcn_arch", "total_vram_gb", "torch", "hip", "vram_limit")}),
             "aotriton_experimental": os.environ.get("TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"),
             "plan": {"accum_rows": accum, "micro_tokens": corpus.micro_tokens, "steps": corpus.steps, "total_steps_schedule": total_steps,
