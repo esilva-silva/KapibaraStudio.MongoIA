@@ -1,0 +1,59 @@
+# distill_v2c.yaml - destilacao sequence-level do KapiTeacher-Mongo-7B (sft_v2d/final) sobre prompts de AUTOCOMPLETE FIM (editor-context-v1).
+# Lido por scripts/distill/{build_prompt_pool,generate_teacher,filter_teacher}.py. Fase 02 §3.5 + G2.4/plano B; Fase 05 §6.2.
+# G2.2 NAO foi aprovado (exec-valid/teto 0,92 < 0,95; campo inexistente 12-14% sem schema visivel): o professor NUNCA rotula as cegas;
+# toda saida passa pelo validador (sintaxe, API, campos, execucao somente leitura, orcamento, dedup, decontaminacao).
+# ESCOPO: so autocomplete FIM. Chat curto fica FORA ate a decisao Q1 do usuario (nada aqui le data/validated/v2c/chat.jsonl como prompt).
+version: v2c
+seed: 20261016                 # seed-mae da destilacao (por item: blake2b(seed:id:amostra))
+dataset_config: configs/dataset.yaml
+source_dir: data/validated/v2c
+snippets: data/generated/v2/snippets.jsonl     # so para re-renderizar contexto (recent_commands/SimilarStatement); somente split train
+out_dir: data/distilled/v2c
+chat_scope: excluded_pending_Q1
+
+teacher:
+  base: BaseRepos/Qwen2.5-Coder-7B
+  adapter: Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final
+  merged: Repos/KapiTeacher-Mongo-7B/merged/sft_v2d-bf16     # --model merged (quando existir); carregado em NF4 (7B bf16 nao cabe com KV em 16 GB)
+  load: nf4
+  contract: editor-context-v1
+
+pool:                          # build_prompt_pool.py
+  target: 600000               # prompts de treino (alvo de aceite apos filtro: T0 ~160k / T1 ~230k exemplos)
+  base: 450000                 # cortes distintos com o contexto NATURAL do v2c (mesma mistura de context_kind do treino)
+  rerender: 150000             # outros cortes distintos, contexto RE-RENDERIZADO (gen_editor_context.make_context com force_kind)
+  rerender_kinds: {full: 0.70, irrelevant: 0.15, none: 0.15}   # `full` ensina campo existente; none/irrelevant mantem a robustez do aluno
+  rerender_source: unused      # unused = cortes que nao entraram no `base` (maximiza diversidade); base = mesmo corte, novo contexto
+  shard_size: 50000
+  oversample_margin: 1.12      # limiar de hash = target*margem/N_treino (corte exato por ordenacao do hash)
+  workers: 8
+  keep_split: train            # ÚNICO split lido como prompt (val/test/bench so entram como indice de isolamento/decontaminacao)
+
+generate:                      # generate_teacher.py
+  max_new_tokens: 96
+  block_size: 2000             # itens por bloco (lotes por comprimento dentro do bloco; unidade de retomada)
+  shard_size: 20000            # itens por shard de saida (multiplo de block_size)
+  batch_tokens: 24576          # orcamento de tokens PADDED por lote de prefill
+  max_batch_rows: 48
+  samples: 1                   # amostras extras por prompt (best-of-N com a greedy); 0 desliga
+  temperature: 0.2
+  top_p: 1.0
+  topk: {enabled: false, k: 32}   # --save-topk liga; ids uint32 + logprobs fp16 + tail_mass fp16 (194 B/posicao para k=32)
+
+filter:                        # filter_teacher.py
+  max_response_tokens: 96
+  prompt_max_tokens: 2048
+  max_accept_per_prompt: 1
+  require_complete: true       # stop=max (96 tokens sem EOS/echo do sufixo) e rejeitado
+  rank: [exact_gold, plan_equal_gold, logprob_mean]   # desempate entre candidatas validas (greedy vence empate)
+  weights: {agrees_with_gold: 1.0, disagrees_with_gold: 0.85}   # Fase 02 §3.5 / Fase 05 §6.2 (discordancia valida: peso 0,85)
+  require_exec_for_static: false   # Atlas Search / escrita / DDL / $out sao so estaticos (como o gold no pipeline)
+  dedup_jaccard: 0.85
+  workers: 8
+  decontam:
+    ngram_min_content: 2       # MESMA regra oficial de configs/dataset.yaml (decontam.ngram_min_content)
+    legacy: [bakeoff/data/v1_benchmark.jsonl, bakeoff/data/v1_validation.jsonl]
+
+targets:                       # volumes de aceite (Fase 05 §6.2)
+  t0: 160000
+  t1: 230000

@@ -173,3 +173,42 @@ jobs:
     watchdog_minutes: 20
     window: any
     estimate_hours: {hours: 0.3}
+  # ---------------------------------------------------------------------------------------------------------------------------------
+  # J12 (destilacao sequence-level, autocomplete FIM; chat fora ate a decisao Q1): geracao do professor sobre o pool de 600k prompts.
+  # PRE-REQUISITO (CPU, ~10 min): env/.venv/Scripts/python.exe -I scripts/distill/build_prompt_pool.py  -> data/distilled/v2c/pool/pool.manifest.json
+  # Backend padrao: GGUF Q8_0 via llama-server/Vulkan (piloto: 4,3 ex/s greedy => ~39 h); alternativa HF NF4 (0,73 ex/s com greedy+1 amostra =>
+  # ~228 h, mas grava top-k para KD): trocar por  --backend hf --save-topk  (ver scripts/distill/README_distill.md). ENFILEIRADO, NAO INICIADO.
+  - id: J12-distill-generate
+    title: "Destilacao: geracao greedy do KapiTeacher (sft_v2d, GGUF Q8_0) sobre 600k prompts FIM"
+    status: ready
+    command: ["{python}", "-I", "scripts/distill/generate_teacher.py", "--backend", "llama-server", "--gguf", "q8_0", "--slots", "8",
+              "--samples", "0", "--resume"]
+    depends_on: []
+    requires_files:
+      - data/distilled/v2c/pool/pool.manifest.json
+      - Repos/KapiTeacher-Mongo-7B/gguf/kapiteacher-mongo-7b-sft_v2d-Q8_0.gguf
+      - cache/llama.cpp/b11693/bin/llama-server.exe
+    watch_files:
+      - data/distilled/v2c/gen/heartbeat.json
+    done_marker: data/distilled/v2c/gen/gen_summary.json
+    max_restarts: 3
+    watchdog_minutes: 30
+    window: any
+    estimate_hours: {hours: 39, basis: "piloto 1000 prompts: Q8_0 greedy 4,3 ex/s (15,5k ex/h); com 1 amostra 2,25 ex/s; HF NF4 greedy+amostra 0,73 ex/s", conservative_hours: 55}
+  # J13: filtro pelo validador (sintaxe, API, campos, execucao somente leitura, orcamento, dedup, decontaminacao k=2). CPU + MongoDB (WSL); nao usa a GPU,
+  # mas fica na fila para ordenar apos o J12. Precisa de `wsl -d Ubuntu -e sleep infinity` em background.
+  - id: J13-distill-filter
+    title: "Destilacao: filtro das candidatas do professor -> data/distilled/v2c/{accepted,rejected}.jsonl"
+    status: waiting
+    command: ["env/.venv/Scripts/python.exe", "-I", "scripts/distill/filter_teacher.py"]
+    depends_on: [J12-distill-generate]
+    requires_files:
+      - data/distilled/v2c/gen/gen_summary.json
+      - data/distilled/v2c/eval_docs.jsonl
+    watch_files:
+      - data/distilled/v2c/gen/gen_summary.json
+    done_marker: data/distilled/v2c/filter_report.json
+    max_restarts: 1
+    watchdog_minutes: 240
+    window: any
+    estimate_hours: {hours: 2.5, basis: "piloto 1000 prompts = 66 s (50 s fixos de indice de avaliacao); decontaminacao por registro domina"}

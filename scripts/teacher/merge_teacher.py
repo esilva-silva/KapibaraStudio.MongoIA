@@ -30,6 +30,7 @@ def main() -> int:
     ap.add_argument("--base", default=str(ROOT / "BaseRepos" / "Qwen2.5-Coder-7B"))
     ap.add_argument("--out", required=True)
     ap.add_argument("--name", default="KapiTeacher-Mongo-7B-v1")
+    ap.add_argument("--corpus-manifest", help="manifest.json do corpus de treino (hash gravado no merge_manifest)")
     a = ap.parse_args()
     # CPU puro: esconde a GPU (a iGPU gfx1036 do Ryzen aparece como cuda:0 e quebra o rocBLAS; o PEFT carregaria o adapter nela)
     os.environ["HIP_VISIBLE_DEVICES"] = "-1"
@@ -59,6 +60,9 @@ def main() -> int:
     manifest = {"name": a.name, "base": {"path": str(base), "repo_id": entry.get("repo_id"), "revision": entry.get("revision")},
                 "adapter": {"path": str(adapter), "adapter_model_sha256": sha256_file(adapter / "adapter_model.safetensors"),
                             "adapter_config": json.loads((adapter / "adapter_config.json").read_text(encoding="utf-8"))},
+                "adapter_train_state_fingerprint": (json.loads((adapter / "train_state.json").read_text(encoding="utf-8")).get("fingerprint")
+                                                    if (adapter / "train_state.json").exists() else None),
+                "corpus_manifest": ({"path": a.corpus_manifest, "sha256": sha256_file(Path(a.corpus_manifest))} if a.corpus_manifest else None),
                 "dtype": "bfloat16", "files": files, "libraries": library_versions(), "merged_utc": time.strftime("%FT%TZ", time.gmtime()),
                 "seconds": round(time.time() - started, 1)}
     (out / "merge_manifest.json").write_text(json.dumps(manifest, indent=1) + "\n", encoding="utf-8", newline="\n")
