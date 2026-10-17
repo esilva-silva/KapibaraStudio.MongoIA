@@ -149,3 +149,20 @@ def test_topk_shard_and_cost(tmp_path):
     assert z["topk_ids"].shape[1] == 4 and int(z["n_pos"].sum()) == z["topk_ids"].shape[0]
     assert s["topk_bytes_per_position_theoretical"] == 4 * 4 + 4 * 2 + 2
     assert gt.TOPK_BYTES_PER_POS(32) == 194
+
+
+def test_only_idx_processes_just_selected_prompts(tmp_path):
+    e = engine(tmp_path, tmp_path / "o", FakeBackend())
+    e.run(only_idx={1, 6, 7})
+    rows = read_all(tmp_path / "o")
+    assert {r["idx"] for r in rows} == {1, 6, 7}
+
+
+def test_retry_indices_only_validation_rejections(tmp_path):
+    d = tmp_path / "f"
+    d.mkdir()
+    (d / "accepted.jsonl").write_text(json.dumps({"teacher": {"pool_idx": 3}}) + chr(10))
+    rej = [{"k": 0, "stage": "fields", "pool_idx": 1}, {"k": 0, "stage": "decontam", "pool_idx": 2}, {"k": 0, "stage": "exec", "pool_idx": 3},
+           {"k": 1, "stage": "fields", "pool_idx": 4}, {"k": 0, "stage": "semantic", "pool_idx": 5}, {"k": 0, "stage": "select", "pool_idx": 6}]
+    (d / "rejected.jsonl").write_text("".join(json.dumps(r) + chr(10) for r in rej))
+    assert gt.retry_indices(d) == {1, 5}

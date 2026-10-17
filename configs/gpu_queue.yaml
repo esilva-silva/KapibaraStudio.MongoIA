@@ -174,12 +174,13 @@ jobs:
     window: any
     estimate_hours: {hours: 0.3}
   # ---------------------------------------------------------------------------------------------------------------------------------
-  # J12 (destilacao sequence-level, autocomplete FIM; chat fora ate a decisao Q1): geracao do professor sobre o pool de 600k prompts.
-  # PRE-REQUISITO (CPU, ~10 min): env/.venv/Scripts/python.exe -I scripts/distill/build_prompt_pool.py  -> data/distilled/v2c/pool/pool.manifest.json
-  # Backend padrao: GGUF Q8_0 via llama-server/Vulkan (piloto: 4,3 ex/s greedy => ~39 h); alternativa HF NF4 (0,73 ex/s com greedy+1 amostra =>
-  # ~228 h, mas grava top-k para KD): trocar por  --backend hf --save-topk  (ver scripts/distill/README_distill.md). ENFILEIRADO, NAO INICIADO.
+  # Destilacao sequence-level, autocomplete FIM (chat fora ate a decisao Q1). Decisoes do usuario (2026-10-17): pool de 300k prompts,
+  # so greedy em GGUF Q8_0 via llama-server, ranking SEM gold, amostra T=0,2 so numa 2a passada dos rejeitados, KD por logits adiado.
+  # PRE-REQUISITO (CPU, ~2 min; ja executado): env/.venv/Scripts/python.exe -I scripts/distill/build_prompt_pool.py --report reports/distill/pool-v2c-300k.md
+  # Ordem: J12 (gera) -> J13 (filtra: passada 1) -> J12b (amostras dos rejeitados) -> J13b (filtro final com greedy + amostras).
+  # NADA aqui foi iniciado. Se pular o J12b, o resultado do J13 ja e o final.
   - id: J12-distill-generate
-    title: "Destilacao: geracao greedy do KapiTeacher (sft_v2d, GGUF Q8_0) sobre 600k prompts FIM"
+    title: "Destilacao: greedy do KapiTeacher (sft_v2d, GGUF Q8_0, llama-server Vulkan) sobre 300k prompts FIM"
     status: ready
     command: ["{python}", "-I", "scripts/distill/generate_teacher.py", "--backend", "llama-server", "--gguf", "q8_0", "--slots", "8",
               "--samples", "0", "--resume"]
@@ -194,13 +195,12 @@ jobs:
     max_restarts: 3
     watchdog_minutes: 30
     window: any
-    estimate_hours: {hours: 39, basis: "piloto 1000 prompts: Q8_0 greedy 4,3 ex/s (15,5k ex/h); com 1 amostra 2,25 ex/s; HF NF4 greedy+amostra 0,73 ex/s", conservative_hours: 55}
-  # J13: filtro pelo validador (sintaxe, API, campos, execucao somente leitura, orcamento, dedup, decontaminacao k=2). CPU + MongoDB (WSL); nao usa a GPU,
-  # mas fica na fila para ordenar apos o J12. Precisa de `wsl -d Ubuntu -e sleep infinity` em background.
+    estimate_hours: {hours: 20, basis: "300k prompts / 4,3 ex/s (piloto Q8_0 greedy, 8 slots) = 19,4 h", conservative_hours: 28}
+  # J13: passada 1 do filtro (validador completo + dedup + decontaminacao k=2). CPU + MongoDB (WSL; manter `wsl -d Ubuntu -e sleep infinity`).
   - id: J13-distill-filter
-    title: "Destilacao: filtro das candidatas do professor -> data/distilled/v2c/{accepted,rejected}.jsonl"
+    title: "Destilacao: filtro das candidatas (passada 1) -> data/distilled/v2c/{accepted,rejected}.jsonl"
     status: waiting
-    command: ["env/.venv/Scripts/python.exe", "-I", "scripts/distill/filter_teacher.py"]
+    command: ["env/.venv/Scripts/python.exe", "-I", "scripts/distill/filter_teacher.py", "--gen", "data/distilled/v2c/gen"]
     depends_on: [J12-distill-generate]
     requires_files:
       - data/distilled/v2c/gen/gen_summary.json
@@ -211,4 +211,37 @@ jobs:
     max_restarts: 1
     watchdog_minutes: 240
     window: any
-    estimate_hours: {hours: 2.5, basis: "piloto 1000 prompts = 66 s (50 s fixos de indice de avaliacao); decontaminacao por registro domina"}
+    estimate_hours: {hours: 1.5, basis: "piloto 1000 prompts = 66 s (50 s fixos de indice de avaliacao); decontaminacao por registro domina; 300k ~1-2 h"}
+  # J12b (OPCIONAL): 2a passada, SO amostras (T=0,2, seed por item) dos prompts cuja greedy foi rejeitada na validacao (~5,5% = ~16k) e sem aceita.
+  - id: J12b-distill-retry
+    title: "Destilacao: amostra T=0,2 dos ~5,5% rejeitados pela validacao (2a passada, opcional)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/distill/generate_teacher.py", "--backend", "llama-server", "--gguf", "q8_0", "--slots", "8",
+              "--retry-from", "data/distilled/v2c", "--samples", "1", "--resume"]
+    depends_on: [J13-distill-filter]
+    requires_files:
+      - data/distilled/v2c/rejected.jsonl
+      - data/distilled/v2c/accepted.jsonl
+    watch_files:
+      - data/distilled/v2c/gen-retry/heartbeat.json
+    done_marker: data/distilled/v2c/gen-retry/gen_summary.json
+    max_restarts: 2
+    watchdog_minutes: 30
+    window: any
+    estimate_hours: {hours: 1.2, basis: "~16k prompts a ~4 ex/s (so a amostra, 1 requisicao por prompt)"}
+  # J13b (OPCIONAL, apos o J12b): filtro final com greedy + amostras; grava em data/distilled/v2c-final (a passada 1 em data/distilled/v2c fica intacta).
+  - id: J13b-distill-filter-final
+    title: "Destilacao: filtro final (greedy + 2a passada) -> data/distilled/v2c-final/{accepted,rejected}.jsonl"
+    status: waiting
+    command: ["env/.venv/Scripts/python.exe", "-I", "scripts/distill/filter_teacher.py", "--gen", "data/distilled/v2c/gen", "data/distilled/v2c/gen-retry",
+              "--out", "data/distilled/v2c-final", "--eval-cache", "data/distilled/v2c", "--name", "v2c-final"]
+    depends_on: [J12b-distill-retry]
+    requires_files:
+      - data/distilled/v2c/gen-retry/gen_summary.json
+    watch_files:
+      - data/distilled/v2c/gen-retry/gen_summary.json
+    done_marker: data/distilled/v2c-final/filter_report.json
+    max_restarts: 1
+    watchdog_minutes: 240
+    window: any
+    estimate_hours: {hours: 1.5}

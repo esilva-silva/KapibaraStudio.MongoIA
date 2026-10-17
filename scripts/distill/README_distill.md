@@ -20,7 +20,7 @@ Python: pool/filtro em `env\.venv\Scripts\python.exe` (tem pymongo; `KAPI_TOKENI
 (`C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe`, torch/peft/bitsandbytes).
 
 1. **Pool** (CPU, ~2-5 min no piloto; ~10 min + ~70 s de snippets para 600k):
-   `env\.venv\Scripts\python.exe -I scripts\distill\build_prompt_pool.py` (padrao: 600k = 450k contexto natural + 150k re-renderizados).
+   `env\.venv\Scripts\python.exe -I scripts\distill\build_prompt_pool.py` (padrao agora: 300k = 200k contexto natural + 100k re-renderizados; `--report reports\distill\pool-v2c-300k.md`).
    Piloto: `--target 1000 --out-dir data\distilled\v2c-pilot --eval-cache data\distilled\v2c`.
 2. **Geracao** (GPU, uma por vez; fila: job `J12-distill-generate`):
    `C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe -I scripts\distill\generate_teacher.py --resume [--save-topk] [--samples 1]`.
@@ -46,8 +46,10 @@ Python: pool/filtro em `env\.venv\Scripts\python.exe` (tem pymongo; `KAPI_TOKENI
 - `gen-*.jsonl`: `idx,id,k,mode,seed,raw,pred,stop,gen_tokens,kept_tokens,prompt_tokens,logprob_mean,logprob_min[,topk_pos]`.
 - `topk/t-BBBBBB.npz` (opcional): `cand_idx,cand_k,n_pos,topk_ids(uint32[P,k]),topk_logprobs(fp16[P,k]),tail_mass(fp16[P])` — `topk-v1` da Fase 02 §3.5, k=32 (194 B/posicao), so posicoes da resposta (cortadas no mesmo ponto que `pred`).
 - `accepted.jsonl`: registro do pool + `middle=target=pred`, `label_source: teacher_seq`, `agrees_with_gold`, `gold_exact`, `plan_equal_gold`, `gold_executable`,
-  `weight` (1,0 concorda / 0,85 diverge, mas valida), `exec_kind` (`live|skipped_write|skipped_static`), `teacher{mode,k,seed,logprob_*,pool_idx,adapter_sha256}`.
+  `weight` (1,0 para todos; so informativo), `exec_kind` (`live|skipped_write|skipped_static`), `teacher{mode,k,seed,logprob_*,pool_idx,adapter_sha256}`.
 - `rejected.jsonl`: uma linha por candidata nao aceita (`stage`, `reason`, `pred`, `gold`).
+
+> Nota: as secoes abaixo (piloto) foram medidas com o rank antigo baseado no gold e pool de 600k; valem como historico de vazao/qualidade.
 
 ## Piloto de 1.000 prompts (2026-10-16; 750 contexto natural + 250 re-renderizados; `data/distilled/v2c-pilot/`)
 
@@ -100,14 +102,26 @@ Projecao para 600k: ~551k aceitos (alvo T1 230k / T0 160k = folga de 2,4x; da pa
 6. GPU compartilhada com o desktop (~3,6 GB de outro processo): lotes HF grandes (24k tokens) estouraram a VRAM e ficaram 10x mais lentos; o piloto usou 8k tokens (pico 8,4 GB).
 7. Nao fundir adapter em NF4; o `merged` bf16 (NF4 na carga) deve acelerar o HF ~20-30% (nao medido: ainda nao existe no disco).
 
-## Decisoes pendentes do usuario
+## Decisoes do usuario (2026-10-17) e estado atual
 
-- **Q1 (chat curto)**: continua FORA; sem decisao nao ha pool de chat.
-- **KD por logits sim/nao**: se sim, rodar o HF com `--save-topk` so sobre o recorte T0/T1 (~48 h) depois do filtro, ou aguardar o piloto A x B.
-- **Volume**: 600k gera ~551k aceitos (>2x o T1); sugestao 300k prompts (~20 h Q8_0 greedy) — decidir antes de iniciar o J12 (`--target 300000`).
-- Rank com ou sem gold; amostra extra (best-of-N) so na 2a passada dos rejeitados.
+1. **Pool de 300k** prompts de treino (200k contexto natural + 100k re-renderizados full 50% / irrelevant 25% / none 25%): construido em
+   `data/distilled/v2c/pool` (`reports/distill/pool-v2c-300k.md`): none+irrelevant = 86.247 (28,7%; none 40.837, irrelevant 45.410); cobertura por cut_kind/dominio/cursor_role
+   dentro de 0,27 p.p. do treino; 0 violacoes G2.7 (1.882 candidatos descartados por prefixo+sufixo/prompt iguais a avaliacao); blind `not_sealed`; decontam `ngram_min_content: 2`.
+2. **Geracao so greedy em GGUF Q8_0** (llama-server): ~4,3 ex/s => ~20 h (J12).
+3. **Ranking SEM gold**: `filter.rank: [stages_passed]` (mais etapas do validador vencidas; empate => greedy). O gold e so medicao/auditoria; `agrees_with_gold`,
+   `gold_exact` e `plan_equal_gold` sao **apenas informativos** e o `weight` e 1,0 para todos (nao ha mais 0,85). A selecao so ve candidatas validas, entao o rank so decide entre greedy e amostra.
+4. **2a passada (J12b)**: `generate_teacher.py --backend llama-server --retry-from data/distilled/v2c --samples 1` gera so amostras (T=0,2, seed por item) dos prompts cuja greedy foi
+   rejeitada em etapa de validacao e sem aceita (~5,5%, ~16k prompts, ~1 h); depois o J13b refaz o filtro com `--gen gen gen-retry` em `data/distilled/v2c-final`. Opcional.
+5. **KD por logits adiado**: `--save-topk` segue implementado (so backend HF), nao usado.
+6. **Chat curto fora** (Q1 pendente).
 
-## Fila
+## Fila (nenhum iniciado)
 
-`J12-distill-generate` (`ready`, Q8_0 greedy, ~39 h) e `J13-distill-filter` (`waiting`, ~2,5 h) em `configs/gpu_queue.yaml`; **nenhum iniciado**. Rodar antes o pool
-(`build_prompt_pool.py`, CPU). O J12 so aceita `--resume` apos o pool existir; trocar de backend no meio exige apagar `data/distilled/v2c/gen`.
+| job | status | horas | depende de |
+|---|---|---:|---|
+| J12-distill-generate (Q8_0 greedy, 300k) | ready | ~20 (conservador 28) | pool pronto |
+| J13-distill-filter (passada 1) | waiting | ~1,5 | J12 |
+| J12b-distill-retry (amostras dos rejeitados) | waiting | ~1,2 | J13 |
+| J13b-distill-filter-final | waiting | ~1,5 | J12b |
+
+Total ~24 h (22 h sem a 2a passada). Disco: pool ~0,5 GB, gen ~0,1 GB, accepted ~0,7 GB.

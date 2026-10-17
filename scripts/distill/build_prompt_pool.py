@@ -33,6 +33,7 @@ KEEP = ("id", "type", "kind", "dialect", "prefix", "suffix", "domain", "schema_i
         "fields_used", "group_id", "template_id", "split", "holdout", "snippet_id", "multiline", "mid_token", "crlf", "split_role",
         "read_only", "language", "context_kind", "editor", "prompt_tokens", "prompt_truncated", "prompt_sha256", "contrato")
 EVAL = ("val", "test", "bench")
+DIST_KEYS = ("cut_kind", "domain", "cursor_role", "category", "context_kind")
 
 
 def compact(rec: dict) -> dict:
@@ -55,6 +56,7 @@ def scan_shard(args: tuple) -> dict:
     train, eval_docs = [], []
     idx = {"ids": [], "groups": set(), "schemas": set(), "snippets": set(), "prompt_sha": set(), "ps_sha": set()}
     n_train = 0
+    dist = {k: Counter() for k in DIST_KEYS}
     with open(path, encoding="utf-8") as handle:
         for line in handle:
             if not line.strip():
@@ -64,6 +66,8 @@ def scan_shard(args: tuple) -> dict:
                 continue
             if rec.get("split") == keep_split:
                 n_train += 1
+                for k in DIST_KEYS:
+                    dist[k][rec.get(k)] += 1
                 h = unit_hash(salt, rec["id"])
                 if h < threshold:
                     train.append((h, compact(rec)))
@@ -76,7 +80,7 @@ def scan_shard(args: tuple) -> dict:
                 if rec.get("prompt_sha256"):
                     idx["prompt_sha"].add(rec["prompt_sha256"])
                 idx["ps_sha"].add(ps_sha(rec["prefix"], rec["suffix"]))
-    return {"train": train, "eval_docs": eval_docs, "idx": idx, "n_train": n_train}
+    return {"train": train, "eval_docs": eval_docs, "idx": idx, "n_train": n_train, "dist": dist}
 
 
 def _scan_block(block):
@@ -215,6 +219,33 @@ def rerender(records: list[dict], dcfg: dict, seed: int, kinds: dict, snippets_p
     return out
 
 
+def write_pool_report(path: Path, m: dict, cfg: dict) -> None:
+    iso, ni = m["isolation_G2_7"], m["none_irrelevant"]
+    L = [f"# Pool de prompts da destilacao - {m['records']} prompts (autocomplete FIM, editor-context-v1)", "",
+         f"Gerado {m['created']} (git {m['git']}), seed {m['seed']}, `{m['config']}`. Chat fora de escopo (Q1 pendente).", "",
+         "## Composicao", "",
+         f"- base (contexto natural do v2c): **{m['base']}**; re-renderizados (`make_context(force_kind)`): **{m['rerender']}**; treino visto: {m['train_seen']}.",
+         f"- none + irrelevant: **{ni['n']} ({ni['share'] * 100:.1f}%)** (none {ni['none']}, irrelevant {ni['irrelevant']}); piso exigido {ni['required']}.",
+         f"- origem: {m['composition']['origin']}; re-render por tipo: {m['composition']['rerender_kind']}.",
+         f"- gold executavel: {m['composition']['gold_executable']}.", "",
+         "## Isolamento G2.7", "",
+         f"- Indice de avaliacao: {iso['checked_against']}.",
+         f"- Apenas `{iso['only_split']}`; dominios holdout {iso['holdout_domains']} nunca; blind: **{iso['blind']}** (via `blind_guard`, manifesto lido uma vez).",
+         f"- Descartados na amostragem: {iso['dropped_by_reason']}; **violacoes no pool final: {iso['violations_in_pool']}**.",
+         f"- Regra de decontaminacao do filtro (mesma de `configs/dataset.yaml`): `ngram_min_content: {m['ngram_min_content']}`.", "",
+         f"## Cobertura vs corpus de treino (tolerancia +-{cfg['pool'].get('coverage_tolerance_pp')} p.p. em cut_kind/dominio/cursor_role; pior desvio {m['coverage_worst_abs_delta_pp']} p.p.; ok={m['coverage_within_tolerance']})", ""]
+    for k, rows in m["coverage_vs_train"].items():
+        L += [f"### {k}", "", "| valor | treino % | pool % | delta pp |", "|---|---:|---:|---:|"]
+        for v, r in sorted(rows.items(), key=lambda kv: -kv[1]["train_pct"]):
+            L.append(f"| {v} | {r['train_pct']} | {r['pool_pct']} | {r['delta_pp']:+} |")
+        L.append("")
+    L += ["## Hashes", ""] + [f"- {k}: `{v}`" for k, v in m["hashes"].items()]
+    L += [f"- source_manifest_sha256: `{m['source_manifest_sha256']}`"] + [f"- {x['path']}: {x['records']} registros, `{x['sha256']}`" for x in m["shards"]]
+    L += ["", f"Tempo de construcao: {m['seconds']} s."]
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text("\n".join(L) + "\n", encoding="utf-8", newline="\n")
+
+
 # -- principal ----------------------------------------------------------------------------------------------------------------------
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
@@ -228,6 +259,7 @@ def main(argv=None) -> int:
     ap.add_argument("--no-rerender", action="store_true", help="so contexto natural (nao carrega snippets)")
     ap.add_argument("--workers", type=int)
     ap.add_argument("--shard-size", type=int)
+    ap.add_argument("--report", help="grava o relatorio markdown (ex.: reports/distill/pool-v2c-300k.md)")
     ap.add_argument("--max-shards", type=int, help="teste: varre so os N primeiros shards (o indice de isolamento fica PARCIAL)")
     a = ap.parse_args(argv)
     cfg = load_config(a.config)
@@ -281,6 +313,10 @@ def main(argv=None) -> int:
         cdocs, chat_idx = scan_chat_eval(chat_path)
         eval_docs += cdocs
     index = build_eval_index([r["idx"] for r in results], chat_idx, dcfg.get("holdout_domains", []))
+    train_dist = {k: Counter() for k in DIST_KEYS}
+    for r in results:
+        for k in DIST_KEYS:
+            train_dist[k].update(r["dist"][k])
     del results
     print(f"[pool] treino visto {n_train_seen}; candidatos {len(candidates)}; docs de avaliacao {len(eval_docs)}", flush=True)
 
@@ -355,10 +391,43 @@ def main(argv=None) -> int:
         "eval_cache": {"index": rel(cache_dir / "eval_index.json"), "docs": rel(cache_dir / "eval_docs.jsonl"), "docs_n": len(eval_docs)},
         "partial_scan": bool(a.max_shards), "seconds": round(time.time() - t0, 1),
     }
+    coverage = {}
+    worst = 0.0
+    pn = len(pool)
+    for k in DIST_KEYS:
+        tn = sum(train_dist[k].values())
+        pc_count = Counter(c.get(k) for c in pool)
+        rows = {}
+        for v in sorted(set(train_dist[k]) | set(pc_count), key=str):
+            tp = 100 * train_dist[k][v] / tn if tn else 0.0
+            pp = 100 * pc_count[v] / pn if pn else 0.0
+            rows[str(v)] = {"train_pct": round(tp, 2), "pool_pct": round(pp, 2), "delta_pp": round(pp - tp, 2)}
+            if k in ("cut_kind", "domain", "cursor_role"):
+                worst = max(worst, abs(pp - tp))
+        coverage[k] = rows
+    ni = sum(1 for c in pool if c.get("context_kind") in ("none", "irrelevant"))
+    manifest["coverage_vs_train"] = coverage
+    manifest["coverage_worst_abs_delta_pp"] = round(worst, 2)
+    manifest["coverage_within_tolerance"] = worst <= pc.get("coverage_tolerance_pp", 2.0)
+    manifest["none_irrelevant"] = {"n": ni, "share": round(ni / max(1, pn), 4), "required": pc.get("min_none_irrelevant"),
+                                   "none": sum(1 for c in pool if c.get("context_kind") == "none"),
+                                   "irrelevant": sum(1 for c in pool if c.get("context_kind") == "irrelevant")}
+    manifest["hashes"] = {"config_sha256": sha256_file(resolve(a.config) if a.config else CONFIG_PATH),
+                          "dataset_yaml_sha256": sha256_file(resolve(cfg["dataset_config"])),
+                          "eval_index_sha256": sha256_file(cache_dir / "eval_index.json"),
+                          "eval_docs_sha256": sha256_file(cache_dir / "eval_docs.jsonl"),
+                          "pool_stream_sha256": hashlib.sha256("".join(x["sha256"] for x in shards).encode()).hexdigest()}
+    manifest["ngram_min_content"] = dcfg.get("decontam", {}).get("ngram_min_content")
     write_json(pool_dir / "pool.manifest.json", manifest)
+    if a.report:
+        write_pool_report(resolve(a.report), manifest, cfg)
+    gated = not a.max_shards and rr_n > 0 and pn >= 10000      # pisos de cobertura/none+irrelevant so valem para o pool completo
+    ok = violations_final == 0 and (not gated or (manifest["coverage_within_tolerance"] and ni / max(1, pn) >= (pc.get("min_none_irrelevant") or 0)))
+    if not ok:
+        print("FALHA: isolamento/cobertura/piso none+irrelevant nao atendidos", json.dumps({k: manifest[k] for k in ("coverage_within_tolerance", "none_irrelevant")}))
     print(json.dumps({"records": len(pool), "base": len(base), "rerender": len(rendered), "seconds": manifest["seconds"],
                       "context_kind": manifest["composition"]["context_kind"], "dropped": dict(dropped)}, ensure_ascii=False))
-    return 0 if violations_final == 0 else 2
+    return 0 if ok else 2
 
 
 if __name__ == "__main__":

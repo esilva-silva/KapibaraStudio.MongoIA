@@ -74,7 +74,7 @@ class Engine:
         return done
 
     # -- uma execucao ---------------------------------------------------------------------------------------------------------------
-    def read_blocks(self, start_block: int, stop_block: int | None):
+    def read_blocks(self, start_block: int, stop_block: int | None, only_idx=None):
         """Gera (bloco, [(idx, linha_bruta)]) em streaming sequencial do pool (so le/parsa o necessario)."""
         buf: list[tuple[int, str]] = []
         idx = 0
@@ -88,11 +88,11 @@ class Engine:
                         if buf:
                             yield buf[0][0] // self.block, buf
                         return
-                    if blk >= start_block:
+                    if blk >= start_block and (only_idx is None or idx in only_idx):
                         buf.append((idx, line))
-                        if len(buf) == self.block:
-                            yield blk, buf
-                            buf = []
+                    if buf and (idx + 1) % self.block == 0:       # fecha o bloco ao cruzar a fronteira
+                        yield buf[0][0] // self.block, buf
+                        buf = []
                     idx += 1
         if buf:
             yield buf[0][0] // self.block, buf
@@ -114,14 +114,14 @@ class Engine:
         return batches
 
     def run(self, *, resume: bool = True, start_block: int = 0, stop_block: int | None = None, max_blocks: int | None = None,
-            hook=None) -> dict:
+            hook=None, only_idx=None) -> dict:
         done = self.committed() if resume else {}
         if not resume:
             for p in list(self.out.glob("gen-*.jsonl")) + [self.done_path]:
                 p.unlink(missing_ok=True)
         t_run = time.time()
         processed = 0
-        for blk, raw in self.read_blocks(start_block, stop_block):
+        for blk, raw in self.read_blocks(start_block, stop_block, only_idx):
             if blk in done:
                 continue
             if max_blocks is not None and processed >= max_blocks:
@@ -422,6 +422,7 @@ class LlamaServerBackend:
         self.load_seconds = 0.0
         self.adapter_info = None
         self.gpu = {"device_name": device}
+        self.skip_greedy = False
         if url is None:
             exe = exe or ROOT / "cache" / "llama.cpp" / "b11693" / "bin" / "llama-server.exe"
             cmd = [str(exe), "-m", str(gguf), "--host", "127.0.0.1", "--port", str(port), "-ngl", "99", "-dev", device,
@@ -480,7 +481,8 @@ class LlamaServerBackend:
             raise SystemExit("--save-topk so existe no backend HF (llama.cpp nao exporta o top-k completo)")
         jobs = []
         for i, it in enumerate(batch):
-            jobs.append((i, 0, it["ids"], 0.0, 0))
+            if not self.skip_greedy:
+                jobs.append((i, 0, it["ids"], 0.0, 0))
             for j, sd in enumerate(seeds[i], start=1):
                 jobs.append((i, j, it["ids"], temperature, sd))
         t0 = time.perf_counter()
@@ -500,6 +502,18 @@ class LlamaServerBackend:
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
+def retry_indices(filter_dir: Path) -> set[int]:
+    """idx do pool cuja greedy (k=0) foi rejeitada em etapa de VALIDACAO (nao dedup/decontam/select) e que nao tem candidata aceita."""
+    stages = {"semantic", "sanitize", "budget", "syntax", "api", "fields", "exec"}
+    accepted = {json.loads(line)["teacher"]["pool_idx"] for line in open(filter_dir / "accepted.jsonl", encoding="utf-8")}
+    out = set()
+    for line in open(filter_dir / "rejected.jsonl", encoding="utf-8"):
+        r = json.loads(line)
+        if r["k"] == 0 and r["stage"] in stages and r["pool_idx"] not in accepted:
+            out.add(r["pool_idx"])
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1], formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config")
@@ -522,6 +536,7 @@ def main(argv=None) -> int:
     ap.add_argument("--backend", choices=["hf", "llama-server"], default="hf")
     ap.add_argument("--gguf", help="llama-server: caminho ou q8_0 | q5_k_m | f16 (Repos/KapiTeacher-Mongo-7B/gguf)")
     ap.add_argument("--server-url", help="llama-server ja em execucao (nao inicia outro)")
+    ap.add_argument("--retry-from", help="2a passada: pasta de saida do filtro; gera so amostras (T=0,2) dos prompts cuja greedy foi rejeitada na validacao")
     ap.add_argument("--slots", type=int, default=8)
     ap.add_argument("--ctx-per-slot", type=int, default=2304)
     a = ap.parse_args(argv)
@@ -544,6 +559,16 @@ def main(argv=None) -> int:
         adapter = resolve(a.adapter) if a.adapter else None
     load = a.load or tc["load"]
     limit_blocks = None if not a.limit else -(-a.limit // block)
+    only_idx = None
+    if a.retry_from:
+        only_idx = retry_indices(resolve(a.retry_from))
+        if a.samples is None:
+            a.samples = 1
+        if a.backend != "llama-server":
+            raise SystemExit("--retry-from usa o backend llama-server (so amostras)")
+        if not a.out:
+            out = out_root / "gen-retry"
+        print(f"[retry] {len(only_idx)} prompts com greedy rejeitada na validacao")
 
     from _common import gpu_lock, library_versions, model_fingerprint
 
@@ -558,6 +583,7 @@ def main(argv=None) -> int:
             names = {"q8_0": "Q8_0", "q5_k_m": "Q5_K_M", "f16": "f16"}
             gguf = resolve(g) if g.endswith(".gguf") else resolve(f"Repos/KapiTeacher-Mongo-7B/gguf/kapiteacher-mongo-7b-sft_v2d-{names[g.lower()]}.gguf")
             backend = LlamaServerBackend(gguf, resolve(tc["base"]), url=a.server_url, slots=a.slots, ctx_per_slot=a.ctx_per_slot)
+            backend.skip_greedy = bool(a.retry_from)
             engine_kwargs.update(save_topk=False, max_rows=max(a.slots * 2, 8), batch_tokens=10 ** 9)
             base_model, adapter, load = gguf, None, a.gguf or "q8_0"
         else:
@@ -570,7 +596,7 @@ def main(argv=None) -> int:
                 "gpu": {k: backend.gpu.get(k) for k in ("device_name", "gcn_arch", "total_vram_gb", "torch", "hip")},
                 "load_seconds": backend.load_seconds, "decoding": "greedy argmax (padding do vocab mascarado) + amostras T/seed por item"}
         write_json(out / "gen_meta.json", meta)
-        summary = eng.run(resume=a.resume, max_blocks=limit_blocks, stop_block=limit_blocks)
+        summary = eng.run(resume=a.resume, max_blocks=limit_blocks, stop_block=limit_blocks, only_idx=only_idx)
         if a.backend == "hf":
             import torch
 

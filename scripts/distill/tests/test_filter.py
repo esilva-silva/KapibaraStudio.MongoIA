@@ -130,16 +130,28 @@ def test_atlas_search_is_static_only(validator, rows):
     assert len(validator.fake.calls) == before
 
 
-def test_rank_prefers_gold_then_logprob_then_greedy():
-    rank = ["exact_gold", "plan_equal_gold", "logprob_mean"]
+def test_rank_is_independent_of_gold():
+    rank = load_config()["filter"]["rank"]
+    assert rank == ["stages_passed"]
 
-    def mk(exact, plan, lp, k):
-        return ({"logprob_mean": lp, "k": k}, {"gold_exact": exact, "plan_equal_gold": plan})
+    def mk(stages, k, exact=False):
+        return ({"logprob_mean": -1.0, "k": k}, {"stages_passed": stages, "gold_exact": exact, "plan_equal_gold": exact})
 
-    cs = [mk(False, False, -0.1, 0), mk(False, True, -0.9, 1), mk(True, True, -2.0, 2)]
-    assert max(cs, key=lambda cv: ft.rank_key(rank, cv[1], cv[0]))[0]["k"] == 2
-    cs = [mk(False, False, -0.5, 0), mk(False, False, -0.5, 1)]
+    # mais etapas vencem, mesmo contra um candidato que bate o gold
+    cs = [mk(7, 0), mk(5, 1, exact=True)]
     assert max(cs, key=lambda cv: ft.rank_key(rank, cv[1], cv[0]))[0]["k"] == 0
+    # empate: a greedy vence, o gold nao influencia
+    cs = [mk(7, 1, exact=True), mk(7, 0)]
+    assert max(cs, key=lambda cv: ft.rank_key(rank, cv[1], cv[0]))[0]["k"] == 0
+    w = load_config()["filter"]["weights"]
+    assert w["agrees_with_gold"] == w["disagrees_with_gold"]
+
+
+def test_stages_passed_counts_validator_stages(validator, rows):
+    r = key_row(rows)
+    assert validator.validate(r, cand(r["gold"]))["stages_passed"] == len(ft.VALIDATION_STAGES)
+    assert validator.validate(r, cand("ZzCampoInexistente"))["stages_passed"] == ft.VALIDATION_STAGES.index("fields")
+    assert validator.validate(r, cand("   "))["stages_passed"] == 0
 
 
 def test_decontam_rule_is_the_official_one():

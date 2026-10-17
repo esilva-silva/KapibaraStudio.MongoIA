@@ -19,10 +19,12 @@ teacher:
   contract: editor-context-v1
 
 pool:                          # build_prompt_pool.py
-  target: 600000               # prompts de treino (alvo de aceite apos filtro: T0 ~160k / T1 ~230k exemplos)
-  base: 450000                 # cortes distintos com o contexto NATURAL do v2c (mesma mistura de context_kind do treino)
-  rerender: 150000             # outros cortes distintos, contexto RE-RENDERIZADO (gen_editor_context.make_context com force_kind)
-  rerender_kinds: {full: 0.70, irrelevant: 0.15, none: 0.15}   # `full` ensina campo existente; none/irrelevant mantem a robustez do aluno
+  target: 300000               # DECIDIDO pelo usuario (2026-10-17): 300k prompts (piloto: ~92% aceitos => ~275k; alvo T1 230k / T0 160k)
+  base: 200000                 # cortes distintos com o contexto NATURAL do v2c (mesma mistura de context_kind do treino)
+  rerender: 100000             # outros cortes distintos, contexto RE-RENDERIZADO (gen_editor_context.make_context com force_kind)
+  rerender_kinds: {full: 0.50, irrelevant: 0.25, none: 0.25}   # compensa o vies (aceitacao 82-84% sem schema x 94% em full)
+  min_none_irrelevant: 0.25    # piso de prompts none+irrelevant no pool (o builder falha se nao atingir)
+  coverage_tolerance_pp: 2.0   # cut_kind / dominio / cursor_role do pool dentro de +-2 p.p. do treino
   rerender_source: unused      # unused = cortes que nao entraram no `base` (maximiza diversidade); base = mesmo corte, novo contexto
   shard_size: 50000
   oversample_margin: 1.12      # limiar de hash = target*margem/N_treino (corte exato por ordenacao do hash)
@@ -35,7 +37,7 @@ generate:                      # generate_teacher.py
   shard_size: 20000            # itens por shard de saida (multiplo de block_size)
   batch_tokens: 24576          # orcamento de tokens PADDED por lote de prefill
   max_batch_rows: 48
-  samples: 1                   # amostras extras por prompt (best-of-N com a greedy); 0 desliga
+  samples: 0                   # DECIDIDO: so greedy no volume todo; amostra T=0,2 apenas na 2a passada dos rejeitados (J12b, --retry-from)
   temperature: 0.2
   top_p: 1.0
   topk: {enabled: false, k: 32}   # --save-topk liga; ids uint32 + logprobs fp16 + tail_mass fp16 (194 B/posicao para k=32)
@@ -45,8 +47,8 @@ filter:                        # filter_teacher.py
   prompt_max_tokens: 2048
   max_accept_per_prompt: 1
   require_complete: true       # stop=max (96 tokens sem EOS/echo do sufixo) e rejeitado
-  rank: [exact_gold, plan_equal_gold, logprob_mean]   # desempate entre candidatas validas (greedy vence empate)
-  weights: {agrees_with_gold: 1.0, disagrees_with_gold: 0.85}   # Fase 02 §3.5 / Fase 05 §6.2 (discordancia valida: peso 0,85)
+  rank: [stages_passed]        # SEM gold (decidido): mais etapas do validador vencidas; empate => greedy (k menor). O gold e so medicao/auditoria
+  weights: {agrees_with_gold: 1.0, disagrees_with_gold: 1.0}   # `agrees_with_gold` e apenas INFORMATIVO: nao altera rank nem peso
   require_exec_for_static: false   # Atlas Search / escrita / DDL / $out sao so estaticos (como o gold no pipeline)
   dedup_jaccard: 0.85
   workers: 8

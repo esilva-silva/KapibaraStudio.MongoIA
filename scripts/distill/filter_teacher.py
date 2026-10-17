@@ -30,6 +30,7 @@ from _distill_common import (ROOT, BlindChecker, git_hash, iter_jsonl, iter_pool
                              resolve, sha256_file, write_json)
 
 STAGE_ORDER = ["sanitize", "syntax", "api", "fields", "exec", "semantic", "budget", "dedup", "decontam", "select"]
+VALIDATION_STAGES = ["semantic", "sanitize", "budget", "syntax", "api", "fields", "exec"]   # ordem real das checagens por candidata
 IDE_BAD = ("<|", "<｜", "```", "\0")
 
 
@@ -94,7 +95,7 @@ class Validator:
                "pred_tokens": None}
 
         def bad(stage: str, why: str) -> dict:
-            out.update(stage=stage, reason=why)
+            out.update(stage=stage, reason=why, stages_passed=VALIDATION_STAGES.index(stage) if stage in VALIDATION_STAGES else 0)
             return out
 
         # 6 (parte barata) completude/IDE: antes de gastar node/Mongo
@@ -156,6 +157,7 @@ class Validator:
         gplan = self._gold_plan(rec, sch, coll)
         out["plan_equal_gold"] = bool(gplan is not None and plan is not None and cv.plans_equal(plan, gplan))
         out["agrees_with_gold"] = bool(out["gold_norm"] or out["plan_equal_gold"])
+        out["stages_passed"] = len(VALIDATION_STAGES)
         out["ok"] = True
         return out
 
@@ -182,9 +184,16 @@ def _w_run(chunk: list) -> dict:
     return {"results": out, "violations": viol, "exec_calls": Counter(op for _, _, op in v.exec_calls)}
 
 
-def merged_candidates(pool_dir: Path, gen_dir: Path, limit: int | None = None):
-    """Gera (pool_rec, [candidatas]) por prompt, na ordem do pool; candidatas deduplicadas por (idx, k) (a primeira vence)."""
-    shards = sorted(gen_dir.glob("gen-[0-9][0-9][0-9][0-9][0-9].jsonl"))
+def merged_candidates(pool_dir: Path, gen_dir, limit: int | None = None):
+    """Gera (pool_rec, [candidatas]) por prompt, na ordem do pool; candidatas deduplicadas por (idx, k) (a primeira vence).
+    `gen_dir` pode ser uma lista: a 1a pasta define os prompts; as demais (2a passada) so acrescentam candidatas (k>=1) aos mesmos idx."""
+    dirs = [Path(d) for d in ([gen_dir] if isinstance(gen_dir, (str, Path)) else gen_dir) if Path(d).exists()]
+    extras: dict[int, dict] = {}
+    for d in dirs[1:]:
+        for sh in sorted(d.glob("gen-[0-9][0-9][0-9][0-9][0-9].jsonl")):
+            for r in iter_jsonl(sh):
+                extras.setdefault(r["idx"], {}).setdefault(r["k"], r)
+    shards = sorted(dirs[0].glob("gen-[0-9][0-9][0-9][0-9][0-9].jsonl"))
     pool_iter = iter(iter_pool(pool_dir))
     state = {"p": next(pool_iter, (None, None))}
 
@@ -199,6 +208,8 @@ def merged_candidates(pool_dir: Path, gen_dir: Path, limit: int | None = None):
     for shard in shards:
         for r in iter_jsonl(shard):
             if cur_idx is not None and r["idx"] != cur_idx:
+                for k_, r_ in extras.get(cur_idx, {}).items():
+                    cur.setdefault(k_, r_)
                 yield pool_rec(cur_idx), [cur[k] for k in sorted(cur)]
                 n += 1
                 if limit and n >= limit:
@@ -207,18 +218,20 @@ def merged_candidates(pool_dir: Path, gen_dir: Path, limit: int | None = None):
             cur_idx = r["idx"]
             cur.setdefault(r["k"], r)
     if cur_idx is not None:
+        for k_, r_ in extras.get(cur_idx, {}).items():
+            cur.setdefault(k_, r_)
         yield pool_rec(cur_idx), [cur[k] for k in sorted(cur)]
 
 
 def rank_key(rank: list[str], v: dict, cand: dict):
     parts = []
     for name in rank:
-        if name == "exact_gold":
-            parts.append(1 if v["gold_exact"] else 0)
-        elif name == "plan_equal_gold":
-            parts.append(1 if v["plan_equal_gold"] else 0)
+        if name == "stages_passed":                  # criterio independente do gold: etapas do validador vencidas
+            parts.append(v.get("stages_passed", 0))
         elif name == "logprob_mean":
             parts.append(cand["logprob_mean"])
+        else:
+            raise SystemExit(f"criterio de rank desconhecido/dependente do gold: {name}")
     parts.append(-cand["k"])                         # empate: a greedy vence
     return tuple(parts)
 
@@ -244,7 +257,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1], formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config")
     ap.add_argument("--pool")
-    ap.add_argument("--gen")
+    ap.add_argument("--gen", nargs="+", help="pastas de geracao: greedy primeiro; opcionalmente a 2a passada (gen-retry)")
     ap.add_argument("--out", help="pasta de saida (padrao: <out_dir do yaml>)")
     ap.add_argument("--eval-cache", help="pasta com eval_docs.jsonl (padrao: <out_dir do yaml>)")
     ap.add_argument("--name", help="nome do relatorio (padrao: nome da pasta de saida)")
@@ -261,7 +274,8 @@ def main(argv=None) -> int:
     dataset_cfg = yaml.safe_load(resolve(cfg["dataset_config"]).read_text(encoding="utf-8"))
     out_root = resolve(cfg["out_dir"])
     pool_dir = resolve(a.pool) if a.pool else out_root / "pool"
-    gen_dir = resolve(a.gen) if a.gen else out_root / "gen"
+    gen_dirs = [resolve(g) for g in a.gen] if a.gen else [out_root / "gen"]
+    gen_dir = gen_dirs[0]
     out = resolve(a.out) if a.out else out_root
     cache = resolve(a.eval_cache) if a.eval_cache else out_root
     name = a.name or out.name
@@ -284,7 +298,7 @@ def main(argv=None) -> int:
             pool_recs.append(rec)
             yield rec, cands
 
-    chunks = par.chunked(tee(merged_candidates(pool_dir, gen_dir, a.limit_prompts)), a.chunk)
+    chunks = par.chunked(tee(merged_candidates(pool_dir, gen_dirs, a.limit_prompts)), a.chunk)
     for res in par.ordered_map(_w_run, chunks, workers, _w_init, (dataset_cfg, fcfg, a.exec)):
         violations += res["violations"]
         exec_ops.update(res["exec_calls"])
