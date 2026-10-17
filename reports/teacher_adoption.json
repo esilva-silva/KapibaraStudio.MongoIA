@@ -1,0 +1,24 @@
+{
+  "decided_at": "2026-10-16",
+  "decision": "adotar o adapter sft_v2d/final como KapiTeacher-Mongo-7B para a destilacao (aceite com excecoes)",
+  "adapter": "Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final",
+  "base": "BaseRepos/Qwen2.5-Coder-7B",
+  "evidence": {
+    "gates": "Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2d-final/gates.json",
+    "comparison_v2c_v2d": "Repos/KapiTeacher-Mongo-7B/reports/eval/cmp_v2c_v2d.md",
+    "error_analysis": "Repos/KapiTeacher-Mongo-7B/reports/error_analysis_sft_v2c.md"
+  },
+  "gates": {
+    "passed": ["G2.2.fim_acc_gain (+19,85 p.p.)", "G2.2.nonexistent_fields_full (1,88% <= 2%)", "G2.5.generic_js_delta (+15,2 p.p.)", "G2.7.contamination (0)"],
+    "failed_accepted_with_exception": [
+      "G2.2.exec_valid_vs_ceiling: 0,9209 < 0,95 (v2c: 0,9265). Falta ~3 p.p. do teto do validador; a causa restante e campo sem schema visivel, nao mais dados de SFT."
+    ],
+    "informative_not_blocking": ["G2.2.nonexistent_fields geral 3,85% (none 12,26%, irrelevant 13,64%)"],
+    "unevaluated": ["G2.3 chat (sem avaliador)", "G2.4 vs student J10", "G2.1 paridade Python x C# (pending_ide)"]
+  },
+  "caveats": [
+    "v2d e estatisticamente equivalente ao v2c (exec-valid p=0,35; campos p=0,60); a escolha do v2d se apoia so no gate de campos em full, que passa por 0,12 p.p. (3 exemplos em 1.647).",
+    "G2.2 NAO esta aprovado: o aceite e uma excecao do usuario para seguir para a destilacao; a destilacao deve filtrar as saidas do professor pelo validador (plano B da Fase 02: filtragem/validacao).",
+    "Melhoria adicional depende de mais contexto/schema no prompt da IDE (Fase 08), nao de mais SFT."
+  ]
+}
