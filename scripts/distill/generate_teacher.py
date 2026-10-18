@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -398,14 +399,55 @@ class HFBackend:
         return {"cands": cands, "stats": {"prefill_seconds": t_prefill, "decode_seconds": t_decode, "padded_tokens": B * L}}
 
 
+_DEV_RE = re.compile(r"^\s*(?P<id>[A-Za-z][\w.-]*\d+):\s*(?P<name>.+?)\s*\((?P<total>\d+)\s*MiB(?:,\s*(?P<free>\d+)\s*MiB free)?\)\s*$")
+
+
+def parse_devices(text: str) -> list[dict]:
+    """Saida de `llama-server --list-devices` -> [{id, name, total_mib, free_mib}] (ignora linhas que nao casam)."""
+    out = []
+    for line in text.splitlines():
+        m = _DEV_RE.match(line)
+        if m:
+            out.append({"id": m["id"], "name": m["name"], "total_mib": int(m["total"]), "free_mib": int(m["free"]) if m["free"] else None})
+    return out
+
+
+def select_device(devices: list[dict], pattern: str = "RX 7800 XT") -> dict:
+    """Escolhe o dispositivo pelo NOME (nunca pelo indice VulkanN, que varia com driver/sessao).
+
+    1) primeiro cujo nome casa `pattern` (regex, sem diferenciar maiusculas); 2) fallback: maior VRAM dedicada entre os que NAO contem
+    "Graphics" (iGPU AMD se chama "AMD Radeon(TM) Graphics"). Sem candidato => SystemExit claro."""
+    if not devices:
+        raise SystemExit("nenhum dispositivo na saida de llama-server --list-devices (driver Vulkan ausente?)")
+    rx = re.compile(pattern, re.I)
+    for d in devices:
+        if rx.search(d["name"]):
+            return d
+    cands = [d for d in devices if "graphics" not in d["name"].lower()]
+    if not cands:
+        raise SystemExit(f"nenhuma dGPU encontrada (padrao {pattern!r}; dispositivos: {devices})")
+    return max(cands, key=lambda d: d["total_mib"])
+
+
+def list_devices(exe: Path) -> list[dict]:
+    import subprocess
+
+    res = subprocess.run([str(exe), "--list-devices"], capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
+    return parse_devices(res.stdout + "\n" + res.stderr)
+
+
 class LlamaServerBackend:
     """GGUF via llama-server (HTTP em 127.0.0.1): so sequence-level (greedy + amostras); sem top-k de logits (KD so via HF).
 
     O prompt e enviado como LISTA DE IDS (mesmos ids do HF/contrato Qwen FIM), portanto nao ha retokenizacao no servidor.
-    Seed por item e repassada em cada requisicao; `--parallel N` slots servem os lotes do Engine por threads."""
+    Seed por item e repassada em cada requisicao; `--parallel N` slots servem os lotes do Engine por threads.
+
+    Dispositivo: escolhido por NOME via `--list-devices` (padrao `device_match`); `device` explicito (ex. "Vulkan1") so para teste.
+    Guarda pos-carga: prompt de ~300 tokens; prompt_per_second < `min_prompt_tps` => aborta ("dispositivo lento: provavel iGPU")."""
 
     def __init__(self, gguf: Path | None, tokenizer_dir: Path, *, url: str | None, slots: int, ctx_per_slot: int, port: int = 8791,
-                 device: str = "Vulkan0", exe: Path | None = None, extra: list[str] | None = None) -> None:
+                 device: str | None = None, device_match: str = "RX 7800 XT", min_prompt_tps: float = 300.0,
+                 exe: Path | None = None, extra: list[str] | None = None) -> None:
         import subprocess
         import urllib.request
         from compact.contracts import contract_for, postprocess
@@ -417,31 +459,73 @@ class LlamaServerBackend:
         self._post = postprocess
         self.slots = slots
         self.proc = None
+        self.log_f = None
         self.url = url or f"http://127.0.0.1:{port}"
         self.gguf = gguf
         self.load_seconds = 0.0
         self.adapter_info = None
         self.gpu = {"device_name": device}
         self.skip_greedy = False
+        self.min_prompt_tps = min_prompt_tps
         if url is None:
             exe = exe or ROOT / "cache" / "llama.cpp" / "b11693" / "bin" / "llama-server.exe"
+            devices = list_devices(exe)
+            if device:
+                chosen = next((d for d in devices if d["id"] == device), {"id": device, "name": "(override manual)", "total_mib": None})
+                print(f"[device] OVERRIDE manual -dev {device}")
+            else:
+                chosen = select_device(devices, device_match)
+            device = chosen["id"]
+            self.gpu = {"device_name": chosen["name"], "device_id": device, "device_match": device_match, "all_devices": devices,
+                        "total_vram_gb": round(chosen["total_mib"] / 1024, 1) if chosen.get("total_mib") else None}
+            print(f"[device] dispositivos: {devices}\n[device] escolhido: -dev {device} ({chosen['name']})")
             cmd = [str(exe), "-m", str(gguf), "--host", "127.0.0.1", "--port", str(port), "-ngl", "99", "-dev", device,
                    "--parallel", str(slots), "-c", str(slots * ctx_per_slot), "-fa", "on", "--no-webui"] + (extra or [])
             t0 = time.time()
             (ROOT / "logs" / "distill").mkdir(parents=True, exist_ok=True)
             self.log_f = open(ROOT / "logs" / "distill" / "llama-server.log", "wb")
             self.proc = subprocess.Popen(cmd, stdout=self.log_f, stderr=subprocess.STDOUT)
-            for _ in range(600):
-                try:
-                    if urllib.request.urlopen(self.url + "/health", timeout=2).status == 200:
-                        break
-                except Exception:  # noqa: BLE001
-                    if self.proc.poll() is not None:
-                        raise SystemExit("llama-server morreu; veja logs/distill/llama-server.log")
-                    time.sleep(1)
-            else:
-                raise SystemExit("llama-server nao ficou pronto em 600 s")
-            self.load_seconds = round(time.time() - t0, 1)
+            try:
+                for _ in range(600):
+                    try:
+                        if urllib.request.urlopen(self.url + "/health", timeout=2).status == 200:
+                            break
+                    except Exception:  # noqa: BLE001
+                        if self.proc.poll() is not None:
+                            raise SystemExit("llama-server morreu; veja logs/distill/llama-server.log")
+                        time.sleep(1)
+                else:
+                    raise SystemExit("llama-server nao ficou pronto em 600 s")
+                self.load_seconds = round(time.time() - t0, 1)
+                self.sanity_check()
+            except BaseException:
+                self.close()
+                raise
+        else:
+            self.sanity_check()
+
+    def sanity_check(self) -> dict:
+        """Prompt de ~300 tokens (sem cache) + 16 tokens gerados; le `timings`. A 1a requisicao pode incluir warm-up: vale a melhor de 2."""
+        import urllib.request
+
+        text = " ".join(f"db.collection{i}.find({{ field{i}: {{ $gt: {i * 7} }} }})" for i in range(60))
+        ids = self.tokenizer.encode(text, add_special_tokens=False)[:300]
+        best = {"prompt_per_second": 0.0, "predicted_per_second": 0.0}
+        for attempt in range(2):
+            body = {"prompt": ids[attempt:], "n_predict": 16, "temperature": 0.0, "cache_prompt": False, "stream": False}
+            req = urllib.request.Request(self.url + "/completion", json.dumps(body).encode(), {"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                tm = json.loads(resp.read()).get("timings") or {}
+            if (tm.get("prompt_per_second") or 0) > best["prompt_per_second"]:
+                best = {"prompt_per_second": round(float(tm.get("prompt_per_second") or 0), 1),
+                        "predicted_per_second": round(float(tm.get("predicted_per_second") or 0), 1)}
+        best.update({"prompt_tokens": len(ids), "threshold_prompt_per_second": self.min_prompt_tps})
+        self.gpu["sanity"] = best
+        print(f"[device] guarda: {best}")
+        if best["prompt_per_second"] < self.min_prompt_tps:
+            raise SystemExit(f"dispositivo lento: provavel iGPU (prompt {best['prompt_per_second']} t/s < {self.min_prompt_tps}; "
+                             f"dispositivo {self.gpu.get('device_name')}); veja logs/distill/llama-server.log")
+        return best
 
     def close(self) -> None:
         if self.proc is not None:
@@ -450,6 +534,7 @@ class LlamaServerBackend:
                 self.proc.wait(timeout=20)
             except Exception:  # noqa: BLE001
                 self.proc.kill()
+        if self.log_f is not None:
             self.log_f.close()
 
     def encode(self, rec: dict) -> list[int]:
@@ -538,6 +623,8 @@ def main(argv=None) -> int:
     ap.add_argument("--server-url", help="llama-server ja em execucao (nao inicia outro)")
     ap.add_argument("--retry-from", help="2a passada: pasta de saida do filtro; gera so amostras (T=0,2) dos prompts cuja greedy foi rejeitada na validacao")
     ap.add_argument("--slots", type=int, default=8)
+    ap.add_argument("--device", help="llama-server: forca -dev (SO para teste, ex. Vulkan1); padrao = escolha por nome (generate.device_match)")
+    ap.add_argument("--min-prompt-tps", type=float, help="guarda pos-carga (padrao generate.min_prompt_tps)")
     ap.add_argument("--ctx-per-slot", type=int, default=2304)
     a = ap.parse_args(argv)
     cfg = load_config(a.config)
@@ -582,7 +669,9 @@ def main(argv=None) -> int:
             g = (a.gguf or "q8_0")
             names = {"q8_0": "Q8_0", "q5_k_m": "Q5_K_M", "f16": "f16"}
             gguf = resolve(g) if g.endswith(".gguf") else resolve(f"Repos/KapiTeacher-Mongo-7B/gguf/kapiteacher-mongo-7b-sft_v2d-{names[g.lower()]}.gguf")
-            backend = LlamaServerBackend(gguf, resolve(tc["base"]), url=a.server_url, slots=a.slots, ctx_per_slot=a.ctx_per_slot)
+            backend = LlamaServerBackend(gguf, resolve(tc["base"]), url=a.server_url, slots=a.slots, ctx_per_slot=a.ctx_per_slot, device=a.device,
+                                         device_match=gc.get("device_match", "RX 7800 XT"),
+                                         min_prompt_tps=a.min_prompt_tps or gc.get("min_prompt_tps", 300))
             backend.skip_greedy = bool(a.retry_from)
             engine_kwargs.update(save_topk=False, max_rows=max(a.slots * 2, 8), batch_tokens=10 ** 9)
             base_model, adapter, load = gguf, None, a.gguf or "q8_0"
@@ -593,7 +682,7 @@ def main(argv=None) -> int:
                 "pool": rel(pool_dir), "pool_manifest_sha256": sha256_file(pool_dir / "pool.manifest.json") if (pool_dir / "pool.manifest.json").exists() else None,
                 "model": {"path": rel(base_model), "fingerprint": (model_fingerprint(base_model)["model_sha256"] if base_model.is_dir() else sha256_file(base_model)), "load": load, "backend": a.backend},
                 "adapter": backend.adapter_info, "engine": {k: v for k, v in engine_kwargs.items()}, "libraries": library_versions(),
-                "gpu": {k: backend.gpu.get(k) for k in ("device_name", "gcn_arch", "total_vram_gb", "torch", "hip")},
+                "gpu": {k: backend.gpu.get(k) for k in ("device_name", "device_id", "device_match", "all_devices", "sanity", "gcn_arch", "total_vram_gb", "torch", "hip") if k in backend.gpu or k in ("device_name", "gcn_arch", "total_vram_gb", "torch", "hip")},
                 "load_seconds": backend.load_seconds, "decoding": "greedy argmax (padding do vocab mascarado) + amostras T/seed por item"}
         write_json(out / "gen_meta.json", meta)
         summary = eng.run(resume=a.resume, max_blocks=limit_blocks, stop_block=limit_blocks, only_idx=only_idx)
