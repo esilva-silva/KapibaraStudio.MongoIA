@@ -245,3 +245,175 @@ jobs:
     watchdog_minutes: 240
     window: any
     estimate_hours: {hours: 1.5}
+  # ---------------------------------------------------------------------------------------------------------------------------------
+  # ALUNOS T0 Nano / T1 Small (autocomplete FIM; KD por logits adiado). ENFILEIRADO, NAO INICIADO. Fonte dos numeros: reports/student/smoke_report.md
+  # (smoke de 20 passos + retomada, 2026-10-18) e reports/student/corpus_report.md. Tokens x 2 epocas / tok/s medidos:
+  #   T0 full FT (mestre fp32, AdamW fp32): 88,3 M tok -> 8,2 k tok/s (otimista 8,5 k; conservador 6,3 k = LoRA) = 3,0 h (3,9 h); 11,5 GB de pico
+  #   T1 LoRA r=64:                          127,4 M tok -> 2,29 k tok/s (conservador 2,0 k) = 15,5 h (17,7 h); 9,2 GB de pico
+  # Os dois bracos (distill x gold) tem os MESMOS hiperparametros, ids, ordem e linhas (so o rotulo muda): J10 e o controle do G2.4.
+  # Pre-requisito das avaliacoes: MongoDB no WSL (`wsl -d Ubuntu -u root -e systemctl start mongod` e `wsl -d Ubuntu -e sleep infinity` aberto) e Node no PATH.
+  # Ordem sugerida: bases zero-shot (curtas) -> J14 -> J16 -> [J10b -> J10be, opcional] -> J15 -> J17 -> J10 -> J10e. Comparacao (CPU):
+  #   python -I scripts/student/eval_student.py compare --tier t1 --distill sft_distill_v1 --gold sft_gold_v1 --base base-qwen2.5-coder-1.5b
+  - id: J16a-eval-base-T0
+    title: "Aluno T0: Qwen2.5-Coder-0.5B zero-shot no val v2c (n=2000, mesmos ids do professor) + Generic-JS (500)"
+    status: ready
+    command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t0", "--model", "BaseRepos/Qwen2.5-Coder-0.5B", "--name", "base-qwen2.5-coder-0.5b"]
+    depends_on: []
+    requires_files:
+      - Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json
+      - Repos/KapiTeacher-Mongo-7B/reports/baseline_base/Qwen2.5-Coder-7B-generic-js/sample_ids.json
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/base-qwen2.5-coder-0.5b/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/base-qwen2.5-coder-0.5b-generic-js/predictions.jsonl
+    done_marker: Repos/KapiCoder-Mongo-Nano/reports/eval/base-qwen2.5-coder-0.5b/gates.json
+    max_restarts: 2
+    watchdog_minutes: 40
+    estimate_hours: {hours: 0.5}
+  - id: J17a-eval-base-T1
+    title: "Aluno T1: Qwen2.5-Coder-1.5B zero-shot no val v2c (n=2000) + Generic-JS (500)"
+    status: ready
+    command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t1", "--model", "BaseRepos/Qwen2.5-Coder-1.5B", "--name", "base-qwen2.5-coder-1.5b"]
+    depends_on: []
+    requires_files:
+      - Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json
+      - Repos/KapiTeacher-Mongo-7B/reports/baseline_base/Qwen2.5-Coder-7B-generic-js/sample_ids.json
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/eval/base-qwen2.5-coder-1.5b/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/eval/base-qwen2.5-coder-1.5b-generic-js/predictions.jsonl
+    done_marker: Repos/KapiCoder-Mongo-Small/reports/eval/base-qwen2.5-coder-1.5b/gates.json
+    max_restarts: 2
+    watchdog_minutes: 40
+    estimate_hours: {hours: 0.7}
+  # J14: T0 distilado (rotulo do professor). Full FT, mestre fp32 + autocast bf16, AdamW fp32, LR 2e-5, 2 epocas, 3.168 passos de ~32,8k tokens.
+  # Manual: python -I scripts/student/train_student.py --config Repos/KapiCoder-Mongo-Nano/configs/sft_distill_v1.yaml --resume auto
+  - id: J14-T0-distill
+    title: "KapiCoder-Mongo-Nano SFT full FT, braco DISTILADO (159.865 ex., 44,2 M tok/epoca, 2 epocas)"
+    status: ready
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Nano/configs/sft_distill_v1.yaml", "--resume", "auto"]
+    depends_on: []
+    requires_files:
+      - data/student/distill/t0/manifest.json
+      - Repos/KapiCoder-Mongo-Nano/configs/sft_distill_v1.yaml
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/sft_distill_v1/metrics.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/sft_distill_v1/heartbeat.json
+    done_marker: Repos/KapiCoder-Mongo-Nano/merged/sft_distill_v1/model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 15
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 8231, conservative_tok_s: 6322, tokens: 88304300, steps: 3168, train_hours: 3.0, with_evals_hours: 3.3, conservative_train_hours: 3.9, conservative_hours: 4.2, budget_hours: 9}
+  - id: J16-T0-distill-eval
+    title: "Avaliacao do T0 distilado (val v2c n=2000 + Generic-JS + medidas + gates T0)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t0", "--model", "Repos/KapiCoder-Mongo-Nano/merged/sft_distill_v1",
+              "--name", "sft_distill_v1", "--base-name", "base-qwen2.5-coder-0.5b"]
+    depends_on: [J14-T0-distill, J16a-eval-base-T0]
+    requires_files:
+      - Repos/KapiCoder-Mongo-Nano/merged/sft_distill_v1/model.safetensors
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_distill_v1/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_distill_v1-generic-js/predictions.jsonl
+    done_marker: Repos/KapiCoder-Mongo-Nano/reports/eval/sft_distill_v1/gates.json
+    max_restarts: 2
+    watchdog_minutes: 40
+    estimate_hours: {hours: 0.5}
+  # J10b (OPCIONAL): controle do T0 (rotulo gold). Barato (~3 h) e da o efeito do professor ja na escala T0 antes das ~32 h do T1. Para ligar: status ready.
+  - id: J10b-T0-gold
+    title: "KapiCoder-Mongo-Nano SFT full FT, braco CONTROLE gold (J10b, opcional): mesmos ids/ordem/hiperparametros"
+    status: optional
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Nano/configs/sft_gold_v1.yaml", "--resume", "auto"]
+    depends_on: [J16-T0-distill-eval]
+    requires_files:
+      - data/student/gold/t0/manifest.json
+      - Repos/KapiCoder-Mongo-Nano/configs/sft_gold_v1.yaml
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/sft_gold_v1/metrics.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/sft_gold_v1/heartbeat.json
+    done_marker: Repos/KapiCoder-Mongo-Nano/merged/sft_gold_v1/model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 15
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 8231, conservative_tok_s: 6322, tokens: 88370000, steps: 3168, train_hours: 3.0, with_evals_hours: 3.3, conservative_train_hours: 3.9, conservative_hours: 4.2, budget_hours: 9}
+  - id: J10be-T0-gold-eval
+    title: "Avaliacao do T0 controle gold (opcional)"
+    status: optional
+    command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t0", "--model", "Repos/KapiCoder-Mongo-Nano/merged/sft_gold_v1",
+              "--name", "sft_gold_v1", "--base-name", "base-qwen2.5-coder-0.5b"]
+    depends_on: [J10b-T0-gold]
+    requires_files:
+      - Repos/KapiCoder-Mongo-Nano/merged/sft_gold_v1/model.safetensors
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_gold_v1/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_gold_v1-generic-js/predictions.jsonl
+    done_marker: Repos/KapiCoder-Mongo-Nano/reports/eval/sft_gold_v1/gates.json
+    max_restarts: 2
+    watchdog_minutes: 40
+    estimate_hours: {hours: 0.5}
+  # J15: T1 distilado. LoRA r=64/alpha=128 (full FT nao cabe: fp32 estoura 14,1 GB, bf16 puro estoura no 3o passo; ver smoke_report), LR 1,5e-4, 4.562 passos.
+  - id: J15-T1-distill
+    title: "KapiCoder-Mongo-Small SFT LoRA r=64, braco DISTILADO (229.834 ex., 63,7 M tok/epoca, 2 epocas)"
+    status: ready
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_distill_v1.yaml", "--resume", "auto"]
+    depends_on: []
+    requires_files:
+      - data/student/distill/t1/manifest.json
+      - Repos/KapiCoder-Mongo-Small/configs/sft_distill_v1.yaml
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/sft_distill_v1/metrics.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/sft_distill_v1/heartbeat.json
+    done_marker: Repos/KapiCoder-Mongo-Small/merged/sft_distill_v1/model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 2290, conservative_tok_s: 2000, tokens: 127441242, steps: 4562, train_hours: 15.5, with_evals_hours: 16.0, conservative_train_hours: 17.7, conservative_hours: 18.2, budget_hours: 22, cut_option: "--total-steps 3422 (1,5 epoca): -4 h por braco"}
+  - id: J17-T1-distill-eval
+    title: "Avaliacao do T1 distilado (val v2c n=2000 + Generic-JS + medidas + gates T1)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t1", "--model", "Repos/KapiCoder-Mongo-Small/merged/sft_distill_v1",
+              "--name", "sft_distill_v1", "--base-name", "base-qwen2.5-coder-1.5b"]
+    depends_on: [J15-T1-distill, J17a-eval-base-T1]
+    requires_files:
+      - Repos/KapiCoder-Mongo-Small/merged/sft_distill_v1/model.safetensors
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1-generic-js/predictions.jsonl
+    done_marker: Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1/gates.json
+    max_restarts: 2
+    watchdog_minutes: 40
+    estimate_hours: {hours: 0.8}
+  # J10: controle do T1 (rotulo gold) = referencia do G2.4 do professor. NAO e o J10 reduzido da Fase 05 §9.2 (100k ex., 1 epoca, ~5 h): e o par exato do J15.
+  - id: J10-T1-gold
+    title: "KapiCoder-Mongo-Small SFT LoRA r=64, braco CONTROLE gold (J10): mesmos ids/ordem/hiperparametros do J15"
+    status: ready
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_gold_v1.yaml", "--resume", "auto"]
+    depends_on: []
+    requires_files:
+      - data/student/gold/t1/manifest.json
+      - Repos/KapiCoder-Mongo-Small/configs/sft_gold_v1.yaml
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/sft_gold_v1/metrics.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/sft_gold_v1/heartbeat.json
+    done_marker: Repos/KapiCoder-Mongo-Small/merged/sft_gold_v1/model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 2290, conservative_tok_s: 2000, tokens: 127480000, steps: 4562, train_hours: 15.5, with_evals_hours: 16.0, conservative_train_hours: 17.7, conservative_hours: 18.2, budget_hours: 22, cut_option: "--total-steps 3422 (1,5 epoca): -4 h por braco"}
+  - id: J10e-T1-gold-eval
+    title: "Avaliacao do T1 controle gold (val v2c n=2000 + Generic-JS + medidas + gates T1)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t1", "--model", "Repos/KapiCoder-Mongo-Small/merged/sft_gold_v1",
+              "--name", "sft_gold_v1", "--base-name", "base-qwen2.5-coder-1.5b"]
+    depends_on: [J10-T1-gold, J17a-eval-base-T1]
+    requires_files:
+      - Repos/KapiCoder-Mongo-Small/merged/sft_gold_v1/model.safetensors
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_gold_v1/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_gold_v1-generic-js/predictions.jsonl
+    done_marker: Repos/KapiCoder-Mongo-Small/reports/eval/sft_gold_v1/gates.json
+    max_restarts: 2
+    watchdog_minutes: 40
+    estimate_hours: {hours: 0.8}

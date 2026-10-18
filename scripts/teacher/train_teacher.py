@@ -177,6 +177,11 @@ def fingerprint(cfg: dict, corpus: Corpus, model_sha: str, accum: int, init_adap
     return parts
 
 
+def base_model(model):
+    """Modelo HF por baixo do wrapper PEFT; modelo completo (full FT dos alunos, scripts/student/train_student.py) volta como esta."""
+    return model.get_base_model() if hasattr(model, "get_base_model") else model
+
+
 # -- perda --------------------------------------------------------------------------------------------------------------------------
 def target_loss(model, input_ids, loss_mask, chunk: int):
     """Soma da CE nas posicoes do alvo (float32) e numero de posicoes. Logits so onde ha perda, em blocos com recomputacao."""
@@ -187,7 +192,7 @@ def target_loss(model, input_ids, loss_mask, chunk: int):
     def piece(hidden, targets, head):
         return F.cross_entropy(F.linear(hidden.to(head.dtype), head).float(), targets, reduction="sum")
 
-    inner = model.get_base_model()
+    inner = base_model(model)
     with torch.autocast("cuda", dtype=torch.bfloat16):
         hidden = inner.model(input_ids=input_ids, use_cache=False).last_hidden_state
     mask = loss_mask[:, 1:]
@@ -210,7 +215,7 @@ def eval_val_loss(model, corpus_dir: Path, manifest: dict, device, chunk: int, h
     with np.load(corpus_dir / "val" / "val_loss.npz") as data:
         shard = {k: data[k] for k in ("ids", "ex_offsets", "loss_start", "row_ptr")}
     sums, counts = {}, {}
-    inner = model.get_base_model()
+    inner = base_model(model)
     head = inner.lm_head.weight
     first = 0
     model.eval()

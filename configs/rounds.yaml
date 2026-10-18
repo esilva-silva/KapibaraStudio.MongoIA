@@ -1,0 +1,27 @@
+# rounds.yaml - regras de adocao PRE-REGISTRADAS por rodada de treino (docs/fase-05-treinamento.md §4.3 "Regras pre-registradas").
+# O hash deste arquivo vai para o run_manifest.json de cada treino de aluno. STATUS: DRAFT - o usuario confirma/ajusta ANTES de iniciar J14/J15/J10;
+# depois de iniciado nenhum limiar muda (mudou => nova rodada com novo id).
+version: 1
+status: draft
+rounds:
+  student-v1:
+    scope: "autocomplete FIM editor-context-v1; T0 Nano (0,5B) e T1 Small (1,5B); KD por logits adiado; chat fora ate a Q1"
+    arms:
+      distill: "fim_ctx/completion com o alvo do KapiTeacher (data/distilled/v2c-final/accepted.jsonl, teacher_seq)"
+      gold: "controle J10: MESMOS prompts/ids/ordem/hiperparametros, rotulo = middle original; fim_raw e replay identicos nos dois bracos"
+    evaluation:
+      set: "val v2c, 2.000 ids de Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json (mesmos do professor); Generic-JS 500 cortes"
+      tool: "scripts/student/eval_student.py (run / compare); estatistica de scripts/eval/stats.py (McNemar exato, bootstrap pareado 10.000, Holm)"
+      never: "test, bench, cego e train nunca entram na selecao entre bracos"
+    # Regra de decisao distilado x controle (por tier, nos MESMOS exemplos). Todas devem valer para o braco distilado ser o adotado:
+    adopt_distill_over_gold:
+      - {metric: exec_valid_vs_ceiling, rule: "delta (distill - gold) >= +2 p.p. E IC95% do delta inteiramente > 0 (ou McNemar p < 0,05 com Holm)"}
+      - {metric: fim_acc_normalized_match, rule: "nao-inferior: limite inferior do IC95% do delta > -2 p.p."}
+      - {metric: nonexistent_fields_context_full, rule: "taxa do distilado <= taxa do gold + 0,5 p.p."}
+      - {metric: generic_js_fim_acc, rule: "queda do distilado vs zero-shot do mesmo tamanho <= 3 p.p. (mesmo limiar do G2.5)"}
+    if_not_adopted: "o professor passa a ser so FILTRO/validador (rotulo gold dos prompts aceitos): adotar o braco gold e registrar o motivo (G2.4 falho => 'destilacao vira so filtragem')"
+    teacher_g2_4: "G2.4 (configs/gates.teacher.yaml): FIM acc do professor >= melhor aluno SEM professor (maior normalized_match entre os controles gold) + 5 p.p., via scripts/student/eval_student.py compare (teacher_measures --student-summary)"
+    tier_gates: "configs/gates.yaml T0/T1 (owner python) avaliados por eval_student.py; itens do KapiLab (TTFT/RAM/paridade), chat, HumanEval+ e baseline v1 re-medido ficam unevaluated nesta rodada"
+    stop_rules:
+      - "loss/grad nao finita, OOM ou queda de FIM acc generico (monitor gjs) > 1,5 p.p. entre avaliacoes consecutivas => pausar e reavaliar (LR/replay)"
+      - "budget.hours de cada config e o teto de horas de treino"

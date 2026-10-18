@@ -1,0 +1,68 @@
+# student_corpus.yaml - corpus dos alunos T0 Nano (Qwen2.5-Coder-0.5B) e T1 Small (Qwen2.5-Coder-1.5B): autocomplete FIM `editor-context-v1`.
+# Lido por scripts/student/build_student_corpus.py. Fase 05 §6.2 (mistura, volumes, replay), §7 (T0 e T1 sao subconjuntos do mesmo conjunto),
+# Fase 01 §6.5 (piloto sequence-level), Fase 02 §3.6 G2.4 (aluno de CONTROLE treinado SEM professor com os mesmos prompts e rotulos gold).
+#
+# DOIS BRACOS com os MESMOS prompts, ids, componentes, ordem e empacotamento em linhas (so muda o rotulo do componente "rotulado pelo professor"):
+#   distill : fim_ctx e completion usam o alvo do professor (`target`, label_source teacher_seq) de data/distilled/v2c-final/accepted.jsonl
+#   gold    : os MESMOS exemplos usam o `gold` (= `middle` original do dataset v2c)  -> J10 (aluno sem professor)
+# Componentes sem professor (fim_raw, replay) sao IDENTICOS nos dois bracos. `agrees_with_gold` so e gravado nos metadados (informativo).
+#
+# Escopo: so autocomplete FIM. Chat curto, correcao e negativos ficam FORA ate a decisao Q1 (a receita da Fase 05 tinha 5-23% de chat/correcao
+# por tier; esse percentual foi redistribuido para FIM/completion e para o replay, que sobe para ~12% dos tokens por decisao do usuario).
+# KD por logits ADIADO: nada aqui le os top-k de data/distilled/v2c/gen/topk.
+# G2.7: so `train`. Nenhum id/grupo/schema/snippet/prompt/prefixo+sufixo/conteudo de val/test/bench/cego (verificado em codigo; ver manifesto).
+version: student-corpus/1
+seed: 20261018
+
+tokenizer: BaseRepos/Qwen2.5-Coder-0.5B/tokenizer.json        # identico (sha256) ao do 1.5B e ao do professor 7B (conferido pelo construtor)
+same_tokenizer_as: [BaseRepos/Qwen2.5-Coder-1.5B/tokenizer.json, BaseRepos/Qwen2.5-Coder-7B/tokenizer.json]
+
+distilled:
+  accepted: data/distilled/v2c-final/accepted.jsonl           # 270.993 prompts com alvo do professor (greedy + 2a passada), 1 por prompt
+  pool_dir: data/distilled/v2c/pool                           # 300k prompts ANTES da geracao: define o balanco-alvo dos estratos (nao depende do rotulo)
+  filter_report: data/distilled/v2c-final/filter_report.json
+  eval_index: data/distilled/v2c/eval_index.json              # ids/grupos/schemas/snippets/prompt_sha/prefixo+sufixo de val/test/bench (G2.7)
+  eval_docs: data/distilled/v2c/eval_docs.jsonl               # prefixo/middle/sufixo de val/test/bench (conteudo)
+splits_dir: data/splits/v2c
+teacher_val_dir: data/teacher/v2d/val                         # val_loss/val_gen/val_gen_generic IDENTICOS aos do professor (comparavel)
+teacher_val_manifest: data/teacher/v2d/manifest.json
+
+# Balanco: estratos = cut_kind x category x context_kind. Alvo = composicao do POOL de 300k (cut_kind/categoria/dominio/papel do cursor a
+# +-0,3 p.p. do corpus de treino; context_kind rebalanceado de proposito para ~29% none+irrelevant, como o corpus v2d do professor).
+# Alocacao proporcional ao alvo com teto da disponibilidade (water-filling determinista); dentro do estrato, prioridade = hash(seed, id).
+# T0 e subconjunto de T1 (mesma ordem de prioridade; teto de T0 = selecao de T1).
+strata: [cut_kind, category, context_kind]
+priority_salt: student-priority
+
+tiers:
+  t1: {name: KapiCoder-Mongo-Small, base: BaseRepos/Qwen2.5-Coder-1.5B, total_examples: 230000}
+  t0: {name: KapiCoder-Mongo-Nano,  base: BaseRepos/Qwen2.5-Coder-0.5B, total_examples: 160000, subset_of: t1}
+
+# Mistura dos exemplos NAO-replay (fracoes; somam 1). Componente por id via hash (determinista, aninhado entre tiers, independente do rotulo).
+mix:
+  fim_ctx: 0.68        # FIM PSM com cabecalho de contexto (prompt exato que o professor viu; 92%/8% natural -> none/irrelevant/full do pool)
+  completion: 0.27     # sufixo vazio: mesmo head do prompt; alvo = rotulo + sufixo original (so cortes curtos: <= completion.max_chars)
+  fim_raw: 0.05        # MESMOS cortes em FIM cru (sem cabecalho), rotulo gold nos dois bracos (preserva infilling puro)
+completion: {max_chars: 240, max_target_tokens: 96}
+teacher_labeled_components: [fim_ctx, completion]
+gold_in_both_arms_components: [fim_raw, replay_fim, replay_causal]
+
+# Replay de codigo generico (G2.5): data/replay/v1 (JS/TS permissivo, holdout por pacote), 12% dos TOKENS do corpus (faixa 10-15%).
+replay:
+  enabled: true
+  token_share: 0.12
+  source_dir: data/replay/v1
+  train_file: replay_train.jsonl
+  eval_file: generic_js_fim_eval.jsonl
+  monitor_file: generic_js_fim_monitor.jsonl
+  fim_fraction: 0.5
+  fim_max_middle_tokens: 96
+  window_chars: 4000
+  max_variants: 3          # a fonte tem so ~7,2k trechos (4,45 M tokens); para chegar a 12% no T1 o mesmo trecho entra ate 3x com outro sorteio FIM/causal e corte (id ~v1, ~v2); a variante 0 de todos vem antes
+
+# Empacotamento: linha = micro-batch de n sequencias com n x Lmax <= micro_tokens (padding a direita, atencao causal sem mascara).
+# O comprimento de empacotamento usa max(alvo distilado, alvo gold) -> as linhas dos dois bracos sao IDENTICAS (mesmos exemplos, mesma ordem).
+micro_tokens: 16384          # Fase 05 §6.2: micro-batch 16.384 tokens para T0/T1
+seq_len: 4096
+max_examples_per_row: 64
+shard_examples: 25000
