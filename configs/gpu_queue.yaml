@@ -321,7 +321,7 @@ jobs:
   # J10b (OPCIONAL): controle do T0 (rotulo gold). Barato (~3 h) e da o efeito do professor ja na escala T0 antes das ~32 h do T1. Para ligar: status ready.
   - id: J10b-T0-gold
     title: "KapiCoder-Mongo-Nano SFT full FT, braco CONTROLE gold (J10b, opcional): mesmos ids/ordem/hiperparametros"
-    status: optional
+    status: waiting
     command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Nano/configs/sft_gold_v1.yaml", "--resume", "auto"]
     depends_on: [J16-T0-distill-eval]
     requires_files:
@@ -338,7 +338,7 @@ jobs:
     estimate_hours: {measured_tok_s: 8231, conservative_tok_s: 6322, tokens: 88370000, steps: 3168, train_hours: 3.0, with_evals_hours: 3.3, conservative_train_hours: 3.9, conservative_hours: 4.2, budget_hours: 9}
   - id: J10be-T0-gold-eval
     title: "Avaliacao do T0 controle gold (opcional)"
-    status: optional
+    status: waiting
     command: ["{python}", "-I", "scripts/student/eval_student.py", "run", "--tier", "t0", "--model", "Repos/KapiCoder-Mongo-Nano/merged/sft_gold_v1",
               "--name", "sft_gold_v1", "--base-name", "base-qwen2.5-coder-0.5b"]
     depends_on: [J10b-T0-gold]
@@ -355,7 +355,7 @@ jobs:
   - id: J15-T1-distill
     title: "KapiCoder-Mongo-Small SFT LoRA r=64, braco DISTILADO (229.834 ex., 63,7 M tok/epoca, 2 epocas)"
     status: ready
-    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_distill_v1.yaml", "--resume", "auto"]
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_distill_v1.yaml", "--total-steps", "3422", "--resume", "auto"]
     depends_on: []
     requires_files:
       - data/student/distill/t1/manifest.json
@@ -388,7 +388,7 @@ jobs:
   - id: J10-T1-gold
     title: "KapiCoder-Mongo-Small SFT LoRA r=64, braco CONTROLE gold (J10): mesmos ids/ordem/hiperparametros do J15"
     status: ready
-    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_gold_v1.yaml", "--resume", "auto"]
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_gold_v1.yaml", "--total-steps", "3422", "--resume", "auto"]
     depends_on: []
     requires_files:
       - data/student/gold/t1/manifest.json
