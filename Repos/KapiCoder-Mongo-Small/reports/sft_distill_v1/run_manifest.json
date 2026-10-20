@@ -1,0 +1,261 @@
+{
+  "schema": "student-run/1",
+  "run": "sft_distill_v1",
+  "arm": "distill",
+  "tier": "t1",
+  "stage": "sft",
+  "started_utc": "2026-10-19T16:04:14Z",
+  "last_start_utc": "2026-10-19T16:04:14Z",
+  "restarts": 0,
+  "git": {
+    "commit": "fce2002ccd50e6c8cab9881215b3d869d9197d0a",
+    "dirty": true
+  },
+  "config": {
+    "path": "Repos\\KapiCoder-Mongo-Small\\configs\\sft_distill_v1.yaml",
+    "sha256": "725d3ac605f9d48ff8494ac0a152bf4b09f4592242b5276fa0b02c40d68c9a7f",
+    "overrides": [],
+    "effective": {
+      "version": "sft-student/1",
+      "run": {
+        "name": "sft_distill_v1",
+        "arm": "distill",
+        "tier": "t1",
+        "seed": 20261018,
+        "stage": "sft"
+      },
+      "model": {
+        "path": "BaseRepos/Qwen2.5-Coder-1.5B",
+        "method": "lora",
+        "master_dtype": "bf16",
+        "attn": "sdpa"
+      },
+      "lora": {
+        "r": 64,
+        "alpha": 128,
+        "dropout": 0.05,
+        "targets": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "data": {
+        "corpus_dir": "data/student/distill/t1",
+        "micro_tokens": 16384,
+        "epochs": 2,
+        "max_train_tokens": null
+      },
+      "optim": {
+        "name": "adamw",
+        "lr": 0.00015,
+        "min_lr_ratio": 0.1,
+        "betas": [
+          0.9,
+          0.95
+        ],
+        "weight_decay": 0.0,
+        "warmup_ratio": 0.03,
+        "grad_clip": 1.0,
+        "tokens_per_step": 32768
+      },
+      "loss": {
+        "ce_chunk": 1024
+      },
+      "memory": {
+        "max_vram_fraction": 0.94,
+        "vram_reserve_gb": 1.6,
+        "gradient_checkpointing": true
+      },
+      "checkpoint": {
+        "dir": "Repos/KapiCoder-Mongo-Small/checkpoints",
+        "every_minutes": 30,
+        "every_pct_steps": 5,
+        "every_steps": null,
+        "keep": 2
+      },
+      "eval": {
+        "every_pct_steps": 10,
+        "every_steps": null,
+        "val_loss": true,
+        "gen_examples": 100,
+        "final_gen_examples": 200,
+        "generic_gen_examples": 50,
+        "final_generic_gen_examples": 100,
+        "max_new_tokens": 96
+      },
+      "budget": {
+        "hours": 22
+      },
+      "paths": {
+        "reports_dir": "Repos/KapiCoder-Mongo-Small/reports",
+        "adapters_dir": "Repos/KapiCoder-Mongo-Small/adapters",
+        "merged_dir": "Repos/KapiCoder-Mongo-Small/merged",
+        "gates": "configs/gates.yaml",
+        "contract_golden": "data/contracts/editor-context-v1.golden"
+      }
+    }
+  },
+  "dataset": {
+    "corpus_manifest": "data\\student\\distill\\t1\\manifest.json",
+    "corpus_manifest_sha256": "d5f45c640e6a9d060d5cd7f3cbf40cf7a8fb2657217523c2a7f75713fd8afb75",
+    "label_source": "teacher_seq (fim_ctx, completion)",
+    "examples": 229834,
+    "tokens_in_corpus": 63702244,
+    "tokens_this_run": 127393998,
+    "rows": 4562,
+    "epochs": 2,
+    "replay": {
+      "examples": 12528,
+      "tokens": 7718144,
+      "token_share_achieved": 0.1212
+    },
+    "pairing": {
+      "ids_sha256": "9937b346325f05956d14f6998400057a86dcdb5f608ed9d1ce8fbba8b1f34bdc",
+      "rows_sha256": "2a57cf6688e4af4114cc149875fb2726d413fc31e0a835e622ec2d85728899b8"
+    },
+    "student_corpus_config_sha256": "c545412e77243ad8f21f1bb2215118ab7f3421d7735cb2c00dc7bbb34075f950",
+    "accepted_sha256": "2a32311843d3479cfd6ac6210555208bc53d01c19b23887f00a6ab37c1ba97bc"
+  },
+  "gates_yaml_sha256": "7620bda4c0074238ec7b72d394f7426371e643a5ffd143164c2baf3def892765",
+  "rounds_yaml_sha256": "4ab337c57e8bc114b077119580ec04bce324376b35a5b50ceafdcfd3fc667e00",
+  "base_model": {
+    "path": "BaseRepos\\Qwen2.5-Coder-1.5B",
+    "repo_id": "Qwen/Qwen2.5-Coder-1.5B",
+    "revision": "df3ce67c0e24480f20468b6ef2894622d69eb73b",
+    "model_sha256": "8bcb242c05f271406b3f585b7688f86e350413612ef67bca6c61700b22d05f3b",
+    "weights_gb_on_gpu": 3.18
+  },
+  "fingerprint": {
+    "model_sha256": "8bcb242c05f271406b3f585b7688f86e350413612ef67bca6c61700b22d05f3b",
+    "corpus_manifest_sha256": "d5f45c640e6a9d060d5cd7f3cbf40cf7a8fb2657217523c2a7f75713fd8afb75",
+    "train_config_sha256": "a45263bbffad55a050a5e8a4a59d361390b7dfb127d86aa07f52bc459d140a1a",
+    "combined": "384a290f88928301ae807f72c12bebca01921d0568847c73afe3fdd3a6818ad8"
+  },
+  "libraries": {
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "torch": "2.10.0+rocm7.14.0a20260611",
+    "transformers": "4.57.6",
+    "bitsandbytes": "0.50.2",
+    "tokenizers": "0.22.2",
+    "safetensors": "0.7.0",
+    "accelerate": "1.12.0",
+    "pymongo": "indisponivel",
+    "hip": "7.14.60850",
+    "peft": "0.17.1"
+  },
+  "environment": {
+    "python": "3.12.10",
+    "python_executable": "C:\\SlopStudio.MongoAI-artifacts\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "libraries": {
+      "torch": "2.10.0+rocm7.14.0a20260611",
+      "transformers": "4.57.6",
+      "peft": "0.17.1",
+      "accelerate": "1.12.0",
+      "bitsandbytes": "0.50.2",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.7.0",
+      "onnxruntime": "1.30.0",
+      "onnxruntime_genai": "0.15.2"
+    },
+    "video_controllers": [
+      {
+        "Name": "AMD Radeon(TM) Graphics",
+        "DriverVersion": "32.0.21045.5002",
+        "DriverDate": "/Date(1786924800000)/",
+        "VideoProcessor": "AMD Radeon Graphics Processor (0x164E)"
+      },
+      {
+        "Name": "AMD Radeon RX 7800 XT",
+        "DriverVersion": "32.0.31041.1004",
+        "DriverDate": "/Date(1786924800000)/",
+        "VideoProcessor": "AMD Radeon Graphics Processor (0x747E)"
+      }
+    ],
+    "gpu": {
+      "device_name": "AMD Radeon RX 7800 XT",
+      "gcn_arch": "gfx1101",
+      "total_vram_gb": 15.98,
+      "torch": "2.10.0+rocm7.14.0a20260611",
+      "hip": "7.14.60850",
+      "vram_limit": {
+        "requested_fraction": 0.94,
+        "effective_fraction": 0.8846,
+        "max_vram_gb": 14.14,
+        "free_at_start_gb": 15.74,
+        "reserve_gb": 1.6,
+        "shared_memory_spill": "bloqueado"
+      }
+    }
+  },
+  "aotriton_experimental": "1",
+  "plan": {
+    "method": "lora",
+    "master_dtype": "bf16",
+    "optimizer": "adamw",
+    "accum_rows": 2,
+    "micro_tokens": 16384,
+    "steps_per_epoch": 2281,
+    "total_steps_schedule": 3422,
+    "trainable_params": 73859072,
+    "load_seconds": 5.7,
+    "budget_hours": 22
+  },
+  "schedule_changes": [],
+  "status": "completed",
+  "finished_utc": "2026-10-20T03:51:41Z",
+  "final_step": 3422,
+  "total_steps": 3422,
+  "tokens_seen": 95649450,
+  "elapsed_train_h": 11.738,
+  "best_val_loss": 0.82733,
+  "final_eval": {
+    "step": 3422,
+    "epoch": 1.5,
+    "tokens": 95649450,
+    "t_utc": "2026-10-20T03:48:33Z",
+    "val_loss_fim": 0.92794,
+    "val_loss_generic": 0.48232,
+    "val_loss": 0.92794,
+    "val_loss_tokens": 10759,
+    "gen_n": 200,
+    "gen_exact_match": 0.375,
+    "gen_normalized_match": 0.375,
+    "gen_syntax_valid": 0.995,
+    "gen_nonempty": 1.0,
+    "gen_seconds": 107.8,
+    "gen_mongo_valid": 0.995,
+    "gjs_n": 100,
+    "gjs_exact_match": 0.64,
+    "gjs_normalized_match": 0.64,
+    "gjs_syntax_valid": 0.95,
+    "gjs_nonempty": 1.0,
+    "gjs_seconds": 41.7,
+    "eval_seconds": 182.6
+  },
+  "peak_vram_gb": {
+    "vram_alloc_gb": 4.01,
+    "vram_peak_gb": 9.29,
+    "vram_reserved_peak_gb": 10.93
+  },
+  "export": {
+    "path": "Repos\\KapiCoder-Mongo-Small\\merged\\sft_distill_v1",
+    "dtype": "bfloat16",
+    "files_sha256": {
+      "config.json": "9dd8637a8aaa2eb099a2fbfcc1f3a13c47055b870a850fe807a90f91470165ed",
+      "generation_config.json": "444ea57ebf361c659d1f5c23508319b691e181d122588ea3cdd5f68d3e618b1f",
+      "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+      "model.safetensors": "1bc114cb989523dac51cc482a8d65e56630118dae43cf3a0091a5a67f876abeb",
+      "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+      "tokenizer_config.json": "4a917e4772d9b246ef600e1c5d7d81e3a81ae9f3f2d10d78ccb02c86e5fb184a",
+      "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    },
+    "combined_sha256": "57de1f5e408cfeb035b953aedccdda515290e8d35e30109b3d76f4b3addc5f60"
+  }
+}
