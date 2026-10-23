@@ -1,0 +1,2093 @@
+{
+ "schema_id": "v3_quartz_gam",
+ "domain": "gaming",
+ "holdout": false,
+ "description": "gaming v3 realista EN, camel",
+ "name_style": "camel",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "items: campos raros (<10% dos docs): migrated_from",
+  "items: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "sessions: campos raros (<10% dos docs): notes, external_ref",
+  "sessions: campos legados/duplicados em formato antigo: ip_old, old_ended_at",
+  "sessions: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "events: campos raros (<10% dos docs): notes, override",
+  "events: colecao time-series (timeField=at, metaField=build)",
+  "matchmaking_queue: campos raros (<10% dos docs): override, review_state",
+  "matchmaking_queue: campos legados/duplicados em formato antigo: legacy_enqueued_at, mmr_v2",
+  "matchmaking_queue: heterogeneidade de tipo no mesmo campo: date_string=1, ref_string=1",
+  "matchmaking_queue: colecao capped (max=3400 docs)",
+  "matches: campos raros (<10% dos docs): external_ref, migrated_from",
+  "leaderboards: campos raros (<10% dos docs): override, review_state",
+  "leaderboards: campos legados/duplicados em formato antigo: old_season, closed_old",
+  "leaderboards: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "guilds: campos raros (<10% dos docs): beta_flag",
+  "guilds: campos legados/duplicados em formato antigo: treasury_old, legacy_founded",
+  "purchases: campos raros (<10% dos docs): review_state",
+  "purchases: aninhamento profundo audit.zone.device.options.* (4 niveis de objeto)",
+  "players: campos raros (<10% dos docs): override",
+  "players: campos legados/duplicados em formato antigo: email_old",
+  "players: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "_id mistos: objectid=8, string=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante camel; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=2, coll_suffix=1, name_ID=1, name_style=4, name_underscore=1, name_upper=1",
+  "campos heterogeneos (alt) no schema: 5; mapas dinamicos: 2; max_depth=5",
+  "dominio gaming: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "items",
+   "name": "items",
+   "doc_count": 950,
+   "fields": {
+    "sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "rarity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "common",
+      "rare",
+      "epic",
+      "legendary"
+     ],
+     "w": [
+      28.9,
+      100.0,
+      42.4,
+      37.3
+     ]
+    },
+    "slot": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "head",
+      "body",
+      "weapon",
+      "pet"
+     ],
+     "w": [
+      100.0,
+      36.8,
+      43.7,
+      42.1
+     ]
+    },
+    "priceCoins": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 90000,
+     "sk": 2.04,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 10,
+       "hi": 90000,
+       "dec": 0,
+       "aw": 0.04
+      }
+     ]
+    },
+    "stats": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "atk": {
+       "t": "int32",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300
+      },
+      "def": {
+       "t": "int32",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 300,
+       "sk": 1.85
+      },
+      "spd": {
+       "t": "int32",
+       "p": 0.95,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100,
+       "sk": 1.46
+      }
+     }
+    },
+    "tradable": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      26.1,
+      29.3,
+      58.4
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sku",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "rarity",
+       1
+      ],
+      [
+       "slot",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "priceCoins",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "migratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "sku": {
+       "bsonType": "string"
+      },
+      "name": {
+       "bsonType": "string"
+      },
+      "rarity": {
+       "bsonType": "string",
+       "enum": [
+        "common",
+        "rare",
+        "epic",
+        "legendary"
+       ]
+      },
+      "slot": {
+       "bsonType": "string",
+       "enum": [
+        "head",
+        "body",
+        "weapon",
+        "pet"
+       ]
+      },
+      "priceCoins": {
+       "bsonType": [
+        "int",
+        "string"
+       ]
+      },
+      "stats": {
+       "bsonType": "object",
+       "properties": {
+        "atk": {
+         "bsonType": "int"
+        },
+        "def": {
+         "bsonType": "int"
+        },
+        "spd": {
+         "bsonType": "int"
+        }
+       }
+      },
+      "tradable": {
+       "bsonType": "bool"
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      }
+     },
+     "required": [
+      "sku",
+      "name",
+      "rarity",
+      "slot",
+      "priceCoins",
+      "stats",
+      "tradable"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "sessions",
+   "name": "sessions",
+   "doc_count": 950,
+   "fields": {
+    "playerId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players",
+     "g": "word"
+    },
+    "startedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "endedAt": {
+     "t": "date",
+     "p": 0.95,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "device": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "os": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "ios",
+        "android",
+        "win",
+        "mac"
+       ],
+       "w": [
+        33.9,
+        100.0,
+        55.9,
+        21.5
+       ]
+      },
+      "model": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "ver": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "V"
+      }
+     }
+    },
+    "ip": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "events": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "t": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30",
+        "alt": [
+         {
+          "t": "string",
+          "g": "isodate",
+          "lo": "2025-01-01",
+          "hi": "2026-09-30",
+          "fmt": "date",
+          "aw": 0.07
+         }
+        ]
+       },
+       "kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "login",
+         "spawn",
+         "death",
+         "buy",
+         "quit"
+        ],
+        "w": [
+         17.7,
+         18.4,
+         100.0,
+         30.3,
+         50.7
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "ipOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "oldEndedAt": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "playerId",
+       1
+      ],
+      [
+       "startedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "startedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "externalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "playerId": {
+       "bsonType": "string"
+      },
+      "startedAt": {
+       "bsonType": "date"
+      },
+      "endedAt": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "device": {
+       "bsonType": "object",
+       "properties": {
+        "os": {
+         "bsonType": "string",
+         "enum": [
+          "ios",
+          "android",
+          "win",
+          "mac"
+         ]
+        },
+        "model": {
+         "bsonType": "string"
+        },
+        "ver": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "os",
+        "model",
+        "ver"
+       ]
+      },
+      "ip": {
+       "bsonType": "string"
+      },
+      "events": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "t": {
+          "bsonType": [
+           "date",
+           "string"
+          ]
+         },
+         "kind": {
+          "bsonType": "string",
+          "enum": [
+           "login",
+           "spawn",
+           "death",
+           "buy",
+           "quit"
+          ]
+         }
+        },
+        "required": [
+         "t",
+         "kind"
+        ]
+       }
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "externalRef": {
+       "bsonType": "string"
+      },
+      "ipOld": {
+       "bsonType": "string"
+      },
+      "oldEndedAt": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "playerId",
+      "startedAt",
+      "device",
+      "ip"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "events",
+   "name": "col_events",
+   "doc_count": 1550,
+   "fields": {
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "playerId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players",
+     "g": "word"
+    },
+    "type": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "login",
+      "kill",
+      "death",
+      "purchase",
+      "levelup",
+      "quit",
+      "chat"
+     ],
+     "w": [
+      37.3,
+      19.4,
+      50.2,
+      51.1,
+      100.0,
+      27.5,
+      26.6
+     ]
+    },
+    "session": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "payload": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "pos": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "x": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -500.0,
+       "hi": 500.0
+      },
+      "y": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -500.0,
+       "hi": 500.0
+      },
+      "zone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "build": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "v"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "playerId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "type",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "at",
+     "metaField": "build",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "matchmaking_queue",
+   "name": "matchmakingQueue_new",
+   "doc_count": 2900,
+   "fields": {
+    "playerID": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players",
+     "g": "word"
+    },
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ranked",
+      "casual",
+      "custom",
+      "coop"
+     ],
+     "w": [
+      22.6,
+      34.9,
+      60.9,
+      100.0
+     ]
+    },
+    "mmr": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 600,
+     "hi": 3200,
+     "sk": 1.55
+    },
+    "enqueuedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "region": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "sa",
+      "na",
+      "eu",
+      "asia"
+     ],
+     "w": [
+      38.5,
+      100.0,
+      35.1,
+      45.8
+     ]
+    },
+    "party": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "players",
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "prefs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.56
+      }
+     }
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "iso",
+         "aw": 0.15
+        }
+       ]
+      }
+     }
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      40.7,
+      27.0,
+      100.0
+     ]
+    },
+    "legacyEnqueuedAt": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "MmrV2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 600,
+     "hi": 3200,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "mode",
+       1
+      ],
+      [
+       "region",
+       1
+      ],
+      [
+       "mmr",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "enqueuedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "prefs.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "capped": true,
+    "size": 47513600,
+    "max": 3400
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "capped"
+   }
+  },
+  {
+   "key": "matches",
+   "name": "matches",
+   "doc_count": 900,
+   "fields": {
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ranked",
+      "casual",
+      "custom"
+     ],
+     "w": [
+      36.3,
+      100.0,
+      46.3
+     ]
+    },
+    "map": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "startedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "durationS": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 60,
+     "hi": 3600
+    },
+    "players": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "playerId": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "players",
+        "g": "word"
+       },
+       "team": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "red",
+         "blue"
+        ],
+        "w": [
+         100.0,
+         53.6
+        ]
+       },
+       "kills": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       },
+       "deaths": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       },
+       "score": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 9999,
+        "sk": 1.97
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "winner": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "red",
+      "blue",
+      "draw"
+     ],
+     "w": [
+      24.1,
+      59.0,
+      100.0
+     ]
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      38.7,
+      63.0,
+      100.0,
+      31.4
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "mode",
+       1
+      ],
+      [
+       "startedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "players.playerId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "map",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "migratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "mode": {
+       "bsonType": "string",
+       "enum": [
+        "ranked",
+        "casual",
+        "custom"
+       ]
+      },
+      "map": {
+       "bsonType": "string"
+      },
+      "startedAt": {
+       "bsonType": "date"
+      },
+      "durationS": {
+       "bsonType": "int"
+      },
+      "players": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "playerId": {
+          "bsonType": "string"
+         },
+         "team": {
+          "bsonType": "string",
+          "enum": [
+           "red",
+           "blue"
+          ]
+         },
+         "kills": {
+          "bsonType": "int"
+         },
+         "deaths": {
+          "bsonType": "int"
+         },
+         "score": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "playerId",
+         "team",
+         "kills",
+         "deaths",
+         "score"
+        ]
+       }
+      },
+      "winner": {
+       "bsonType": "string",
+       "enum": [
+        "red",
+        "blue",
+        "draw"
+       ]
+      },
+      "externalRef": {
+       "bsonType": "string"
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      }
+     },
+     "required": [
+      "mode",
+      "map",
+      "startedAt",
+      "durationS",
+      "players",
+      "winner"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "leaderboards",
+   "name": "leaderboards",
+   "doc_count": 1150,
+   "fields": {
+    "season": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "S"
+    },
+    "mode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ranked",
+      "casual"
+     ],
+     "w": [
+      100.0,
+      62.2
+     ]
+    },
+    "entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "playerId": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "players",
+        "g": "word"
+       },
+       "RANK": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 1000,
+        "sk": 2.39,
+        "alt": [
+         {
+          "t": "double",
+          "lo": 1,
+          "hi": 1000,
+          "aw": 0.18
+         }
+        ]
+       },
+       "rating": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 800,
+        "hi": 3500
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "_closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.46
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      35.1,
+      100.0,
+      54.0
+     ]
+    },
+    "oldSeason": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "S"
+    },
+    "closedOld": {
+     "t": "bool",
+     "p": 0.15,
+     "n": 0.0,
+     "pt": 0.63
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "season",
+       1
+      ],
+      [
+       "mode",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "entries.playerId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "guilds",
+   "name": "guilds",
+   "doc_count": 700,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "tag": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "G"
+    },
+    "leader": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players",
+     "g": "word"
+    },
+    "members": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "players",
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "level": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 30,
+     "sk": 1.57
+    },
+    "treasury": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000
+    },
+    "founded": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.59
+    },
+    "treasuryOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 9000000,
+     "dec": 0
+    },
+    "legacy_founded": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "level",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "members",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "tag": {
+       "bsonType": "string"
+      },
+      "leader": {
+       "bsonType": "string"
+      },
+      "members": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "level": {
+       "bsonType": "int"
+      },
+      "treasury": {
+       "bsonType": "long"
+      },
+      "founded": {
+       "bsonType": "date"
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "treasuryOld": {
+       "bsonType": "string"
+      },
+      "legacy_founded": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "name",
+      "tag",
+      "leader",
+      "members",
+      "level",
+      "treasury",
+      "founded"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "guilds_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "tag": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "leader": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "level": {
+         "type": "number"
+        },
+        "treasury": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "purchases",
+   "name": "t_purchases",
+   "doc_count": 750,
+   "fields": {
+    "playerId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "players",
+     "g": "word"
+    },
+    "itemId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "items"
+    },
+    "paidReal": {
+     "t": "decimal128",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": 1.0,
+     "hi": 200.0
+    },
+    "paidCoins": {
+     "t": "int32",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 50000,
+     "sk": 2.19
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "platform": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ios",
+      "android",
+      "pc",
+      "console"
+     ],
+     "w": [
+      60.8,
+      30.3,
+      100.0,
+      33.4
+     ]
+    },
+    "receipt": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      54.8,
+      43.3,
+      100.0
+     ]
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "device": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "options": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.56
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          },
+          "score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "playerId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "platform",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "players",
+   "name": "players",
+   "doc_count": 1100,
+   "fields": {
+    "handle": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "level": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 120,
+     "sk": 1.96
+    },
+    "xp": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000,
+     "sk": 2.11
+    },
+    "region": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "sa",
+      "na",
+      "eu",
+      "ap"
+     ],
+     "w": [
+      100.0,
+      41.2,
+      43.3,
+      24.5
+     ]
+    },
+    "premium": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.23
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.12
+      }
+     ]
+    },
+    "banned": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "until": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "friends": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "players",
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "emailOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "email"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "handle",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "region",
+       1
+      ],
+      [
+       "level",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "premium",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PLA-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "handle": {
+       "bsonType": "string"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "level": {
+       "bsonType": "int"
+      },
+      "xp": {
+       "bsonType": "long"
+      },
+      "region": {
+       "bsonType": "string",
+       "enum": [
+        "sa",
+        "na",
+        "eu",
+        "ap"
+       ]
+      },
+      "premium": {
+       "bsonType": "bool"
+      },
+      "createdAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "banned": {
+       "bsonType": "object",
+       "properties": {
+        "reason": {
+         "bsonType": "string"
+        },
+        "until": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "reason",
+        "until"
+       ]
+      },
+      "uuid": {
+       "bsonType": "binData"
+      },
+      "friends": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "at"
+       ]
+      },
+      "emailOld": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "handle",
+      "email",
+      "level",
+      "xp",
+      "region",
+      "premium",
+      "createdAt",
+      "uuid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  }
+ ]
+}

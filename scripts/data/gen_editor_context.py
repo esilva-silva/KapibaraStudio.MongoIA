@@ -36,6 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import blind_guard  # noqa: E402
 import render_contract as rc  # noqa: E402
+import hom_guard  # noqa: E402
 from gen_snippets import CONFIG_PATH, ROOT, load_config, load_schemas  # noqa: E402
 from jsonl_shards import HashReservoir, ShardWriter, iter_jsonl, resolve_inputs, sha256_file  # noqa: E402
 
@@ -485,6 +486,8 @@ def main(argv=None):
     ap.add_argument("--seed", type=int)
     ap.add_argument("--ver")
     ap.add_argument("--fim")
+    ap.add_argument("--include-hom", action="store_true",
+                    help="SO para scripts de homologacao (outro diretorio, split `homolog`); nunca em jobs de treino")
     ap.add_argument("--snippets")
     ap.add_argument("--out")
     ap.add_argument("--limit", type=int)
@@ -506,17 +509,17 @@ def main(argv=None):
     if not fim_files:
         raise SystemExit(f"FIM nao encontrado: {fim_path} (nem shards fim-NNNNN.jsonl)")
     snip_path = Path(a.snippets) if a.snippets else gdir / "snippets.jsonl"
-    schemas = load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"))
+    schemas = load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"), include_hom=a.include_hom)
     tok = None
     tok_path = None if a.no_tokenizer else ROOT / cfg["editor_context"]["tokenizer"]
     if tok_path is not None:
         tok = rc.Tokenizer(tok_path)
     t0 = time.time()
-    pools = Pools(iter_jsonl(snip_path), schemas, int(cfg["editor_context"].get("pool_max_per_key", 0) or 0))   # snippets em streaming
+    pools = Pools(hom_guard.drop_hom(iter_jsonl(snip_path), a.include_hom), schemas, int(cfg["editor_context"].get("pool_max_per_key", 0) or 0))   # snippets em streaming
 
     def fim_stream():
         n = 0
-        for r in iter_jsonl(fim_files):
+        for r in hom_guard.drop_hom(iter_jsonl(fim_files), a.include_hom):
             if a.limit and n >= a.limit:
                 return
             n += 1

@@ -1,0 +1,1768 @@
+{
+ "schema_id": "v3_flux_edu",
+ "domain": "education",
+ "holdout": true,
+ "description": "education v3 realista EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "courses: campos raros (<10% dos docs): deleted_at, override",
+  "courses: campos legados/duplicados em formato antigo: legacy_title, credits_v2",
+  "grade_books: campos raros (<10% dos docs): import_batch",
+  "grade_books: aninhamento profundo origin.options.flags.runtime.* (4 niveis de objeto)",
+  "grade_books: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "enrollments: campos raros (<10% dos docs): import_batch",
+  "enrollments: aninhamento profundo meta.route.flags.region.* (4 niveis de objeto)",
+  "enrollments: heterogeneidade de tipo no mesmo campo: num_mixed=2, ref_string=1",
+  "teachers: campos raros (<10% dos docs): import_batch, review_state",
+  "teachers: campos legados/duplicados em formato antigo: old_hired_at",
+  "teachers: aninhamento profundo origin.limits.runtime.config.device.* (5 niveis de objeto)",
+  "exams: campos raros (<10% dos docs): override",
+  "exams: campos legados/duplicados em formato antigo: legacy_date",
+  "exams: aninhamento profundo meta.options.device.system.* (4 niveis de objeto)",
+  "students: campos raros (<10% dos docs): migrated_from",
+  "classrooms: campos raros (<10% dos docs): external_ref, override",
+  "classrooms: aninhamento profundo ext.zone.options.config.client.* (5 niveis de objeto)",
+  "_id mistos: objectid=5, string=1, uuid=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=2, coll_suffix=1, name_abbr=3, name_hung=1, name_style=6, name_suffix=3, name_upper=1",
+  "campos heterogeneos (alt) no schema: 4; mapas dinamicos: 2; max_depth=6",
+  "dominio education: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "eval",
+ "collections": [
+  {
+   "key": "courses",
+   "name": "Courses",
+   "doc_count": 1150,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CRS"
+    },
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Credits": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 8
+    },
+    "TeacherId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "teachers",
+     "g": "word"
+    },
+    "Schedule": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Day": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "mon",
+         "tue",
+         "wed",
+         "thu",
+         "fri"
+        ],
+        "w": [
+         100.0,
+         38.2,
+         26.8,
+         48.4,
+         21.0
+        ]
+       },
+       "Start": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "T"
+       },
+       "Room": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "R"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Syllabus": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Topics": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Books": {
+       "t": "array",
+       "p": 0.3,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "DeletedAtNew": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "LegacyTitle": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "title"
+    },
+    "CreditsV2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 8,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "TeacherId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Schedule.Day",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "DeletedAtNew",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "grade_books",
+   "name": "GradeBooks",
+   "doc_count": 800,
+   "fields": {
+    "CourseId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "courses",
+     "v": 4
+    },
+    "TERM": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "2025-1",
+      "2025-2",
+      "2026-1"
+     ],
+     "w": [
+      100.0,
+      25.5,
+      57.2
+     ]
+    },
+    "Weights": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      }
+     }
+    },
+    "Entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Student": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "students"
+       },
+       "Scores": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {},
+        "map": {
+         "keys": "word",
+         "min": 2,
+         "max": 6,
+         "value": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0.0,
+          "hi": 10.0
+         }
+        }
+       },
+       "Final": {
+        "t": "double",
+        "p": 0.5,
+        "n": 0.1,
+        "lo": 0.0,
+        "hi": 10.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "ImportBatch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Options": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Flags": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "runtime": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "SeenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30",
+             "alt": [
+              {
+               "t": "string",
+               "g": "isodate",
+               "lo": "2025-01-01",
+               "hi": "2026-09-30",
+               "fmt": "date",
+               "aw": 0.15
+              }
+             ]
+            }
+           }
+          }
+         }
+        },
+        "Score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CourseId",
+       1
+      ],
+      [
+       "TERM",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "enrollments",
+   "name": "Enrollments",
+   "doc_count": 1300,
+   "fields": {
+    "StudentId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "students",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "students",
+       "as": "string",
+       "aw": 0.11
+      }
+     ]
+    },
+    "CourseId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "courses",
+     "v": 4
+    },
+    "Term": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "2025-1",
+      "2025-2",
+      "2026-1",
+      "2026-2"
+     ],
+     "w": [
+      100.0,
+      28.5,
+      35.5,
+      54.5
+     ]
+    },
+    "Grade": {
+     "t": "double",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": 0.0,
+     "hi": 10.0,
+     "alt": [
+      {
+       "t": "int32",
+       "lo": 0,
+       "hi": 11,
+       "aw": 0.2
+      }
+     ]
+    },
+    "St": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "passed",
+      "failed",
+      "dropped"
+     ],
+     "w": [
+      16.9,
+      100.0,
+      26.5,
+      51.4
+     ]
+    },
+    "AttendancePct": {
+     "t": "int32",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100,
+     "sk": 1.88,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 0,
+       "hi": 100,
+       "dec": 0,
+       "aw": 0.1
+      }
+     ]
+    },
+    "ImportBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "Meta": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "Route": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Flags": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "region": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "seen_at": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.69
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "StudentId",
+       1
+      ],
+      [
+       "Term",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CourseId",
+       1
+      ],
+      [
+       "St",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "StudentId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "CourseId": {
+       "bsonType": "binData"
+      },
+      "Term": {
+       "bsonType": "string",
+       "enum": [
+        "2025-1",
+        "2025-2",
+        "2026-1",
+        "2026-2"
+       ]
+      },
+      "Grade": {
+       "bsonType": [
+        "double",
+        "int",
+        "null"
+       ]
+      },
+      "St": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "passed",
+        "failed",
+        "dropped"
+       ]
+      },
+      "AttendancePct": {
+       "bsonType": [
+        "int",
+        "string"
+       ]
+      },
+      "ImportBatch": {
+       "bsonType": "string"
+      },
+      "Meta": {
+       "bsonType": "object",
+       "properties": {
+        "Route": {
+         "bsonType": "object",
+         "properties": {
+          "Flags": {
+           "bsonType": "object",
+           "properties": {
+            "region": {
+             "bsonType": "object",
+             "properties": {
+              "seen_at": {
+               "bsonType": "date"
+              },
+              "enabled": {
+               "bsonType": "bool"
+              }
+             },
+             "required": [
+              "seen_at",
+              "enabled"
+             ]
+            }
+           }
+          }
+         },
+         "required": [
+          "Flags"
+         ]
+        }
+       },
+       "required": [
+        "Route"
+       ]
+      }
+     },
+     "required": [
+      "StudentId",
+      "CourseId",
+      "Term",
+      "St"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "enrollments_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "ImportBatch": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "Term": {
+         "type": "token"
+        },
+        "St": {
+         "type": "token"
+        },
+        "Grade": {
+         "type": "number"
+        },
+        "AttendancePct": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "teachers",
+   "name": "Teachers",
+   "doc_count": 1500,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "StrDept": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "math",
+      "physics",
+      "letters",
+      "cs",
+      "bio"
+     ],
+     "w": [
+      24.1,
+      26.9,
+      29.2,
+      57.9,
+      100.0
+     ]
+    },
+    "Tenured": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.5
+    },
+    "HiredAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2000-01-01",
+     "hi": "2026-01-01"
+    },
+    "Office": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "Research": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "ImportBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      27.5,
+      48.1,
+      100.0
+     ]
+    },
+    "OldHiredAt": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2000-01-01",
+     "hi": "2026-01-01",
+     "fmt": "iso"
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Limits": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "runtime": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "Config": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Dev": {
+             "t": "object",
+             "p": 0.7,
+             "n": 0.0,
+             "f": {
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "Level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              49.2,
+              43.5
+             ]
+            }
+           }
+          }
+         }
+        },
+        "Enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.58
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "StrDept",
+       1
+      ],
+      [
+       "Tenured",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ImportBatch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "TEA-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Name": {
+       "bsonType": "string"
+      },
+      "StrDept": {
+       "bsonType": "string",
+       "enum": [
+        "math",
+        "physics",
+        "letters",
+        "cs",
+        "bio"
+       ]
+      },
+      "Tenured": {
+       "bsonType": "bool"
+      },
+      "HiredAt": {
+       "bsonType": "date"
+      },
+      "Office": {
+       "bsonType": "string"
+      },
+      "Research": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "ImportBatch": {
+       "bsonType": "string"
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "OldHiredAt": {
+       "bsonType": "string"
+      },
+      "Origin": {
+       "bsonType": "object",
+       "properties": {
+        "Limits": {
+         "bsonType": "object",
+         "properties": {
+          "runtime": {
+           "bsonType": "object",
+           "properties": {
+            "Config": {
+             "bsonType": "object",
+             "properties": {
+              "Dev": {
+               "bsonType": "object",
+               "properties": {
+                "SeenAt": {
+                 "bsonType": "date"
+                }
+               },
+               "required": [
+                "SeenAt"
+               ]
+              },
+              "Level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "Level"
+             ]
+            }
+           },
+           "required": [
+            "Config"
+           ]
+          },
+          "Enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "Enabled"
+         ]
+        }
+       },
+       "required": [
+        "Limits"
+       ]
+      }
+     },
+     "required": [
+      "Name",
+      "StrDept",
+      "Tenured",
+      "HiredAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "search_indexes": [
+    {
+     "name": "teachers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "Office": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "ImportBatch": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "StrDept": {
+         "type": "token"
+        },
+        "ReviewState": {
+         "type": "token"
+        },
+        "HiredAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "exams",
+   "name": "tbl_exams",
+   "doc_count": 1000,
+   "fields": {
+    "CourseId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "courses",
+     "v": 4
+    },
+    "Date": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "RoomId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "classrooms"
+    },
+    "DurationMin": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 30,
+     "hi": 240,
+     "sk": 2.52
+    },
+    "questions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "N": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 60
+       },
+       "Kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "mcq",
+         "open"
+        ],
+        "w": [
+         55.6,
+         100.0
+        ]
+       },
+       "Points": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 5.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "LegacyDate": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "Meta": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "options": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Dev": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "system": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100,
+             "sk": 1.52
+            },
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            }
+           }
+          },
+          "version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CourseId",
+       1
+      ],
+      [
+       "Date",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "students",
+   "name": "Students_v2",
+   "doc_count": 1300,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "EnrolledAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2019-01-01",
+     "hi": "2026-08-01"
+    },
+    "Program": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cs",
+      "law",
+      "med",
+      "arts",
+      "eng"
+     ],
+     "w": [
+      50.1,
+      18.1,
+      100.0,
+      30.8,
+      25.8
+     ]
+    },
+    "Gpa": {
+     "t": "double",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 10.0
+    },
+    "Scholarship": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "Guardian": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "phone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "phone"
+      },
+      "contact": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "email": {
+         "t": "string",
+         "p": 0.95,
+         "n": 0.0,
+         "g": "email"
+        },
+        "addr": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "city": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "city"
+          },
+          "state": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "UuidX": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "MigratedFromV2": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      21.0,
+      34.0,
+      44.0
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Program",
+       1
+      ],
+      [
+       "Gpa",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Scholarship",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFromV2",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "students_v2_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Email": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "Program": {
+         "type": "token"
+        },
+        "MigratedFromV2": {
+         "type": "token"
+        },
+        "EnrolledAt": {
+         "type": "date"
+        },
+        "Gpa": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "classrooms",
+   "name": "t_classrooms",
+   "doc_count": 1550,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "Building": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Capacity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 300
+    },
+    "Equipment": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "projector",
+       "lab",
+       "ac",
+       "mic"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Floor": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Ext": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Zone": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "Options": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Config": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Client": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              },
+              "Version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.73
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Building",
+       1
+      ],
+      [
+       "Floor",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Code": {
+       "bsonType": "string"
+      },
+      "Building": {
+       "bsonType": "string"
+      },
+      "Capacity": {
+       "bsonType": "int"
+      },
+      "Equipment": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "projector",
+         "lab",
+         "ac",
+         "mic"
+        ]
+       }
+      },
+      "Floor": {
+       "bsonType": "int"
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "Override": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Reason": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "By",
+        "Reason",
+        "At"
+       ]
+      },
+      "Ext": {
+       "bsonType": "object",
+       "properties": {
+        "Zone": {
+         "bsonType": "object",
+         "properties": {
+          "Options": {
+           "bsonType": "object",
+           "properties": {
+            "Config": {
+             "bsonType": "object",
+             "properties": {
+              "Client": {
+               "bsonType": "object",
+               "properties": {
+                "SeenAt": {
+                 "bsonType": "date"
+                },
+                "Version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "SeenAt",
+                "Version"
+               ]
+              }
+             },
+             "required": [
+              "Client"
+             ]
+            }
+           },
+           "required": [
+            "Config"
+           ]
+          },
+          "Enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "Options",
+          "Enabled"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "Code",
+      "Building",
+      "Capacity",
+      "Equipment",
+      "Floor"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

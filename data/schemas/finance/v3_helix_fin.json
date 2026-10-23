@@ -1,0 +1,1914 @@
+{
+ "schema_id": "v3_helix_fin",
+ "domain": "finance",
+ "holdout": false,
+ "description": "finance v3 realista EN, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "market_ticks: campos raros (<10% dos docs): external_ref, deleted_at",
+  "market_ticks: colecao time-series (timeField=at, metaField=symbol)",
+  "statements: campos raros (<10% dos docs): beta_flag, external_ref",
+  "statements: campos legados/duplicados em formato antigo: old_closing",
+  "statements: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "loans: campos raros (<10% dos docs): review_state",
+  "loans: campos legados/duplicados em formato antigo: term_months_v2",
+  "loans: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "payments: campos raros (<10% dos docs): migrated_from",
+  "payments: aninhamento profundo info.zone.source.runtime.* (4 niveis de objeto)",
+  "fx_rates: campos raros (<10% dos docs): migrated_from",
+  "fx_rates: colecao time-series (timeField=at, metaField=pair)",
+  "accounts: campos raros (<10% dos docs): import_batch",
+  "accounts: campos legados/duplicados em formato antigo: old_balance",
+  "transactions: campos raros (<10% dos docs): review_state, notes",
+  "transactions: campos legados/duplicados em formato antigo: memo_old",
+  "transactions: aninhamento profundo extra.device.options.source.* (4 niveis de objeto)",
+  "cards: campos raros (<10% dos docs): migrated_from",
+  "customers: campos raros (<10% dos docs): override",
+  "customers: campos legados/duplicados em formato antigo: onboarded_at_old, risk_score_v2",
+  "customers: aninhamento profundo origin.source.options.network.* (4 niveis de objeto)",
+  "customers: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "_id mistos: objectid=8, uuid=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_space=1, name_ID=1, name_abbr=9, name_hung=1, name_style=6",
+  "campos heterogeneos (alt) no schema: 3; mapas dinamicos: 1; max_depth=5",
+  "dominio finance: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "market_ticks",
+   "name": "tbl_market_ticks",
+   "doc_count": 2500,
+   "fields": {
+    "symbol": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TK"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "bid": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0
+    },
+    "ask": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0,
+     "sk": 2.44
+    },
+    "last": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0
+    },
+    "vol": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000
+    },
+    "venue": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "B3",
+      "NYSE",
+      "NASDAQ",
+      "LSE"
+     ],
+     "w": [
+      100.0,
+      61.2,
+      21.2,
+      35.0
+     ]
+    },
+    "Flags": {
+     "t": "array",
+     "p": 0.05,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "symbol",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "venue",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "at",
+     "metaField": "symbol",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "statements",
+   "name": "statements",
+   "doc_count": 1150,
+   "fields": {
+    "account_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "accounts",
+       "as": "string",
+       "aw": 0.1
+      }
+     ]
+    },
+    "period": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Year": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 2025,
+       "hi": 2026
+      },
+      "Month": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 12
+      }
+     }
+    },
+    "opening": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "closing": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Day": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 31,
+        "sk": 2.57
+       },
+       "Desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Amt": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -9000.0,
+        "hi": 9000.0
+       },
+       "Tags": {
+        "t": "array",
+        "p": 0.6,
+        "n": 0.0,
+        "item": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "fees": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 90.0
+      }
+     }
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.67
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "OldClosing": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": -500.0,
+     "hi": 90000.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "account_id",
+       1
+      ],
+      [
+       "period.Year",
+       1
+      ],
+      [
+       "period.Month",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "fees.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "account_id": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "period": {
+       "bsonType": "object",
+       "properties": {
+        "Year": {
+         "bsonType": "int"
+        },
+        "Month": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "Year",
+        "Month"
+       ]
+      },
+      "opening": {
+       "bsonType": "decimal"
+      },
+      "closing": {
+       "bsonType": "decimal"
+      },
+      "entries": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Day": {
+          "bsonType": "int"
+         },
+         "Desc": {
+          "bsonType": "string"
+         },
+         "Amt": {
+          "bsonType": "decimal"
+         },
+         "Tags": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "Day",
+         "Desc",
+         "Amt"
+        ]
+       }
+      },
+      "fees": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "decimal"
+       }
+      },
+      "beta_flag": {
+       "bsonType": "bool"
+      },
+      "external_ref": {
+       "bsonType": "string"
+      },
+      "OldClosing": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "account_id",
+      "period",
+      "opening",
+      "closing",
+      "entries",
+      "fees"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "loans",
+   "name": "loans",
+   "doc_count": 550,
+   "fields": {
+    "cust_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "principal": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 500.0,
+     "hi": 200000.0
+    },
+    "rate_pct": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9.0
+    },
+    "term_months": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 120,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 6,
+       "hi": 120,
+       "aw": 0.06
+      }
+     ]
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "paid",
+      "default"
+     ],
+     "w": [
+      100.0,
+      56.8,
+      34.0
+     ]
+    },
+    "schedule": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "n": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 120
+       },
+       "due": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 50.0,
+        "hi": 9000.0
+       },
+       "paid": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.33
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      29.8,
+      50.4,
+      100.0
+     ]
+    },
+    "term_months_v2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 6,
+     "hi": 120,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cust_id",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "schedule.paid",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "cust_id": {
+       "bsonType": "objectId"
+      },
+      "principal": {
+       "bsonType": "decimal"
+      },
+      "rate_pct": {
+       "bsonType": "double"
+      },
+      "term_months": {
+       "bsonType": [
+        "int",
+        "double"
+       ]
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "paid",
+        "default"
+       ]
+      },
+      "schedule": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "n": {
+          "bsonType": "int"
+         },
+         "due": {
+          "bsonType": "date"
+         },
+         "amount": {
+          "bsonType": "decimal"
+         },
+         "paid": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "n",
+         "due",
+         "amount",
+         "paid"
+        ]
+       }
+      },
+      "review_state": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "term_months_v2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "cust_id",
+      "principal",
+      "rate_pct",
+      "term_months",
+      "status",
+      "schedule"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "payments",
+   "name": "payments",
+   "doc_count": 700,
+   "fields": {
+    "AccountID": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "method": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "boleto",
+      "pix",
+      "card"
+     ],
+     "w": [
+      51.0,
+      100.0,
+      48.3
+     ]
+    },
+    "amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5000.0
+    },
+    "due": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "paid_at": {
+     "t": "date",
+     "p": 0.95,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "barcode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      53.8,
+      41.9,
+      100.0,
+      19.6
+     ]
+    },
+    "info": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "source": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "runtime": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "sk": 1.8
+            }
+           }
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "barcode",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "AccountID",
+       1
+      ],
+      [
+       "due",
+       -1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "AccountID": {
+       "bsonType": "objectId"
+      },
+      "method": {
+       "bsonType": "string",
+       "enum": [
+        "boleto",
+        "pix",
+        "card"
+       ]
+      },
+      "amount": {
+       "bsonType": "decimal"
+      },
+      "due": {
+       "bsonType": "date"
+      },
+      "paid_at": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "barcode": {
+       "bsonType": "string"
+      },
+      "migrated_from": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "info": {
+       "bsonType": "object",
+       "properties": {
+        "zone": {
+         "bsonType": "object",
+         "properties": {
+          "source": {
+           "bsonType": "object",
+           "properties": {
+            "runtime": {
+             "bsonType": "object",
+             "properties": {
+              "count": {
+               "bsonType": "int"
+              }
+             },
+             "required": [
+              "count"
+             ]
+            }
+           },
+           "required": [
+            "runtime"
+           ]
+          },
+          "name": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "source",
+          "name"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "AccountID",
+      "method",
+      "amount",
+      "due",
+      "barcode"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "payments_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "barcode": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "method": {
+         "type": "token"
+        },
+        "migrated_from": {
+         "type": "token"
+        },
+        "amount": {
+         "type": "number"
+        },
+        "due": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "fx_rates",
+   "name": "Fx Rates",
+   "doc_count": 2000,
+   "fields": {
+    "pair": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "USD/BRL",
+      "EUR/BRL",
+      "GBP/USD",
+      "JPY/USD"
+     ],
+     "w": [
+      29.6,
+      45.5,
+      38.4,
+      100.0
+     ]
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "bid": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 6.0
+    },
+    "ask": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 6.0
+    },
+    "src": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      28.1,
+      46.9,
+      31.3
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "pair",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "at",
+     "metaField": "pair",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "accounts",
+   "name": "accounts",
+   "doc_count": 1050,
+   "fields": {
+    "cust_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers"
+    },
+    "num": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "type": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "checking",
+      "savings",
+      "investment"
+     ],
+     "w": [
+      100.0,
+      46.9,
+      41.8
+     ]
+    },
+    "balance": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0,
+     "sk": 2.31
+    },
+    "currency": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": [
+      43.5,
+      41.7,
+      100.0
+     ]
+    },
+    "opened_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "limits": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100.0,
+       "hi": 9000.0
+      },
+      "overdraft": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 5000.0,
+       "sk": 2.4
+      }
+     }
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "old_balance": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": -500.0,
+     "hi": 90000.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "num",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cust_id",
+       1
+      ],
+      [
+       "type",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "balance",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "closed": true
+     }
+    },
+    {
+     "keys": [
+      [
+       "opened_at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "cust_id": {
+       "bsonType": "objectId"
+      },
+      "num": {
+       "bsonType": "string"
+      },
+      "type": {
+       "bsonType": "string",
+       "enum": [
+        "checking",
+        "savings",
+        "investment"
+       ]
+      },
+      "balance": {
+       "bsonType": "decimal"
+      },
+      "currency": {
+       "bsonType": "string",
+       "enum": [
+        "BRL",
+        "USD",
+        "EUR"
+       ]
+      },
+      "opened_at": {
+       "bsonType": "date"
+      },
+      "closed": {
+       "bsonType": "bool"
+      },
+      "limits": {
+       "bsonType": "object",
+       "properties": {
+        "daily": {
+         "bsonType": "decimal"
+        },
+        "overdraft": {
+         "bsonType": "decimal"
+        }
+       },
+       "required": [
+        "daily",
+        "overdraft"
+       ]
+      },
+      "import_batch": {
+       "bsonType": "string"
+      },
+      "old_balance": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "cust_id",
+      "num",
+      "type",
+      "balance",
+      "currency",
+      "opened_at",
+      "closed"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "search_indexes": [
+    {
+     "name": "accounts_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "num": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "import_batch": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "type": {
+         "type": "token"
+        },
+        "currency": {
+         "type": "token"
+        },
+        "balance": {
+         "type": "number"
+        },
+        "opened_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "transactions",
+   "name": "transactions",
+   "doc_count": 1350,
+   "fields": {
+    "acct_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "debit",
+      "credit",
+      "pix",
+      "transfer",
+      "fee"
+     ],
+     "w": [
+      42.5,
+      100.0,
+      35.6,
+      20.1,
+      24.7
+     ]
+    },
+    "amt": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9000.0
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "counterparty": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "bank": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "BK"
+      },
+      "account": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "AC"
+      }
+     }
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "posted",
+      "pending",
+      "reversed"
+     ],
+     "w": [
+      32.0,
+      49.6,
+      100.0
+     ]
+    },
+    "memo": {
+     "t": "string",
+     "p": 0.3,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ref": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      49.0,
+      49.3,
+      100.0
+     ]
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "memo_old": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Device": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "Options": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "src": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "acct_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ],
+      [
+       "st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "cards",
+   "name": "cards",
+   "doc_count": 1350,
+   "fields": {
+    "fk_account_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "last4": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": ""
+    },
+    "brand": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "visa",
+      "master",
+      "elo",
+      "amex"
+     ],
+     "w": [
+      48.8,
+      21.3,
+      65.7,
+      100.0
+     ]
+    },
+    "limit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 300.0,
+     "hi": 30000.0
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "blocked",
+      "expired"
+     ],
+     "w": [
+      28.5,
+      63.7,
+      100.0
+     ]
+    },
+    "expires": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "contactless": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.61
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      52.3,
+      100.0,
+      22.8,
+      31.1
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "fk_account_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "brand",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "cards_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "last4": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "brand": {
+         "type": "token"
+        },
+        "status": {
+         "type": "token"
+        },
+        "limit": {
+         "type": "number"
+        },
+        "expires": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "customers",
+   "name": "customers",
+   "doc_count": 550,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "tax_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "segment": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "premium",
+      "corporate"
+     ],
+     "w": [
+      28.5,
+      55.9,
+      100.0
+     ]
+    },
+    "onboarded_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.06
+      }
+     ]
+    },
+    "kyc": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "status": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "ok",
+        "pending",
+        "review"
+       ],
+       "w": [
+        52.2,
+        100.0,
+        44.5
+       ]
+      },
+      "checked_at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "docs": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "risk_score": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "onboarded_at_old": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "risk_score_v2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 100,
+     "dec": 0
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "source": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "options": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 0.9,
+           "n": 0.0,
+           "f": {
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.61
+            }
+           }
+          },
+          "version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tax_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "segment",
+       1
+      ],
+      [
+       "risk_score",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

@@ -1,0 +1,3229 @@
+{
+ "schema_id": "v3_aurora_mfg",
+ "domain": "manufacturing",
+ "holdout": false,
+ "description": "manufacturing v3 realista pt-BR sem acento, camel",
+ "name_style": "camel",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "pt-BR",
+ "realism_notes": [
+  "shipments: campos raros (<10% dos docs): review_state",
+  "shipments: campos legados/duplicados em formato antigo: legacy_carrier",
+  "work_orders: campos raros (<10% dos docs): migrated_from",
+  "work_orders: campos legados/duplicados em formato antigo: qtd_planned_old, qtd_done_old",
+  "work_orders: aninhamento profundo meta.profile.device.system.* (4 niveis de objeto)",
+  "work_orders: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "suppliers: campos raros (<10% dos docs): beta_flag",
+  "suppliers: aninhamento profundo trace.rule.limits.policy.* (4 niveis de objeto)",
+  "suppliers: heterogeneidade de tipo no mesmo campo: bool_string=1",
+  "machine_readings: campos raros (<10% dos docs): beta_flag",
+  "machine_readings: campos legados/duplicados em formato antigo: quality_old, old_valor",
+  "machine_readings: aninhamento profundo info.network.device.zone.route.* (5 niveis de objeto)",
+  "machine_readings: heterogeneidade de tipo no mesmo campo: num_mixed=1, ref_string=1",
+  "downtime: campos raros (<10% dos docs): deleted_at",
+  "downtime: colecao time-series (timeField=em, metaField=linha)",
+  "batches: campos raros (<10% dos docs): deleted_at",
+  "batches: campos legados/duplicados em formato antigo: old_expira, old_qtd",
+  "tools: campos raros (<10% dos docs): beta_flag, override",
+  "tools: campos legados/duplicados em formato antigo: localizacao_v2",
+  "machines: campos raros (<10% dos docs): review_state",
+  "machines: campos legados/duplicados em formato antigo: vendor_old, model_v2",
+  "machines: heterogeneidade de tipo no mesmo campo: num_mixed=2",
+  "parts: campos raros (<10% dos docs): import_batch, external_ref",
+  "parts: campos legados/duplicados em formato antigo: old_lead_days",
+  "parts: aninhamento profundo ctx.config.zone.network.profile.* (5 niveis de objeto)",
+  "production_lines: campos raros (<10% dos docs): review_state",
+  "production_lines: aninhamento profundo audit.route.limits.options.* (4 niveis de objeto)",
+  "plants: campos raros (<10% dos docs): migrated_from, import_batch",
+  "plants: campos legados/duplicados em formato antigo: commissioned_old",
+  "_id mistos: objectid=11 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante camel; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_space=1, coll_suffix=2, name_abbr=1, name_hung=5, name_style=10, name_suffix=3, name_underscore=3, name_upper=3",
+  "campos heterogeneos (alt) no schema: 10; mapas dinamicos: 6; max_depth=6",
+  "dominio manufacturing: BOM aninhado, ordens de producao, leituras de maquina e paradas (time-series)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "shipments",
+   "name": "expedicoes",
+   "doc_count": 400,
+   "fields": {
+    "woId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "work_orders"
+    },
+    "cliente": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "shippedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "pallets": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "sscc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SS"
+       },
+       "itens": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "part": {
+           "t": "objectid",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts"
+          },
+          "qtd": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 1,
+           "hi": 900
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "carrier": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "docs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "url"
+      }
+     }
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "packed",
+      "shipped",
+      "delivered"
+     ],
+     "w": [
+      100.0,
+      39.5,
+      45.7
+     ]
+    },
+    "sReviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      45.8,
+      100.0,
+      43.6
+     ]
+    },
+    "legacyCarrier": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "word"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "woId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "cliente",
+       1
+      ],
+      [
+       "shippedEm",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "sReviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "work_orders",
+   "name": "ordensProducao",
+   "doc_count": 1200,
+   "fields": {
+    "woNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "WO"
+    },
+    "produtoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts"
+    },
+    "fkLinhaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "production_lines"
+    },
+    "qtdPlanned": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 9000
+    },
+    "QtdDone": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "planned",
+      "released",
+      "running",
+      "done",
+      "cancelled"
+     ],
+     "w": [
+      61.2,
+      30.6,
+      21.2,
+      46.8,
+      100.0
+     ]
+    },
+    "planned": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "inicio": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "date",
+         "aw": 0.15
+        }
+       ]
+      },
+      "fim": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "actual": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "inicio": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "fim": {
+       "t": "date",
+       "p": 0.6,
+       "n": 0.1,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "routing": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Op": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 10,
+        "hi": 90
+       },
+       "station": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "stdMin": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 120.0,
+        "sk": 2.5
+       },
+       "tools": {
+        "t": "array",
+        "p": 0.9,
+        "n": 0.0,
+        "item": {
+         "t": "objectid",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "tools"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "lot": {
+     "t": "objectid",
+     "p": 0.4,
+     "n": 0.0,
+     "ref": "batches"
+    },
+    "prioridade": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "CLIENTE_REF": {
+     "t": "int32",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": 100000,
+     "hi": 999999,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 100000,
+       "hi": 999999,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ]
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      42.9,
+      24.6,
+      49.3,
+      100.0
+     ]
+    },
+    "qtdPlannedOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10,
+     "hi": 9000,
+     "dec": 0
+    },
+    "qtdDoneOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 9000,
+     "dec": 0
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "profile": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "dev": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "system": {
+           "t": "object",
+           "p": 0.9,
+           "n": 0.0,
+           "f": {
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.55
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          }
+         }
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "woNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "fkLinhaId",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "planned.inicio",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "prioridade",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CLIENTE_REF",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "suppliers",
+   "name": "fornecedores",
+   "doc_count": 500,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "strImpostoId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "nota": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5.0
+    },
+    "pais": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "certs": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "scorecard": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "delivery": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      },
+      "quality": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      },
+      "cost": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      }
+     }
+    },
+    "leadDays": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90,
+     "sk": 1.62
+    },
+    "contacts": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "email": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "email"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.32,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "limits": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "policy": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          },
+          "level": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "low",
+            "mid",
+            "high"
+           ],
+           "w": [
+            42.9,
+            41.1,
+            100.0
+           ]
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "strImpostoId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "pais",
+       1
+      ],
+      [
+       "nota",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "fornecedores_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "nome": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "strImpostoId": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "pais": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "nota": {
+         "type": "number"
+        },
+        "leadDays": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "fornecedores_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "dotProduct"
+       },
+       {
+        "type": "filter",
+        "path": "nota"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "machine_readings",
+   "name": "Leituras Maquina",
+   "doc_count": 1450,
+   "fields": {
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "machineId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "machines",
+       "as": "string",
+       "aw": 0.15
+      }
+     ]
+    },
+    "src": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "machine": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "MC"
+      },
+      "channel": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "vib",
+        "temp",
+        "current",
+        "pressure"
+       ],
+       "w": [
+        26.6,
+        33.4,
+        55.8,
+        100.0
+       ]
+      }
+     }
+    },
+    "valor": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -50.0,
+     "hi": 900.0,
+     "sk": 1.62
+    },
+    "unidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "C",
+      "A",
+      "bar",
+      "mm_s",
+      "rpm"
+     ],
+     "w": [
+      51.1,
+      50.5,
+      100.0,
+      40.0,
+      19.0
+     ]
+    },
+    "quality": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0,
+       "hi": 100,
+       "aw": 0.13
+      }
+     ]
+    },
+    "alarms": {
+     "t": "array",
+     "p": 0.05,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "code",
+      "prefix": "AL"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.45
+    },
+    "QualityOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 100,
+     "dec": 0
+    },
+    "OLDVALOR": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": -50.0,
+     "hi": 900.0,
+     "dec": 2
+    },
+    "info": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "network": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "device": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "zone": {
+           "t": "object",
+           "p": 0.7,
+           "n": 0.0,
+           "f": {
+            "route": {
+             "t": "object",
+             "p": 0.8,
+             "n": 0.0,
+             "f": {
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.54
+              }
+             }
+            },
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          },
+          "version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        },
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100,
+         "sk": 2.2
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "machineId",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "src.channel",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "em": {
+       "bsonType": "date"
+      },
+      "machineId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "src": {
+       "bsonType": "object",
+       "properties": {
+        "machine": {
+         "bsonType": "string"
+        },
+        "channel": {
+         "bsonType": "string",
+         "enum": [
+          "vib",
+          "temp",
+          "current",
+          "pressure"
+         ]
+        }
+       },
+       "required": [
+        "machine",
+        "channel"
+       ]
+      },
+      "valor": {
+       "bsonType": "double"
+      },
+      "unidade": {
+       "bsonType": "string",
+       "enum": [
+        "C",
+        "A",
+        "bar",
+        "mm_s",
+        "rpm"
+       ]
+      },
+      "quality": {
+       "bsonType": [
+        "int",
+        "double"
+       ]
+      },
+      "alarms": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "QualityOld": {
+       "bsonType": "string"
+      },
+      "OLDVALOR": {
+       "bsonType": "string"
+      },
+      "info": {
+       "bsonType": "object",
+       "properties": {
+        "network": {
+         "bsonType": "object",
+         "properties": {
+          "device": {
+           "bsonType": "object",
+           "properties": {
+            "zone": {
+             "bsonType": "object",
+             "properties": {
+              "route": {
+               "bsonType": "object",
+               "properties": {
+                "version": {
+                 "bsonType": "string"
+                },
+                "enabled": {
+                 "bsonType": "bool"
+                }
+               },
+               "required": [
+                "version",
+                "enabled"
+               ]
+              },
+              "seenAt": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "seenAt"
+             ]
+            },
+            "version": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "version"
+           ]
+          },
+          "score": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "score"
+         ]
+        }
+       },
+       "required": [
+        "network"
+       ]
+      }
+     },
+     "required": [
+      "em",
+      "machineId",
+      "src",
+      "valor",
+      "unidade",
+      "quality"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "leituras_maquina_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "unidade": {
+         "type": "token"
+        },
+        "em": {
+         "type": "date"
+        },
+        "valor": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "downtime",
+   "name": "paradas",
+   "doc_count": 2050,
+   "fields": {
+    "machineId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "durationMin": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 600.0,
+     "sk": 1.49
+    },
+    "reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "breakdown",
+      "changeover",
+      "material",
+      "quality",
+      "planned",
+      "no_operator"
+     ],
+     "w": [
+      59.0,
+      23.5,
+      100.0,
+      41.8,
+      21.2,
+      34.0
+     ]
+    },
+    "linha": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "codigo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "LN"
+      },
+      "plant": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "PL"
+      }
+     }
+    },
+    "details": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "errorCodigo": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "ER"
+      },
+      "StopCodes": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SC"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "machineId",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reason",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "em",
+     "metaField": "linha",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "batches",
+   "name": "col_lotes",
+   "doc_count": 850,
+   "fields": {
+    "lotNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LT"
+    },
+    "partId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts"
+    },
+    "qtd": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000,
+     "sk": 2.49
+    },
+    "_produced": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "expira": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "qc": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "situacao": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "released",
+        "hold",
+        "rejected"
+       ],
+       "w": [
+        100.0,
+        53.9,
+        37.2
+       ]
+      },
+      "tests": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "valueX": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.0,
+           "hi": 100.0
+          },
+          "spec": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      },
+      "releasedBy": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "name"
+      }
+     }
+    },
+    "genealogy": {
+     "t": "array",
+     "p": 0.05,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "LT"
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "oldExpira": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "oldQtd": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 90000,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "lotNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "partId",
+       1
+      ],
+      [
+       "_produced",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "qc.situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "partId",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "qc.tests.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "tools",
+   "name": "ferramentas_old",
+   "doc_count": 350,
+   "fields": {
+    "toolNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TL"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "drill",
+      "mill",
+      "insert",
+      "gauge",
+      "fixture"
+     ],
+     "w": [
+      100.0,
+      32.2,
+      17.6,
+      58.4,
+      36.5
+     ]
+    },
+    "life": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "maxCycles": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100,
+       "hi": 90000
+      },
+      "used": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 90000,
+       "sk": 2.04
+      }
+     }
+    },
+    "calibration": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "ultimo": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "vencimento": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "History": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "em": {
+          "t": "date",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": "2025-01-01",
+          "hi": "2026-09-30"
+         },
+         "by": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "name"
+         },
+         "result": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "ok",
+           "adjusted",
+           "failed"
+          ],
+          "w": [
+           38.6,
+           63.5,
+           100.0
+          ]
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "localizacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "isBetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.67
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "localizacaoV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "word"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "toolNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "calibration.vencimento",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "isBetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "machines",
+   "name": "maquinas_bkp",
+   "doc_count": 1000,
+   "fields": {
+    "assetTag": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MC"
+    },
+    "linhaId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "production_lines"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cnc",
+      "press",
+      "robot",
+      "oven",
+      "injector",
+      "agv"
+     ],
+     "w": [
+      29.5,
+      17.0,
+      100.0,
+      24.8,
+      40.7,
+      34.4
+     ]
+    },
+    "vendor": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MD"
+    },
+    "commissioned": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "spec": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "powerKw": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 900.0,
+       "sk": 1.59
+      },
+      "axes": {
+       "t": "int32",
+       "p": 0.03,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 9
+      },
+      "tolerances": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.001,
+         "hi": 1.0
+        }
+       }
+      },
+      "controller": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "vendor": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "fw": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "FW"
+        },
+        "params": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {},
+         "map": {
+          "keys": "word",
+          "min": 2,
+          "max": 6,
+          "value": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "_situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "running",
+      "idle",
+      "down",
+      "maint"
+     ],
+     "w": [
+      31.2,
+      100.0,
+      43.3,
+      38.7
+     ]
+    },
+    "oee": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "availability": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.3,
+       "hi": 1.0,
+       "alt": [
+        {
+         "t": "int32",
+         "lo": 0,
+         "hi": 2,
+         "aw": 0.15
+        }
+       ]
+      },
+      "performance": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.3,
+       "hi": 1.0,
+       "alt": [
+        {
+         "t": "int32",
+         "lo": 0,
+         "hi": 2,
+         "aw": 0.21
+        }
+       ]
+      },
+      "quality": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.5,
+       "hi": 1.0
+      }
+     }
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      51.2,
+      45.9
+     ]
+    },
+    "vendorOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "word"
+    },
+    "modelV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MD"
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "assetTag",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "linhaId",
+       1
+      ],
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "_situacao",
+       1
+      ],
+      [
+       "oee.availability",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "spec.tolerances.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "maquinas_bkp_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "assetTag": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "vendor": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "model": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "tipo": {
+         "type": "token"
+        },
+        "_situacao": {
+         "type": "token"
+        },
+        "commissioned": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "maquinas_bkp_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "cosine"
+       },
+       {
+        "type": "filter",
+        "path": "tipo"
+       },
+       {
+        "type": "filter",
+        "path": "commissioned"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 4,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "parts",
+   "name": "pecas",
+   "doc_count": 750,
+   "fields": {
+    "partNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PN"
+    },
+    "descricao2": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "raw",
+      "component",
+      "assembly",
+      "finished"
+     ],
+     "w": [
+      100.0,
+      28.8,
+      64.4,
+      34.8
+     ]
+    },
+    "strUom": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "un",
+      "kg",
+      "m",
+      "l"
+     ],
+     "w": [
+      22.4,
+      100.0,
+      46.7,
+      28.1
+     ]
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.1,
+     "hi": 9000.0
+    },
+    "fornecedorId": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.0,
+     "ref": "suppliers"
+    },
+    "params": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "hazmat": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "class": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "unNo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "UN"
+      }
+     }
+    },
+    "leadDays": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 120
+    },
+    "drawings": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Rev": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "R"
+       },
+       "Url": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "url"
+       },
+       "Format": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "pdf",
+         "dwg",
+         "step"
+        ],
+        "w": [
+         100.0,
+         24.5,
+         40.7
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "old_lead_days": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 120,
+     "dec": 0
+    },
+    "ctx": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "config": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "zone": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "profile": {
+             "t": "object",
+             "p": 0.7,
+             "n": 0.0,
+             "f": {
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              },
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              }
+             }
+            }
+           }
+          },
+          "seen_at": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        },
+        "ENABLED": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.48
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "partNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ],
+      [
+       "cost",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "fornecedorId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "importBatch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "params.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "production_lines",
+   "name": "linhasProducao",
+   "doc_count": 1000,
+   "fields": {
+    "plantId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "plants",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "plants",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LN"
+    },
+    "produtoFamily": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "engines",
+      "gearboxes",
+      "pcb",
+      "plastics",
+      "cables"
+     ],
+     "w": [
+      47.9,
+      51.6,
+      27.4,
+      30.9,
+      100.0
+     ]
+    },
+    "taktS": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5.0,
+     "hi": 600.0
+    },
+    "stations": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Seq": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 40
+       },
+       "Nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "MachineId": {
+        "t": "objectid",
+        "p": 0.8,
+        "n": 0.0,
+        "ref": "machines"
+       },
+       "CycleS": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1.0,
+        "hi": 300.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "capacityPerH": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 9000
+    },
+    "Situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "running",
+      "idle",
+      "maint",
+      "changeover"
+     ],
+     "w": [
+      43.0,
+      29.0,
+      100.0,
+      18.8
+     ]
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      45.1,
+      41.7,
+      100.0
+     ]
+    },
+    "auditNew": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "route": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Limits": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "options": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          },
+          "count": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          }
+         }
+        },
+        "Count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "plantId",
+       1
+      ],
+      [
+       "Situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "stations.MachineId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "plantId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "codigo": {
+       "bsonType": "string"
+      },
+      "produtoFamily": {
+       "bsonType": "string",
+       "enum": [
+        "engines",
+        "gearboxes",
+        "pcb",
+        "plastics",
+        "cables"
+       ]
+      },
+      "taktS": {
+       "bsonType": "double"
+      },
+      "stations": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Seq": {
+          "bsonType": "int"
+         },
+         "Nome": {
+          "bsonType": "string"
+         },
+         "MachineId": {
+          "bsonType": "objectId"
+         },
+         "CycleS": {
+          "bsonType": "double"
+         }
+        },
+        "required": [
+         "Seq",
+         "Nome",
+         "CycleS"
+        ]
+       }
+      },
+      "capacityPerH": {
+       "bsonType": "int"
+      },
+      "Situacao": {
+       "bsonType": "string",
+       "enum": [
+        "running",
+        "idle",
+        "maint",
+        "changeover"
+       ]
+      },
+      "reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "auditNew": {
+       "bsonType": "object",
+       "properties": {
+        "route": {
+         "bsonType": "object",
+         "properties": {
+          "Limits": {
+           "bsonType": "object",
+           "properties": {
+            "options": {
+             "bsonType": "object",
+             "properties": {
+              "score": {
+               "bsonType": "double"
+              },
+              "name": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "score",
+              "name"
+             ]
+            },
+            "count": {
+             "bsonType": "int"
+            }
+           },
+           "required": [
+            "options",
+            "count"
+           ]
+          },
+          "Count": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "Count"
+         ]
+        }
+       },
+       "required": [
+        "route"
+       ]
+      }
+     },
+     "required": [
+      "plantId",
+      "codigo",
+      "produtoFamily",
+      "taktS",
+      "stations",
+      "capacityPerH",
+      "Situacao"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "plants",
+   "name": "fabricas",
+   "doc_count": 400,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PL"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "localizacao": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "Point"
+       ],
+       "w": null
+      },
+      "coordinates": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -180,
+        "hi": 180
+       },
+       "min": 2,
+       "max": 2
+      }
+     },
+     "geo": {
+      "lat": [
+       -33.0,
+       5.0
+      ],
+      "lng": [
+       -73.0,
+       -35.0
+      ]
+     }
+    },
+    "_pais": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "linhasContagem": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 40
+    },
+    "certifications": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "ISO9001",
+       "ISO14001",
+       "IATF16949",
+       "ISO45001"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "shifts": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "start": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "end": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "crew": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 5,
+         "hi": 200
+        }
+       }
+      }
+     }
+    },
+    "commissioned": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "energy": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "grid_kw": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 500,
+       "hi": 90000
+      },
+      "solar": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "kwp": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        }
+       }
+      }
+     }
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      49.0,
+      23.4,
+      100.0,
+      45.7
+     ]
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "commissionedOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "_pais",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "localizacao",
+       "2dsphere"
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "codigo": {
+       "bsonType": "string"
+      },
+      "nome": {
+       "bsonType": "string"
+      },
+      "localizacao": {
+       "bsonType": "object",
+       "properties": {
+        "type": {
+         "enum": [
+          "Point"
+         ]
+        },
+        "coordinates": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "double"
+         }
+        }
+       }
+      },
+      "_pais": {
+       "bsonType": "string"
+      },
+      "linhasContagem": {
+       "bsonType": "int"
+      },
+      "certifications": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "ISO9001",
+         "ISO14001",
+         "IATF16949",
+         "ISO45001"
+        ]
+       }
+      },
+      "shifts": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "object",
+        "properties": {
+         "start": {
+          "bsonType": "string"
+         },
+         "end": {
+          "bsonType": "string"
+         },
+         "crew": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "start",
+         "end",
+         "crew"
+        ]
+       }
+      },
+      "commissioned": {
+       "bsonType": "date"
+      },
+      "energy": {
+       "bsonType": "object",
+       "properties": {
+        "grid_kw": {
+         "bsonType": "int"
+        },
+        "solar": {
+         "bsonType": "object",
+         "properties": {
+          "kwp": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "kwp"
+         ]
+        }
+       },
+       "required": [
+        "grid_kw"
+       ]
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "importBatch": {
+       "bsonType": "string"
+      },
+      "commissionedOld": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "codigo",
+      "nome",
+      "localizacao",
+      "_pais",
+      "linhasContagem",
+      "certifications",
+      "shifts",
+      "commissioned"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 1,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

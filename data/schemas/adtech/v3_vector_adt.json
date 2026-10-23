@@ -1,0 +1,4347 @@
+{
+ "schema_id": "v3_vector_adt",
+ "domain": "adtech",
+ "holdout": false,
+ "description": "adtech v3 realista EN, camel",
+ "name_style": "camel",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "impressions: campos raros (<10% dos docs): beta_flag, import_batch",
+  "impressions: colecao time-series (timeField=at, metaField=dev)",
+  "creatives: campos raros (<10% dos docs): import_batch, migrated_from",
+  "creatives: campos legados/duplicados em formato antigo: old_version, old_landing_url",
+  "creatives: aninhamento profundo audit.runtime.stack.flags.zone.* (5 niveis de objeto)",
+  "creatives: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "clicks: campos raros (<10% dos docs): migrated_from, beta_flag",
+  "clicks: campos legados/duplicados em formato antigo: old_at",
+  "conversions: campos raros (<10% dos docs): review_state",
+  "conversions: aninhamento profundo audit.client.runtime.device.flags.* (5 niveis de objeto)",
+  "attribution_paths: campos raros (<10% dos docs): beta_flag",
+  "attribution_paths: campos legados/duplicados em formato antigo: old_last_touch, converted_old",
+  "attribution_paths: heterogeneidade de tipo no mesmo campo: bool_string=1, num_mixed=1",
+  "fraud_flags: campos raros (<10% dos docs): override",
+  "fraud_flags: aninhamento profundo trace.region.profile.route.policy.* (5 niveis de objeto)",
+  "bid_events: campos raros (<10% dos docs): external_ref",
+  "bid_events: campos legados/duplicados em formato antigo: at_v2",
+  "bid_events: aninhamento profundo ext.policy.region.options.* (4 niveis de objeto)",
+  "bid_events: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "bid_events: colecao capped (max=3450 docs)",
+  "pacing: campos raros (<10% dos docs): beta_flag, override",
+  "pacing: campos legados/duplicados em formato antigo: delivered_old, day_old",
+  "pacing: aninhamento profundo ctx.network.source.config.* (4 niveis de objeto)",
+  "pacing: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "publishers: campos raros (<10% dos docs): beta_flag, migrated_from",
+  "publishers: aninhamento profundo trace.limits.system.runtime.* (4 niveis de objeto)",
+  "campaigns: campos raros (<10% dos docs): deleted_at",
+  "campaigns: campos legados/duplicados em formato antigo: name_v2",
+  "campaigns: aninhamento profundo trace.route.tenant.limits.runtime.* (5 niveis de objeto)",
+  "campaigns: heterogeneidade de tipo no mesmo campo: date_string=2",
+  "ad_groups: campos raros (<10% dos docs): import_batch",
+  "ad_groups: campos legados/duplicados em formato antigo: old_created_at",
+  "ad_groups: aninhamento profundo meta.options.stack.policy.* (4 niveis de objeto)",
+  "advertisers: campos raros (<10% dos docs): migrated_from, external_ref",
+  "advertisers: aninhamento profundo meta.limits.config.network.rule.* (5 niveis de objeto)",
+  "placements: campos raros (<10% dos docs): external_ref",
+  "placements: aninhamento profundo origin.runtime.options.zone.policy.* (5 niveis de objeto)",
+  "_id mistos: int64=1, objectid=9, string=2, uuid=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante camel; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_hyphen=1, coll_prefix=3, coll_space=1, coll_suffix=1, name_ID=1, name_abbr=8, name_hung=1, name_style=10, name_suffix=5, name_underscore=1, name_upper=2",
+  "campos heterogeneos (alt) no schema: 11; mapas dinamicos: 8; max_depth=6",
+  "dominio adtech: eventos de leilao/impressao/clique em alto volume, relatorios com mapas de metricas"
+ ],
+ "split_role": "hom",
+ "collections": [
+  {
+   "key": "impressions",
+   "name": "impressions",
+   "doc_count": 1950,
+   "fields": {
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "campaignId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "lo": 0,
+     "hi": 1
+    },
+    "creativeId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "creatives"
+    },
+    "publisherId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "publishers",
+     "g": "word"
+    },
+    "dev": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "mobile",
+        "desktop",
+        "tv",
+        "ctv"
+       ],
+       "w": [
+        24.6,
+        24.7,
+        100.0,
+        60.8
+       ]
+      },
+      "os": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "android",
+        "ios",
+        "windows",
+        "macos",
+        "linux"
+       ],
+       "w": [
+        100.0,
+        16.0,
+        38.0,
+        44.5,
+        49.4
+       ]
+      },
+      "uaHash": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      },
+      "geo": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "country": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "country"
+        },
+        "city": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "city"
+        },
+        "loc": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "type": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "Point"
+           ],
+           "w": null
+          },
+          "coordinates": {
+           "t": "array",
+           "p": 1.0,
+           "n": 0.0,
+           "item": {
+            "t": "double",
+            "p": 1.0,
+            "n": 0.0,
+            "lo": -180,
+            "hi": 180
+           },
+           "min": 2,
+           "max": 2
+          }
+         },
+         "geo": {
+          "lat": [
+           -33.0,
+           5.0
+          ],
+          "lng": [
+           -73.0,
+           -35.0
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "costMicros": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 9000000
+    },
+    "viewable": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.73
+    },
+    "bid": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "price": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.05,
+       "hi": 30.0,
+       "sk": 1.71
+      },
+      "win_price": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.05,
+       "hi": 30.0
+      },
+      "auction": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "first",
+        "second"
+       ],
+       "w": [
+        100.0,
+        64.8
+       ]
+      }
+     }
+    },
+    "user": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Uid": {
+       "t": "uuid",
+       "p": 1.0,
+       "n": 0.0,
+       "v": 4
+      },
+      "Segments": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SG"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.38
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "campaignId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "publisherId",
+       1
+      ],
+      [
+       "at",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "dev.os",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "at",
+     "metaField": "dev",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 4,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 1,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "creatives",
+   "name": "creatives",
+   "doc_count": 1450,
+   "fields": {
+    "adGroupId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "ad_groups",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "ad_groups",
+       "as": "string",
+       "aw": 0.16
+      }
+     ]
+    },
+    "format": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "banner",
+      "video",
+      "native",
+      "html5",
+      "audio"
+     ],
+     "w": [
+      55.7,
+      41.2,
+      32.4,
+      22.3,
+      100.0
+     ]
+    },
+    "size": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "w": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 1920,
+       "sk": 2.13
+      },
+      "h": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 1080
+      }
+     }
+    },
+    "assets": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "image",
+         "video",
+         "text"
+        ],
+        "w": [
+         35.1,
+         59.5,
+         100.0
+        ]
+       },
+       "Url": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "url"
+       },
+       "Bytes": {
+        "t": "int64",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1000,
+        "hi": 90000000
+       },
+       "Meta": {
+        "t": "object",
+        "p": 0.7,
+        "n": 0.0,
+        "f": {},
+        "map": {
+         "keys": "word",
+         "min": 2,
+         "max": 6,
+         "value": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "approved",
+      "pending",
+      "rejected"
+     ],
+     "w": [
+      100.0,
+      25.6,
+      57.2
+     ]
+    },
+    "review": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 0.4,
+       "n": 0.0,
+       "g": "name"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "notes": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "landingUrl": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "url"
+    },
+    "version": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      45.8,
+      50.3,
+      30.3,
+      100.0
+     ]
+    },
+    "oldVersion": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 9,
+     "dec": 0
+    },
+    "oldLandingUrl": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "url"
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "runtime": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "stack": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "flags": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "zone": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.71
+              },
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              }
+             }
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "adGroupId",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "format",
+       1
+      ],
+      [
+       "version",
+       -1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "adGroupId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "format": {
+       "bsonType": "string",
+       "enum": [
+        "banner",
+        "video",
+        "native",
+        "html5",
+        "audio"
+       ]
+      },
+      "size": {
+       "bsonType": "object",
+       "properties": {
+        "w": {
+         "bsonType": "int"
+        },
+        "h": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "w",
+        "h"
+       ]
+      },
+      "assets": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Kind": {
+          "bsonType": "string",
+          "enum": [
+           "image",
+           "video",
+           "text"
+          ]
+         },
+         "Url": {
+          "bsonType": "string"
+         },
+         "Bytes": {
+          "bsonType": "long"
+         },
+         "Meta": {
+          "bsonType": "object",
+          "additionalProperties": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "Kind",
+         "Url",
+         "Bytes"
+        ]
+       }
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "approved",
+        "pending",
+        "rejected"
+       ]
+      },
+      "review": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        },
+        "notes": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "At"
+       ]
+      },
+      "landingUrl": {
+       "bsonType": "string"
+      },
+      "version": {
+       "bsonType": "int"
+      },
+      "importBatch": {
+       "bsonType": "string"
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "oldVersion": {
+       "bsonType": "string"
+      },
+      "oldLandingUrl": {
+       "bsonType": "string"
+      },
+      "audit": {
+       "bsonType": "object",
+       "properties": {
+        "runtime": {
+         "bsonType": "object",
+         "properties": {
+          "stack": {
+           "bsonType": "object",
+           "properties": {
+            "flags": {
+             "bsonType": "object",
+             "properties": {
+              "zone": {
+               "bsonType": "object",
+               "properties": {
+                "enabled": {
+                 "bsonType": "bool"
+                },
+                "name": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "enabled",
+                "name"
+               ]
+              },
+              "count": {
+               "bsonType": "int"
+              }
+             },
+             "required": [
+              "count"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "name"
+           ]
+          }
+         }
+        }
+       },
+       "required": [
+        "runtime"
+       ]
+      }
+     },
+     "required": [
+      "adGroupId",
+      "format",
+      "size",
+      "assets",
+      "status",
+      "landingUrl",
+      "version"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "clicks",
+   "name": "clicks",
+   "doc_count": 2500,
+   "fields": {
+    "impressionId": {
+     "t": "objectid",
+     "p": 0.3,
+     "n": 0.0,
+     "ref": "impressions"
+    },
+    "cmpId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "lo": 0,
+     "hi": 1
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "clickId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "Position": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "x": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 1920
+      },
+      "y": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 1080
+      }
+     }
+    },
+    "_fraud": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "score": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      },
+      "reasonsX": {
+       "t": "array",
+       "p": 0.4,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "landing": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "url": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "url"
+      },
+      "referrer": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "url"
+      },
+      "utm": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      21.5,
+      46.2,
+      29.9
+     ]
+    },
+    "BETAFLAG": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.51
+    },
+    "oldAt": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "clickId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cmpId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "_fraud.score",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "impressionId": {
+       "bsonType": "objectId"
+      },
+      "cmpId": {
+       "bsonType": "long"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "clickId": {
+       "bsonType": "binData"
+      },
+      "Position": {
+       "bsonType": "object",
+       "properties": {
+        "x": {
+         "bsonType": "int"
+        },
+        "y": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "x",
+        "y"
+       ]
+      },
+      "_fraud": {
+       "bsonType": "object",
+       "properties": {
+        "score": {
+         "bsonType": "double"
+        },
+        "reasonsX": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "string"
+         }
+        }
+       },
+       "required": [
+        "score"
+       ]
+      },
+      "landing": {
+       "bsonType": "object",
+       "properties": {
+        "url": {
+         "bsonType": "string"
+        },
+        "referrer": {
+         "bsonType": "string"
+        },
+        "utm": {
+         "bsonType": "object",
+         "additionalProperties": {
+          "bsonType": "string"
+         }
+        }
+       },
+       "required": [
+        "url"
+       ]
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "BETAFLAG": {
+       "bsonType": "bool"
+      },
+      "oldAt": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "cmpId",
+      "at",
+      "clickId",
+      "Position",
+      "landing"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "conversions",
+   "name": "conversions",
+   "doc_count": 1300,
+   "fields": {
+    "clickId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "cmpId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "lo": 0,
+     "hi": 1
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "purchase",
+      "signup",
+      "install",
+      "lead"
+     ],
+     "w": [
+      100.0,
+      17.8,
+      33.4,
+      41.1
+     ]
+    },
+    "value": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 3000.0
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "attribution": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "model": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "last_click",
+        "linear",
+        "data_driven"
+       ],
+       "w": [
+        61.6,
+        49.5,
+        100.0
+       ]
+      },
+      "window_days": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 90,
+       "sk": 2.06
+      },
+      "touchpoints": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "campaign": {
+          "t": "int64",
+          "p": 1.0,
+          "n": 0.0,
+          "ref": "campaigns",
+          "lo": 0,
+          "hi": 1
+         },
+         "at": {
+          "t": "date",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": "2025-01-01",
+          "hi": "2026-09-30"
+         },
+         "weight": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0.0,
+          "hi": 1.0
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      45.8,
+      28.1
+     ]
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "runtime": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "device": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "flags": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.8
+            }
+           }
+          },
+          "seenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.5
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cmpId",
+       1
+      ],
+      [
+       "kind",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "attribution.model",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "clickId": {
+       "bsonType": "binData"
+      },
+      "cmpId": {
+       "bsonType": "long"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "purchase",
+        "signup",
+        "install",
+        "lead"
+       ]
+      },
+      "value": {
+       "bsonType": "decimal"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "attribution": {
+       "bsonType": "object",
+       "properties": {
+        "model": {
+         "bsonType": "string",
+         "enum": [
+          "last_click",
+          "linear",
+          "data_driven"
+         ]
+        },
+        "window_days": {
+         "bsonType": "int"
+        },
+        "touchpoints": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "campaign": {
+            "bsonType": "long"
+           },
+           "at": {
+            "bsonType": "date"
+           },
+           "weight": {
+            "bsonType": "double"
+           }
+          },
+          "required": [
+           "campaign",
+           "at",
+           "weight"
+          ]
+         }
+        }
+       },
+       "required": [
+        "model",
+        "window_days",
+        "touchpoints"
+       ]
+      },
+      "reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "audit": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "runtime": {
+           "bsonType": "object",
+           "properties": {
+            "device": {
+             "bsonType": "object",
+             "properties": {
+              "flags": {
+               "bsonType": "object",
+               "properties": {
+                "name": {
+                 "bsonType": "string"
+                },
+                "version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "name",
+                "version"
+               ]
+              },
+              "enabled": {
+               "bsonType": "bool"
+              }
+             },
+             "required": [
+              "enabled"
+             ]
+            },
+            "seenAt": {
+             "bsonType": "date"
+            }
+           },
+           "required": [
+            "device",
+            "seenAt"
+           ]
+          },
+          "enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "enabled"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "clickId",
+      "cmpId",
+      "kind",
+      "value",
+      "at",
+      "attribution"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "attribution_paths",
+   "name": "Attribution Paths",
+   "doc_count": 1450,
+   "fields": {
+    "user": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "paths": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "CH"
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "converted": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.27
+    },
+    "value": {
+     "t": "decimal128",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 2000.0,
+     "sk": 2.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0.0,
+       "hi": 2000.0,
+       "aw": 0.18
+      }
+     ]
+    },
+    "firstTouch": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "lastTouch": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "modelScores": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      }
+     }
+    },
+    "betaFlagOld": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.33
+    },
+    "oldLastTouch": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "CONVERTEDOLD": {
+     "t": "bool",
+     "p": 0.15,
+     "n": 0.0,
+     "pt": 0.13,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "user",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "converted",
+       1
+      ],
+      [
+       "lastTouch",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "value",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "user": {
+       "bsonType": "binData"
+      },
+      "paths": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "array",
+        "items": {
+         "bsonType": "string"
+        }
+       }
+      },
+      "converted": {
+       "bsonType": "bool"
+      },
+      "value": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "firstTouch": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "lastTouch": {
+       "bsonType": "date"
+      },
+      "modelScores": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "double"
+       }
+      },
+      "betaFlagOld": {
+       "bsonType": "bool"
+      },
+      "oldLastTouch": {
+       "bsonType": "string"
+      },
+      "CONVERTEDOLD": {
+       "bsonType": [
+        "bool",
+        "string"
+       ]
+      }
+     },
+     "required": [
+      "user",
+      "paths",
+      "converted",
+      "firstTouch",
+      "lastTouch",
+      "modelScores"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "fraud_flags",
+   "name": "fraud-flags",
+   "doc_count": 1200,
+   "fields": {
+    "publisherId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "publishers",
+     "g": "word"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ivt",
+      "bot",
+      "click_farm",
+      "domain_spoof"
+     ],
+     "w": [
+      27.4,
+      29.7,
+      100.0,
+      65.0
+     ]
+    },
+    "severity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "evidence": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "sample": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "uuid",
+        "p": 1.0,
+        "n": 0.0,
+        "v": 4
+       },
+       "min": 0,
+       "max": 4
+      },
+      "rates": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "metric",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        }
+       }
+      },
+      "notes": {
+       "t": "string",
+       "p": 0.3,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "flaggedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "resolved": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.24
+    },
+    "override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "region": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "Profile": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Route": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "policy": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "countNew": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "publisherId",
+       1
+      ],
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "severity",
+       1
+      ],
+      [
+       "flaggedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "evidence.rates.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "bid_events",
+   "name": "bidEvents",
+   "doc_count": 2950,
+   "fields": {
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.06
+      }
+     ]
+    },
+    "exchange": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "google",
+      "xandr",
+      "magnite",
+      "pubmatic",
+      "openx"
+     ],
+     "w": [
+      41.6,
+      28.7,
+      100.0,
+      20.5,
+      37.5
+     ]
+    },
+    "requestId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "floor": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 5.0
+    },
+    "bids": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "bidder": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "price": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 20.0
+       },
+       "latencyMs": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 5,
+        "hi": 400,
+        "sk": 2.51
+       },
+       "won": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.33
+       },
+       "reasonsLegacy": {
+        "t": "array",
+        "p": 0.6,
+        "n": 0.0,
+        "item": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "result": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "won",
+      "lost",
+      "timeout",
+      "nobid"
+     ],
+     "w": [
+      42.5,
+      45.2,
+      100.0,
+      46.8
+     ]
+    },
+    "site": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "domain": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "slug"
+      },
+      "page": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "url"
+      },
+      "categories": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "IAB"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "atV2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "policy": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "region": {
+         "t": "object",
+         "p": 0.8,
+         "n": 0.0,
+         "f": {
+          "Options": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.42
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              51.3,
+              39.9
+             ]
+            }
+           }
+          },
+          "Name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "exchange",
+       1
+      ],
+      [
+       "result",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "externalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "options": {
+    "capped": true,
+    "size": 48332800,
+    "max": 3450
+   },
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "capped"
+   }
+  },
+  {
+   "key": "pacing",
+   "name": "pacing",
+   "doc_count": 1350,
+   "fields": {
+    "refCampaignId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "lo": 0,
+     "hi": 1
+    },
+    "day": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "spent": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 30000.0,
+     "sk": 2.13,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0.0,
+       "hi": 30000.0,
+       "aw": 0.12
+      }
+     ]
+    },
+    "Delivered": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000,
+     "sk": 1.92
+    },
+    "target": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1000,
+     "hi": 9000000,
+     "sk": 2.33
+    },
+    "hourly": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "hour",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 2000.0
+      }
+     }
+    },
+    "underdelivery": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.22
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.56
+    },
+    "override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "deliveredOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 9000000,
+     "dec": 0
+    },
+    "dayOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "ctx": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "network": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "src": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "config": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              63.5,
+              48.7,
+              100.0
+             ]
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.43
+            }
+           }
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "refCampaignId",
+       1
+      ],
+      [
+       "day",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "underdelivery",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "hourly.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "publishers",
+   "name": "publishers",
+   "doc_count": 600,
+   "fields": {
+    "domain": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "cat": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "news",
+      "sports",
+      "games",
+      "shopping",
+      "video",
+      "social"
+     ],
+     "w": [
+      41.5,
+      18.2,
+      27.2,
+      100.0,
+      27.2,
+      23.7
+     ]
+    },
+    "trafficTier": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "t1",
+      "t2",
+      "t3"
+     ],
+     "w": [
+      45.9,
+      44.3,
+      100.0
+     ]
+    },
+    "adsTxt": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Verified": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.62
+      },
+      "Lines": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 400
+      },
+      "Sellers": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Id": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "SL"
+         },
+         "rel": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "DIRECT",
+           "RESELLER"
+          ],
+          "w": [
+           100.0,
+           55.9
+          ]
+         }
+        }
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "revenueShare": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.3,
+     "hi": 0.9
+    },
+    "floorPrices": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "cur",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.01,
+       "hi": 3.0
+      }
+     }
+    },
+    "country": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.52
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      24.3,
+      27.0,
+      53.5,
+      100.0
+     ]
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "limits": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "system": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "runtime": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "Level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              35.1,
+              100.0,
+              52.1
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "domain",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cat",
+       1
+      ],
+      [
+       "trafficTier",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "floorPrices.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PUB-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "domain": {
+       "bsonType": "string"
+      },
+      "name": {
+       "bsonType": "string"
+      },
+      "cat": {
+       "bsonType": "string",
+       "enum": [
+        "news",
+        "sports",
+        "games",
+        "shopping",
+        "video",
+        "social"
+       ]
+      },
+      "trafficTier": {
+       "bsonType": "string",
+       "enum": [
+        "t1",
+        "t2",
+        "t3"
+       ]
+      },
+      "adsTxt": {
+       "bsonType": "object",
+       "properties": {
+        "Verified": {
+         "bsonType": "bool"
+        },
+        "Lines": {
+         "bsonType": "int"
+        },
+        "Sellers": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "Id": {
+            "bsonType": "string"
+           },
+           "rel": {
+            "bsonType": "string",
+            "enum": [
+             "DIRECT",
+             "RESELLER"
+            ]
+           }
+          },
+          "required": [
+           "Id",
+           "rel"
+          ]
+         }
+        }
+       },
+       "required": [
+        "Verified",
+        "Lines",
+        "Sellers"
+       ]
+      },
+      "revenueShare": {
+       "bsonType": "double"
+      },
+      "floorPrices": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "double"
+       }
+      },
+      "country": {
+       "bsonType": "string"
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "trace": {
+       "bsonType": "object",
+       "properties": {
+        "limits": {
+         "bsonType": "object",
+         "properties": {
+          "system": {
+           "bsonType": "object",
+           "properties": {
+            "runtime": {
+             "bsonType": "object",
+             "properties": {
+              "seenAt": {
+               "bsonType": "date"
+              },
+              "Level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "seenAt",
+              "Level"
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "domain",
+      "name",
+      "cat",
+      "trafficTier",
+      "revenueShare",
+      "floorPrices",
+      "country"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "campaigns",
+   "name": "col_campaigns",
+   "doc_count": 1500,
+   "fields": {
+    "advertiserId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "advertisers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "advertisers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "objective": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "awareness",
+      "traffic",
+      "conversion",
+      "app_install"
+     ],
+     "w": [
+      47.7,
+      100.0,
+      47.7,
+      25.3
+     ]
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "draft",
+      "live",
+      "paused",
+      "ended"
+     ],
+     "w": [
+      24.5,
+      100.0,
+      48.0,
+      23.7
+     ]
+    },
+    "budget": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "total": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 500.0,
+       "hi": 900000.0
+      },
+      "daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10.0,
+       "hi": 30000.0
+      },
+      "currency": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "BRL",
+        "USD"
+       ],
+       "w": [
+        64.6,
+        100.0
+       ]
+      },
+      "pacing": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "even",
+        "asap",
+        "smart"
+       ],
+       "w": [
+        100.0,
+        59.1,
+        42.7
+       ]
+      }
+     }
+    },
+    "flight": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "start": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "end": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "date",
+         "aw": 0.09
+        }
+       ]
+      }
+     }
+    },
+    "targeting": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "geo": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "country"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "devices": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "mobile",
+         "desktop",
+         "tv",
+         "ctv"
+        ],
+        "w": null
+       },
+       "min": 0,
+       "max": 4
+      },
+      "age": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "min": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 13,
+         "hi": 40,
+         "sk": 2.03
+        },
+        "max": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 41,
+         "hi": 90,
+         "sk": 1.93
+        }
+       }
+      },
+      "languages": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "lang",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.77
+        }
+       }
+      }
+     }
+    },
+    "bidStrategy": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "kindX": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "cpc",
+        "cpm",
+        "cpa",
+        "roas"
+       ],
+       "w": [
+        57.3,
+        100.0,
+        19.3,
+        47.6
+       ]
+      },
+      "target": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.1,
+       "hi": 90.0,
+       "sk": 1.51
+      },
+      "caps": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "maxBid": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.5,
+         "hi": 20.0
+        },
+        "minBid": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        }
+       }
+      }
+     }
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.06
+      }
+     ]
+    },
+    "nameV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "title"
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "route": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "tenant": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "limits": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "runtime": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            }
+           }
+          },
+          "version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.6
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "advertiserId",
+       1
+      ],
+      [
+       "st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "flight.start",
+       1
+      ],
+      [
+       "flight.end",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "objective",
+       1
+      ],
+      [
+       "budget.total",
+       -1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "targeting.languages.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "advertiserId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "name": {
+       "bsonType": "string"
+      },
+      "objective": {
+       "bsonType": "string",
+       "enum": [
+        "awareness",
+        "traffic",
+        "conversion",
+        "app_install"
+       ]
+      },
+      "st": {
+       "bsonType": "string",
+       "enum": [
+        "draft",
+        "live",
+        "paused",
+        "ended"
+       ]
+      },
+      "budget": {
+       "bsonType": "object",
+       "properties": {
+        "total": {
+         "bsonType": "decimal"
+        },
+        "daily": {
+         "bsonType": "decimal"
+        },
+        "currency": {
+         "bsonType": "string",
+         "enum": [
+          "BRL",
+          "USD"
+         ]
+        },
+        "pacing": {
+         "bsonType": "string",
+         "enum": [
+          "even",
+          "asap",
+          "smart"
+         ]
+        }
+       },
+       "required": [
+        "total",
+        "daily",
+        "currency",
+        "pacing"
+       ]
+      },
+      "flight": {
+       "bsonType": "object",
+       "properties": {
+        "start": {
+         "bsonType": "date"
+        },
+        "end": {
+         "bsonType": [
+          "date",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "start",
+        "end"
+       ]
+      },
+      "targeting": {
+       "bsonType": "object",
+       "properties": {
+        "geo": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "string"
+         }
+        },
+        "devices": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "string",
+          "enum": [
+           "mobile",
+           "desktop",
+           "tv",
+           "ctv"
+          ]
+         }
+        },
+        "age": {
+         "bsonType": "object",
+         "properties": {
+          "min": {
+           "bsonType": "int"
+          },
+          "max": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "min",
+          "max"
+         ]
+        },
+        "languages": {
+         "bsonType": "object",
+         "additionalProperties": {
+          "bsonType": "bool"
+         }
+        }
+       },
+       "required": [
+        "geo",
+        "devices"
+       ]
+      },
+      "bidStrategy": {
+       "bsonType": "object",
+       "properties": {
+        "kindX": {
+         "bsonType": "string",
+         "enum": [
+          "cpc",
+          "cpm",
+          "cpa",
+          "roas"
+         ]
+        },
+        "target": {
+         "bsonType": "double"
+        },
+        "caps": {
+         "bsonType": "object",
+         "properties": {
+          "maxBid": {
+           "bsonType": "double"
+          },
+          "minBid": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "maxBid",
+          "minBid"
+         ]
+        }
+       },
+       "required": [
+        "kindX",
+        "target"
+       ]
+      },
+      "deletedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "nameV2": {
+       "bsonType": "string"
+      },
+      "trace": {
+       "bsonType": "object",
+       "properties": {
+        "route": {
+         "bsonType": "object",
+         "properties": {
+          "tenant": {
+           "bsonType": "object",
+           "properties": {
+            "limits": {
+             "bsonType": "object",
+             "properties": {
+              "runtime": {
+               "bsonType": "object",
+               "properties": {
+                "Count": {
+                 "bsonType": "int"
+                }
+               },
+               "required": [
+                "Count"
+               ]
+              }
+             },
+             "required": [
+              "runtime"
+             ]
+            },
+            "version": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "limits",
+            "version"
+           ]
+          },
+          "enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "enabled"
+         ]
+        }
+       },
+       "required": [
+        "route"
+       ]
+      }
+     },
+     "required": [
+      "advertiserId",
+      "name",
+      "objective",
+      "st",
+      "budget",
+      "flight",
+      "targeting",
+      "bidStrategy"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "ad_groups",
+   "name": "tbl_ad_groups",
+   "doc_count": 700,
+   "fields": {
+    "cmpId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "alt": [
+      {
+       "t": "int64",
+       "ref": "campaigns",
+       "as": "string",
+       "aw": 0.12,
+       "lo": 0,
+       "hi": 1
+      }
+     ],
+     "lo": 0,
+     "hi": 1
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "live",
+      "paused",
+      "ended"
+     ],
+     "w": [
+      60.2,
+      39.4,
+      100.0
+     ]
+    },
+    "bidModifiers": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "slot",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.1,
+       "hi": 3.0
+      }
+     }
+    },
+    "keywords": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "placements": {
+     "t": "array",
+     "p": 0.9,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "placements",
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "oldCrtAt": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "options": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "stack": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "policy": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "sk": 2.37
+            }
+           }
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cmpId",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "keywords",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "importBatch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "advertisers",
+   "name": "t_advertisers",
+   "doc_count": 450,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "legalID": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "vertical": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "finance",
+      "auto",
+      "telecom",
+      "gaming",
+      "travel"
+     ],
+     "w": [
+      45.0,
+      24.4,
+      17.2,
+      100.0,
+      12.7,
+      41.9
+     ]
+    },
+    "billing": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "currency": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "BRL",
+        "USD",
+        "EUR"
+       ],
+       "w": [
+        37.7,
+        46.9,
+        100.0
+       ]
+      },
+      "termsDays": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 90
+      },
+      "tax": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "rate": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 0.3
+        },
+        "exempt": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.05
+        }
+       }
+      }
+     }
+    },
+    "createdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "paused",
+      "closed"
+     ],
+     "w": [
+      100.0,
+      35.0,
+      45.0
+     ]
+    },
+    "contacts": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "email": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "email"
+       },
+       "role": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "billing",
+         "tech",
+         "exec"
+        ],
+        "w": [
+         100.0,
+         37.0,
+         60.5
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      26.7,
+      100.0,
+      27.1,
+      49.1
+     ]
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "limits": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "config": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "Rule": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                51.5,
+                45.1,
+                100.0
+               ]
+              },
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              },
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "Name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "legalID",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "vertical",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    },
+    {
+     "keys": [
+      [
+       "migratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "t_advertisers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "legalID": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "externalRef": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "vertical": {
+         "type": "token"
+        },
+        "status": {
+         "type": "token"
+        },
+        "createdAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "placements",
+   "name": "placements_old",
+   "doc_count": 300,
+   "fields": {
+    "publisherId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "publishers",
+     "g": "word"
+    },
+    "slot": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SLOT"
+    },
+    "format": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "banner",
+       "video",
+       "native"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "sizes": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 970
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "viewability": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.2,
+     "hi": 0.95
+    },
+    "active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.91
+    },
+    "floor": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 4.0
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "runtime": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "options": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "zone": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "policy": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                44.1,
+                100.0,
+                42.0
+               ]
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              },
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            }
+           }
+          },
+          "level": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "low",
+            "mid",
+            "high"
+           ],
+           "w": [
+            58.5,
+            37.9,
+            100.0
+           ]
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "publisherId",
+       1
+      ],
+      [
+       "active",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "slot",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "publisherId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "externalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PLA-"
+   },
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 1,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  }
+ ]
+}

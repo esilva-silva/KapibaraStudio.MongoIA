@@ -1,0 +1,2498 @@
+{
+ "schema_id": "v3_krypton_leg",
+ "domain": "legal",
+ "holdout": true,
+ "description": "legal v3 realista EN, camel",
+ "name_style": "camel",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "cases: campos raros (<10% dos docs): import_batch, migrated_from",
+  "cases: aninhamento profundo meta.options.network.source.* (4 niveis de objeto)",
+  "contracts: campos raros (<10% dos docs): beta_flag",
+  "contracts: campos legados/duplicados em formato antigo: old_title",
+  "contracts: aninhamento profundo origin.runtime.stack.source.* (4 niveis de objeto)",
+  "billing: campos raros (<10% dos docs): import_batch",
+  "billing: campos legados/duplicados em formato antigo: old_hours",
+  "billing: heterogeneidade de tipo no mesmo campo: num_mixed=1, ref_string=1",
+  "docket_entries: campos raros (<10% dos docs): migrated_from, external_ref",
+  "deadlines: campos raros (<10% dos docs): review_state, beta_flag",
+  "clients: campos raros (<10% dos docs): migrated_from",
+  "time_records: campos raros (<10% dos docs): beta_flag",
+  "time_records: campos legados/duplicados em formato antigo: legacy_day, old_billed",
+  "time_records: aninhamento profundo origin.tenant.client.device.system.* (5 niveis de objeto)",
+  "time_records: heterogeneidade de tipo no mesmo campo: date_string=1, num_mixed=1",
+  "documents: campos raros (<10% dos docs): migrated_from, review_state",
+  "documents: campos legados/duplicados em formato antigo: pages_old",
+  "documents: aninhamento profundo meta.rule.options.zone.* (4 niveis de objeto)",
+  "documents: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "hearings: campos raros (<10% dos docs): beta_flag",
+  "hearings: campos legados/duplicados em formato antigo: room_v2, legacy_at",
+  "hearings: aninhamento profundo audit.config.profile.tenant.client.limits.* (6 niveis de objeto)",
+  "lawyers: campos raros (<10% dos docs): import_batch, notes",
+  "lawyers: campos legados/duplicados em formato antigo: legacy_firm",
+  "lawyers: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "_id mistos: objectid=8, string=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante camel; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_suffix=1, name_ID=1, name_abbr=1, name_hung=3, name_style=9, name_suffix=2, name_underscore=1",
+  "campos heterogeneos (alt) no schema: 10; mapas dinamicos: 1; max_depth=7",
+  "dominio legal: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "eval",
+ "collections": [
+  {
+   "key": "cases",
+   "name": "t_cases",
+   "doc_count": 400,
+   "fields": {
+    "number": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CNJ"
+    },
+    "court": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "TJSP",
+      "TRF3",
+      "STJ",
+      "TRT2"
+     ],
+     "w": [
+      22.9,
+      100.0,
+      31.8,
+      59.2
+     ]
+    },
+    "subject": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "clientId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clients",
+     "g": "word"
+    },
+    "filedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2018-01-01",
+     "hi": "2026-09-01"
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "stayed",
+      "closed"
+     ],
+     "w": [
+      100.0,
+      29.7,
+      64.1
+     ]
+    },
+    "value": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 5000000.0,
+     "sk": 2.24
+    },
+    "parties": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "role": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "plaintiff",
+         "defendant",
+         "witness"
+        ],
+        "w": [
+         30.5,
+         100.0,
+         63.5
+        ]
+       },
+       "counsel": {
+        "t": "object",
+        "p": 0.95,
+        "n": 0.0,
+        "f": {
+         "name": {
+          "t": "string",
+          "p": 0.6,
+          "n": 0.0,
+          "g": "name"
+         },
+         "bar": {
+          "t": "string",
+          "p": 0.95,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "OAB"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "leadId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "lawyers",
+     "g": "word"
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      25.3,
+      25.5,
+      100.0,
+      41.0
+     ]
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "options": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "network": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "src": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.46
+            }
+           }
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "number",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "court",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "parties.Name",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "clientId",
+       1
+      ],
+      [
+       "filedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "leadId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "subject",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "t_cases_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "number": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "subject": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "clientId": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "court": {
+         "type": "token"
+        },
+        "status": {
+         "type": "token"
+        },
+        "filedAt": {
+         "type": "date"
+        },
+        "value": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "contracts",
+   "name": "contracts",
+   "doc_count": 1550,
+   "fields": {
+    "clientId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clients",
+     "g": "word"
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "signedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "expiresAt": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "decValue": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 500.0,
+     "hi": 9000000.0
+    },
+    "clauses": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Num": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 60,
+        "sk": 1.56
+       },
+       "Title": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "Text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Risk": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "low",
+         "med",
+         "high"
+        ],
+        "w": [
+         31.4,
+         52.1,
+         100.0
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "parties": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "name"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.6
+    },
+    "oldTitle": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "title"
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "runtime": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "stack": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "source": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.73
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              31.1,
+              100.0,
+              43.9
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "clientId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "expiresAt",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "clauses.Risk",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "clientId": {
+       "bsonType": "string"
+      },
+      "title": {
+       "bsonType": "string"
+      },
+      "signedAt": {
+       "bsonType": "date"
+      },
+      "expiresAt": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "decValue": {
+       "bsonType": "decimal"
+      },
+      "clauses": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Num": {
+          "bsonType": "int"
+         },
+         "Title": {
+          "bsonType": "string"
+         },
+         "Text": {
+          "bsonType": "string"
+         },
+         "Risk": {
+          "bsonType": "string",
+          "enum": [
+           "low",
+           "med",
+           "high"
+          ]
+         }
+        },
+        "required": [
+         "Num",
+         "Title",
+         "Text",
+         "Risk"
+        ]
+       }
+      },
+      "parties": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "oldTitle": {
+       "bsonType": "string"
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "runtime": {
+         "bsonType": "object",
+         "properties": {
+          "stack": {
+           "bsonType": "object",
+           "properties": {
+            "source": {
+             "bsonType": "object",
+             "properties": {
+              "count": {
+               "bsonType": "int"
+              },
+              "enabled": {
+               "bsonType": "bool"
+              },
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "count",
+              "enabled",
+              "level"
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "clientId",
+      "title",
+      "signedAt",
+      "decValue",
+      "clauses",
+      "parties"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "contracts_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "clientId": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "title": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "oldTitle": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "signedAt": {
+         "type": "date"
+        },
+        "expiresAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "billing",
+   "name": "billing",
+   "doc_count": 1100,
+   "fields": {
+    "clientId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clients",
+     "g": "word"
+    },
+    "caseID": {
+     "t": "objectid",
+     "p": 0.3,
+     "n": 0.0,
+     "ref": "cases",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "cases",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "hours": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 90.0,
+     "sk": 1.89
+    },
+    "rate": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 2000.0,
+     "sk": 1.81
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50.0,
+     "hi": 180000.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 50.0,
+       "hi": 180000.0,
+       "aw": 0.16
+      }
+     ]
+    },
+    "issuedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "paid": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.67
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "oldHours": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.5,
+     "hi": 90.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "clientId",
+       1
+      ],
+      [
+       "issuedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "issuedAt",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "paid": true
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "clientId": {
+       "bsonType": "string"
+      },
+      "caseID": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "hours": {
+       "bsonType": "double"
+      },
+      "rate": {
+       "bsonType": "decimal"
+      },
+      "total": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "issuedAt": {
+       "bsonType": "date"
+      },
+      "paid": {
+       "bsonType": "bool"
+      },
+      "importBatch": {
+       "bsonType": "string"
+      },
+      "oldHours": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "clientId",
+      "hours",
+      "rate",
+      "total",
+      "issuedAt",
+      "paid"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "validationLevel": "moderate",
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "docket_entries",
+   "name": "docketEntries",
+   "doc_count": 700,
+   "fields": {
+    "caseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "cases",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AN"
+    },
+    "text": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "partiesNotified": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "name"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "attachments": {
+     "t": "array",
+     "p": 0.03,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "slug"
+       },
+       "pages": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 200,
+        "alt": [
+         {
+          "t": "string",
+          "g": "numstr",
+          "lo": 1,
+          "hi": 200,
+          "dec": 0,
+          "aw": 0.08
+         }
+        ]
+       },
+       "hash": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "hex"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "sMigratedFrom": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      54.3,
+      16.8,
+      30.1,
+      100.0
+     ]
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "caseId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "sMigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "caseId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "at": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "code": {
+       "bsonType": "string"
+      },
+      "text": {
+       "bsonType": "string"
+      },
+      "partiesNotified": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "attachments": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "name": {
+          "bsonType": "string"
+         },
+         "pages": {
+          "bsonType": [
+           "int",
+           "string"
+          ]
+         },
+         "hash": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "name",
+         "pages",
+         "hash"
+        ]
+       }
+      },
+      "sMigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "externalRef": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "caseId",
+      "at",
+      "code",
+      "text",
+      "partiesNotified"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "deadlines",
+   "name": "deadlines",
+   "doc_count": 2350,
+   "fields": {
+    "caseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "due": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "done": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.59
+    },
+    "reminders": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "channel": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "email",
+         "sms",
+         "push"
+        ],
+        "w": [
+         100.0,
+         48.8,
+         45.3
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "reviewState2": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      41.1,
+      28.2
+     ]
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.45
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "caseId",
+       1
+      ],
+      [
+       "due",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "due",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "caseId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reviewState2",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "deadlines_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "title": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "reviewState2": {
+         "type": "token"
+        },
+        "due": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "clients",
+   "name": "clients",
+   "doc_count": 1000,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "TaxId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "person",
+      "company"
+     ],
+     "w": [
+      100.0,
+      63.6
+     ]
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "since": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "address": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "city": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "State": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "country": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      }
+     }
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      47.8,
+      100.0,
+      29.6,
+      37.4
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TaxId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "migratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "CLI-"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "time_records",
+   "name": "timeRecords_old",
+   "doc_count": 1600,
+   "fields": {
+    "lawyerId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "lawyers",
+     "g": "word"
+    },
+    "caseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "dayOld": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "minutes": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 720,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 6,
+       "hi": 720,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ]
+    },
+    "activity": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 240
+      }
+     }
+    },
+    "billed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.81
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.35
+    },
+    "legacyDay": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "oldBilled": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "tenant": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "client": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Device": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "System": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                48.3,
+                33.6,
+                100.0
+               ]
+              },
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900,
+               "alt": [
+                {
+                 "t": "string",
+                 "g": "numstr",
+                 "lo": 0,
+                 "hi": 900,
+                 "dec": 0,
+                 "aw": 0.09
+                }
+               ]
+              }
+             }
+            }
+           }
+          },
+          "SeenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30",
+           "alt": [
+            {
+             "t": "string",
+             "g": "isodate",
+             "lo": "2025-01-01",
+             "hi": "2026-09-30",
+             "fmt": "date",
+             "aw": 0.12
+            }
+           ]
+          }
+         }
+        },
+        "seenAt": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "lawyerId",
+       1
+      ],
+      [
+       "dayOld",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "caseId",
+       1
+      ],
+      [
+       "billed",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "lawyerId": {
+       "bsonType": "string"
+      },
+      "caseId": {
+       "bsonType": "objectId"
+      },
+      "dayOld": {
+       "bsonType": "date"
+      },
+      "minutes": {
+       "bsonType": [
+        "int",
+        "string"
+       ]
+      },
+      "activity": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "billed": {
+       "bsonType": "bool"
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "legacyDay": {
+       "bsonType": "string"
+      },
+      "oldBilled": {
+       "bsonType": "bool"
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "tenant": {
+         "bsonType": "object",
+         "properties": {
+          "client": {
+           "bsonType": "object",
+           "properties": {
+            "Device": {
+             "bsonType": "object",
+             "properties": {
+              "System": {
+               "bsonType": "object",
+               "properties": {
+                "level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                },
+                "Count": {
+                 "bsonType": [
+                  "int",
+                  "string"
+                 ]
+                }
+               },
+               "required": [
+                "level",
+                "Count"
+               ]
+              }
+             },
+             "required": [
+              "System"
+             ]
+            },
+            "SeenAt": {
+             "bsonType": [
+              "date",
+              "string"
+             ]
+            }
+           },
+           "required": [
+            "Device",
+            "SeenAt"
+           ]
+          },
+          "seenAt": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "client",
+          "seenAt"
+         ]
+        }
+       },
+       "required": [
+        "tenant"
+       ]
+      }
+     },
+     "required": [
+      "lawyerId",
+      "caseId",
+      "dayOld",
+      "minutes",
+      "activity",
+      "billed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "documents",
+   "name": "documents",
+   "doc_count": 1300,
+   "fields": {
+    "caseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "petition",
+      "motion",
+      "ruling",
+      "evidence"
+     ],
+     "w": [
+      22.9,
+      100.0,
+      26.2,
+      64.5
+     ]
+    },
+    "pages": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 400,
+     "sk": 2.24,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 1,
+       "hi": 400,
+       "aw": 0.11
+      }
+     ]
+    },
+    "hash": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "filed": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "confidential": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      27.3,
+      100.0,
+      30.9,
+      41.1
+     ]
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      61.9,
+      29.3
+     ]
+    },
+    "pagesOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 400,
+     "dec": 0
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "options": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "zone": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "Level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              38.7,
+              57.3,
+              100.0
+             ]
+            },
+            "Version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            },
+            "Count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            }
+           }
+          }
+         }
+        },
+        "level": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "low",
+          "mid",
+          "high"
+         ],
+         "w": [
+          53.4,
+          100.0,
+          50.5
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "caseId",
+       1
+      ],
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "hash",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "confidential": true
+     }
+    },
+    {
+     "keys": [
+      [
+       "migratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "filed",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "hearings",
+   "name": "hearings",
+   "doc_count": 1450,
+   "fields": {
+    "refCaseId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-01-01",
+     "hi": "2027-03-31"
+    },
+    "room": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "judge": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "outcome": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.1,
+     "g": "enum",
+     "values": [
+      "held",
+      "postponed",
+      "settled"
+     ],
+     "w": [
+      47.1,
+      28.2,
+      100.0
+     ]
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.36
+    },
+    "roomV2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "legacyAt": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2026-01-01",
+     "hi": "2027-03-31",
+     "fmt": "iso"
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "config": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "profile": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "tenant": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "client": {
+             "t": "object",
+             "p": 0.8,
+             "n": 0.0,
+             "f": {
+              "limits": {
+               "t": "object",
+               "p": 0.8,
+               "n": 0.0,
+               "f": {
+                "score": {
+                 "t": "double",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 100,
+                 "sk": 1.48
+                },
+                "version": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "code",
+                 "prefix": "v"
+                }
+               }
+              },
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100
+              }
+             }
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          },
+          "count": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "refCaseId",
+       1
+      ],
+      [
+       "_at",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "judge",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "refCaseId": {
+       "bsonType": "objectId"
+      },
+      "_at": {
+       "bsonType": "date"
+      },
+      "room": {
+       "bsonType": "string"
+      },
+      "judge": {
+       "bsonType": "string"
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "outcome": {
+       "bsonType": [
+        "string",
+        "null"
+       ],
+       "enum": [
+        "held",
+        "postponed",
+        "settled",
+        null
+       ]
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "roomV2": {
+       "bsonType": "string"
+      },
+      "legacyAt": {
+       "bsonType": "string"
+      },
+      "audit": {
+       "bsonType": "object",
+       "properties": {
+        "config": {
+         "bsonType": "object",
+         "properties": {
+          "profile": {
+           "bsonType": "object",
+           "properties": {
+            "tenant": {
+             "bsonType": "object",
+             "properties": {
+              "client": {
+               "bsonType": "object",
+               "properties": {
+                "limits": {
+                 "bsonType": "object",
+                 "properties": {
+                  "score": {
+                   "bsonType": "double"
+                  },
+                  "version": {
+                   "bsonType": "string"
+                  }
+                 },
+                 "required": [
+                  "score",
+                  "version"
+                 ]
+                },
+                "score": {
+                 "bsonType": "double"
+                }
+               },
+               "required": [
+                "score"
+               ]
+              },
+              "version": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "version"
+             ]
+            },
+            "count": {
+             "bsonType": "int"
+            }
+           },
+           "required": [
+            "tenant",
+            "count"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "refCaseId",
+      "_at",
+      "room",
+      "judge"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "lawyers",
+   "name": "lawyers",
+   "doc_count": 600,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "bar": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "OAB"
+    },
+    "firm": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "g": "title"
+    },
+    "active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.89
+    },
+    "areas": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "civil",
+       "criminal",
+       "labor",
+       "tax",
+       "ip"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "rateHour": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 2000.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 100.0,
+       "hi": 2000.0,
+       "aw": 0.13
+      }
+     ]
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "legacyFirm": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "title"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "bar",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "active",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "areas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "LAW-"
+   },
+   "search_indexes": [
+    {
+     "name": "lawyers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "bar": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "firm": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "rateHour": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  }
+ ]
+}

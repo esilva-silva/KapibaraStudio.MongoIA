@@ -1,0 +1,2882 @@
+{
+ "schema_id": "v3_bastion_trv",
+ "domain": "travel",
+ "holdout": false,
+ "description": "travel v3 realista EN, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "travelers: campos raros (<10% dos docs): deleted_at",
+  "travelers: campos legados/duplicados em formato antigo: passport_v2, birth_old",
+  "reviews: campos raros (<10% dos docs): notes, deleted_at",
+  "reviews: campos legados/duplicados em formato antigo: score_old, legacy_stayed",
+  "reviews: aninhamento profundo origin.config.flags.device.stack.* (5 niveis de objeto)",
+  "cars: campos raros (<10% dos docs): import_batch, beta_flag",
+  "cars: aninhamento profundo ctx.rule.tenant.flags.* (4 niveis de objeto)",
+  "cars: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "hotel_inventory: campos raros (<10% dos docs): external_ref",
+  "tours: campos raros (<10% dos docs): beta_flag",
+  "tours: campos legados/duplicados em formato antigo: old_guide, legacy_duration_h",
+  "flights: campos raros (<10% dos docs): beta_flag",
+  "flights: campos legados/duplicados em formato antigo: legacy_arrives, old_origin",
+  "bookings: campos raros (<10% dos docs): external_ref, review_state",
+  "bookings: campos legados/duplicados em formato antigo: total_v2",
+  "payments: campos raros (<10% dos docs): deleted_at",
+  "payments: campos legados/duplicados em formato antigo: amount_v2",
+  "loyalty_events: campos raros (<10% dos docs): review_state, override",
+  "loyalty_events: campos legados/duplicados em formato antigo: points_v2",
+  "loyalty_events: aninhamento profundo meta.device.flags.tenant.config.profile.* (6 niveis de objeto)",
+  "loyalty_events: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "hotels: campos raros (<10% dos docs): migrated_from",
+  "hotels: campos legados/duplicados em formato antigo: legacy_stars",
+  "hotels: aninhamento profundo ext.zone.route.network.* (4 niveis de objeto)",
+  "destinations: campos raros (<10% dos docs): deleted_at",
+  "destinations: campos legados/duplicados em formato antigo: country_old",
+  "itineraries: campos raros (<10% dos docs): migrated_from",
+  "fare_quotes: campos raros (<10% dos docs): import_batch, deleted_at",
+  "fare_quotes: campos legados/duplicados em formato antigo: legacy_carrier, old_dest",
+  "fare_quotes: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "_id mistos: int64=1, objectid=9, string=1, uuid=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=4, coll_suffix=1, name_abbr=7, name_hung=6, name_style=4, name_suffix=3, name_underscore=1",
+  "campos heterogeneos (alt) no schema: 4; mapas dinamicos: 4; max_depth=7",
+  "dominio travel: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "travelers",
+   "name": "travelers_v2",
+   "doc_count": 750,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "str_passport": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PP"
+    },
+    "nationality": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "birth": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "1950-01-01",
+     "hi": "2008-01-01"
+    },
+    "loyalty": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "tier": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "blue",
+        "silver",
+        "gold"
+       ],
+       "w": [
+        48.1,
+        100.0,
+        52.6
+       ]
+      },
+      "points": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900000
+      }
+     }
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "passport_v2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PP"
+    },
+    "str_birth_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "1950-01-01",
+     "hi": "2008-01-01",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "nationality",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "loyalty.tier",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "str_passport": {
+       "bsonType": "string"
+      },
+      "nationality": {
+       "bsonType": "string"
+      },
+      "birth": {
+       "bsonType": "date"
+      },
+      "loyalty": {
+       "bsonType": "object",
+       "properties": {
+        "tier": {
+         "bsonType": "string",
+         "enum": [
+          "blue",
+          "silver",
+          "gold"
+         ]
+        },
+        "points": {
+         "bsonType": "long"
+        }
+       },
+       "required": [
+        "tier",
+        "points"
+       ]
+      },
+      "uuid": {
+       "bsonType": "binData"
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "passport_v2": {
+       "bsonType": "string"
+      },
+      "str_birth_old": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "name",
+      "email",
+      "str_passport",
+      "nationality",
+      "birth",
+      "uuid"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "reviews",
+   "name": "t_reviews",
+   "doc_count": 2000,
+   "fields": {
+    "traveler_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "travelers",
+     "v": 4
+    },
+    "hotel_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "hotels"
+    },
+    "score": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 10
+    },
+    "text": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.1,
+     "g": "sentence"
+    },
+    "stayed": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "photos": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "url"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "score_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 10,
+     "dec": 0
+    },
+    "legacy_stayed": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "config": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "flags": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "device": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "stack": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100,
+               "sk": 2.32
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.63
+              },
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "hotel_id",
+       1
+      ],
+      [
+       "score",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "traveler_id",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "traveler_id": {
+       "bsonType": "binData"
+      },
+      "hotel_id": {
+       "bsonType": "objectId"
+      },
+      "score": {
+       "bsonType": "int"
+      },
+      "text": {
+       "bsonType": [
+        "string",
+        "null"
+       ]
+      },
+      "stayed": {
+       "bsonType": "date"
+      },
+      "photos": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "score_old": {
+       "bsonType": "string"
+      },
+      "legacy_stayed": {
+       "bsonType": "string"
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "config": {
+         "bsonType": "object",
+         "properties": {
+          "flags": {
+           "bsonType": "object",
+           "properties": {
+            "device": {
+             "bsonType": "object",
+             "properties": {
+              "stack": {
+               "bsonType": "object",
+               "properties": {
+                "score": {
+                 "bsonType": "double"
+                },
+                "enabled": {
+                 "bsonType": "bool"
+                },
+                "Count": {
+                 "bsonType": "int"
+                }
+               },
+               "required": [
+                "score",
+                "enabled",
+                "Count"
+               ]
+              }
+             },
+             "required": [
+              "stack"
+             ]
+            }
+           },
+           "required": [
+            "device"
+           ]
+          },
+          "name": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "name"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "traveler_id",
+      "hotel_id",
+      "score",
+      "stayed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "cars",
+   "name": "cars",
+   "doc_count": 850,
+   "fields": {
+    "plate": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PL"
+    },
+    "str_cat": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "eco",
+      "suv",
+      "luxury",
+      "van"
+     ],
+     "w": [
+      21.0,
+      41.0,
+      100.0,
+      48.3
+     ]
+    },
+    "daily_rate": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 40.0,
+     "hi": 600.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 40.0,
+       "hi": 600.0,
+       "aw": 0.19
+      }
+     ]
+    },
+    "city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "available": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.79
+    },
+    "mileage": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 200000
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.68
+    },
+    "ctx": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Tenant": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Flags": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          },
+          "Score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          }
+         }
+        },
+        "Version": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "v"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "plate",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "city",
+       1
+      ],
+      [
+       "available",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "str_cat",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "import_batch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "cars_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "plate": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "city": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "import_batch": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "str_cat": {
+         "type": "token"
+        },
+        "daily_rate": {
+         "type": "number"
+        },
+        "mileage": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "hotel_inventory",
+   "name": "hotel_inventory",
+   "doc_count": 1550,
+   "fields": {
+    "hotel_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "hotels"
+    },
+    "date": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "rates": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50.0,
+       "hi": 2500.0
+      }
+     }
+    },
+    "rooms_left": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 40
+      }
+     }
+    },
+    "restrictions": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "MinStay": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 7
+      },
+      "Closed": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.07
+      }
+     }
+    },
+    "str_external_ref": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "hotel_id",
+       1
+      ],
+      [
+       "date",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "date",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "hotel_id": {
+       "bsonType": "objectId"
+      },
+      "date": {
+       "bsonType": "date"
+      },
+      "rates": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "decimal"
+       }
+      },
+      "rooms_left": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "restrictions": {
+       "bsonType": "object",
+       "properties": {
+        "MinStay": {
+         "bsonType": "int"
+        },
+        "Closed": {
+         "bsonType": "bool"
+        }
+       },
+       "required": [
+        "MinStay",
+        "Closed"
+       ]
+      },
+      "str_external_ref": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "hotel_id",
+      "date",
+      "rates",
+      "rooms_left"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "search_indexes": [
+    {
+     "name": "hotel_inventory_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "str_external_ref": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "date": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "tours",
+   "name": "tours",
+   "doc_count": 300,
+   "fields": {
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "destination_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "destinations"
+    },
+    "prc": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20.0,
+     "hi": 900.0
+    },
+    "duration_h": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 12.0
+    },
+    "guide": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "name"
+    },
+    "slots": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "date": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "left": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 30,
+        "sk": 1.72
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.39
+    },
+    "old_guide": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "name"
+    },
+    "legacy_duration_h": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.5,
+     "hi": 12.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "destination_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "slots.date",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "beta_flag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "title": {
+       "bsonType": "string"
+      },
+      "destination_id": {
+       "bsonType": "objectId"
+      },
+      "prc": {
+       "bsonType": "decimal"
+      },
+      "duration_h": {
+       "bsonType": "double"
+      },
+      "guide": {
+       "bsonType": "string"
+      },
+      "slots": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "date": {
+          "bsonType": "date"
+         },
+         "left": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "date",
+         "left"
+        ]
+       }
+      },
+      "beta_flag": {
+       "bsonType": "bool"
+      },
+      "old_guide": {
+       "bsonType": "string"
+      },
+      "legacy_duration_h": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "title",
+      "destination_id",
+      "prc",
+      "duration_h",
+      "slots"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "flights",
+   "name": "flights",
+   "doc_count": 600,
+   "fields": {
+    "num": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "FL"
+    },
+    "origin": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AP"
+    },
+    "dest": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AP"
+    },
+    "departs": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "arrives": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "aircraft": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "A320",
+      "B737",
+      "E195",
+      "A350"
+     ],
+     "w": [
+      35.7,
+      35.2,
+      100.0,
+      49.1
+     ]
+    },
+    "seats": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "economy": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 250
+      },
+      "business": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 40
+      }
+     }
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "scheduled",
+      "delayed",
+      "cancelled",
+      "landed"
+     ],
+     "w": [
+      18.9,
+      38.4,
+      57.3,
+      100.0
+     ]
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.34
+    },
+    "legacy_arrives": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "old_origin": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AP"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "num",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "origin",
+       1
+      ],
+      [
+       "dest",
+       1
+      ],
+      [
+       "departs",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "beta_flag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "bookings",
+   "name": "t_bookings",
+   "doc_count": 1050,
+   "fields": {
+    "traveler_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "travelers",
+     "v": 4
+    },
+    "kind_v2": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hotel",
+      "flight",
+      "package",
+      "car"
+     ],
+     "w": [
+      32.6,
+      100.0,
+      29.6,
+      62.9
+     ]
+    },
+    "ref_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50.0,
+     "hi": 30000.0
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "held",
+      "confirmed",
+      "cancelled",
+      "completed"
+     ],
+     "w": [
+      30.8,
+      57.8,
+      100.0,
+      39.6
+     ]
+    },
+    "booked_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "passengers": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "doc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "DC"
+       },
+       "seat": {
+        "t": "string",
+        "p": 0.95,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "S"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      47.5,
+      33.7,
+      100.0
+     ]
+    },
+    "tot_v2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 50.0,
+     "hi": 30000.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "traveler_id",
+       1
+      ],
+      [
+       "booked_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "status",
+       1
+      ],
+      [
+       "kind_v2",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "traveler_id",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "review_state",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "payments",
+   "name": "t_payments",
+   "doc_count": 450,
+   "fields": {
+    "booking_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "bookings"
+    },
+    "method": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "card",
+      "pix",
+      "voucher",
+      "points"
+     ],
+     "w": [
+      33.7,
+      20.9,
+      58.8,
+      100.0
+     ]
+    },
+    "amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 30000.0
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "authorized",
+      "captured",
+      "refunded",
+      "failed"
+     ],
+     "w": [
+      45.2,
+      50.7,
+      100.0,
+      21.4
+     ]
+    },
+    "gateway": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "tx": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      },
+      "response": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "amt_v2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10.0,
+     "hi": 30000.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "booking_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "st",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "gateway.response.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "booking_id": {
+       "bsonType": "objectId"
+      },
+      "method": {
+       "bsonType": "string",
+       "enum": [
+        "card",
+        "pix",
+        "voucher",
+        "points"
+       ]
+      },
+      "amount": {
+       "bsonType": "decimal"
+      },
+      "st": {
+       "bsonType": "string",
+       "enum": [
+        "authorized",
+        "captured",
+        "refunded",
+        "failed"
+       ]
+      },
+      "gateway": {
+       "bsonType": "object",
+       "properties": {
+        "name": {
+         "bsonType": "string"
+        },
+        "tx": {
+         "bsonType": "string"
+        },
+        "response": {
+         "bsonType": "object",
+         "additionalProperties": {
+          "bsonType": "string"
+         }
+        }
+       },
+       "required": [
+        "name",
+        "tx",
+        "response"
+       ]
+      },
+      "at": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "amt_v2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "booking_id",
+      "method",
+      "amount",
+      "st",
+      "gateway",
+      "at"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "loyalty_events",
+   "name": "loyalty_events",
+   "doc_count": 2100,
+   "fields": {
+    "traveler_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "travelers",
+     "v": 4
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "earn",
+      "burn",
+      "expire",
+      "bonus"
+     ],
+     "w": [
+      55.8,
+      100.0,
+      25.9,
+      17.0
+     ]
+    },
+    "points": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000,
+     "sk": 2.51,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 1,
+       "hi": 90000,
+       "aw": 0.08
+      }
+     ]
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      41.8,
+      100.0,
+      55.1
+     ]
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "points_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 90000,
+     "dec": 0
+    },
+    "_meta": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "device": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "flags": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "tenant": {
+           "t": "object",
+           "p": 0.3,
+           "n": 0.0,
+           "f": {
+            "config": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "profile": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "level": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "enum",
+                 "values": [
+                  "low",
+                  "mid",
+                  "high"
+                 ],
+                 "w": [
+                  32.1,
+                  47.9,
+                  100.0
+                 ]
+                }
+               }
+              },
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                50.9,
+                25.1,
+                100.0
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "traveler_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "review_state",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "loyalty_events_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "kind": {
+         "type": "token"
+        },
+        "review_state": {
+         "type": "token"
+        },
+        "points": {
+         "type": "number"
+        },
+        "at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "hotels",
+   "name": "hotels",
+   "doc_count": 650,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "stars": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "amenities": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "pool",
+       "wifi",
+       "gym",
+       "spa",
+       "parking"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "rooms": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "type": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "single",
+         "double",
+         "suite"
+        ],
+        "w": [
+         55.0,
+         100.0,
+         32.7
+        ]
+       },
+       "price": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 50.0,
+        "hi": 2500.0
+       },
+       "available_2": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 40
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "rating": {
+     "t": "double",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 10.0
+    },
+    "Chain": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "g": "word"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      52.6,
+      40.1,
+      100.0,
+      27.1
+     ]
+    },
+    "legacy_stars": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 5,
+     "dec": 0
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "route": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.43
+            }
+           }
+          }
+         }
+        },
+        "seen_at": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "city",
+       1
+      ],
+      [
+       "stars",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "amenities",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "migrated_from",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "city": {
+       "bsonType": "string"
+      },
+      "stars": {
+       "bsonType": "int"
+      },
+      "amenities": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "pool",
+         "wifi",
+         "gym",
+         "spa",
+         "parking"
+        ]
+       }
+      },
+      "rooms": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "type": {
+          "bsonType": "string",
+          "enum": [
+           "single",
+           "double",
+           "suite"
+          ]
+         },
+         "price": {
+          "bsonType": "decimal"
+         },
+         "available_2": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "type",
+         "price",
+         "available_2"
+        ]
+       }
+      },
+      "rating": {
+       "bsonType": "double"
+      },
+      "Chain": {
+       "bsonType": "string"
+      },
+      "migrated_from": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "legacy_stars": {
+       "bsonType": "string"
+      },
+      "ext": {
+       "bsonType": "object",
+       "properties": {
+        "zone": {
+         "bsonType": "object",
+         "properties": {
+          "route": {
+           "bsonType": "object",
+           "properties": {
+            "network": {
+             "bsonType": "object",
+             "properties": {
+              "enabled": {
+               "bsonType": "bool"
+              }
+             },
+             "required": [
+              "enabled"
+             ]
+            }
+           },
+           "required": [
+            "network"
+           ]
+          },
+          "seen_at": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "route",
+          "seen_at"
+         ]
+        }
+       },
+       "required": [
+        "zone"
+       ]
+      }
+     },
+     "required": [
+      "name",
+      "city",
+      "stars",
+      "amenities",
+      "rooms"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "destinations",
+   "name": "destinations",
+   "doc_count": 200,
+   "fields": {
+    "s_city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "country": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "climate": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "tropical",
+      "dry",
+      "temperate",
+      "cold"
+     ],
+     "w": [
+      42.9,
+      100.0,
+      40.2,
+      54.1
+     ]
+    },
+    "best_months_legacy": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "int32",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": 1,
+      "hi": 12
+     },
+     "min": 0,
+     "max": 4
+    },
+    "popularity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100,
+     "sk": 2.34
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -60.0,
+       "hi": 60.0,
+       "sk": 1.81
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -180.0,
+       "hi": 180.0
+      }
+     }
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "country_old": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "country"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "s_city",
+       1
+      ],
+      [
+       "country",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "popularity",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "s_city": {
+       "bsonType": "string"
+      },
+      "country": {
+       "bsonType": "string"
+      },
+      "climate": {
+       "bsonType": "string",
+       "enum": [
+        "tropical",
+        "dry",
+        "temperate",
+        "cold"
+       ]
+      },
+      "best_months_legacy": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "int"
+       }
+      },
+      "popularity": {
+       "bsonType": "int"
+      },
+      "geo": {
+       "bsonType": "object",
+       "properties": {
+        "lat": {
+         "bsonType": "double"
+        },
+        "lng": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "lat",
+        "lng"
+       ]
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "country_old": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "s_city",
+      "country",
+      "climate",
+      "best_months_legacy",
+      "popularity",
+      "geo"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "itineraries",
+   "name": "col_itineraries",
+   "doc_count": 300,
+   "fields": {
+    "traveler_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "travelers",
+     "v": 4
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "days": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "day": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 21
+       },
+       "city": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "city"
+       },
+       "activities": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "shared": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.38
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      37.0,
+      100.0,
+      45.0,
+      28.3
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "traveler_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "days.city",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "migrated_from",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "fare_quotes",
+   "name": "fare_quotes",
+   "doc_count": 750,
+   "fields": {
+    "origin": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AP"
+    },
+    "s_dest": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AP"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "fares": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "cur",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50.0,
+       "hi": 9000.0
+      }
+     }
+    },
+    "carrier": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CA"
+    },
+    "cabin": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "Y",
+      "W",
+      "J",
+      "F"
+     ],
+     "w": [
+      55.3,
+      40.6,
+      100.0,
+      38.9
+     ]
+    },
+    "rules": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "refundable": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.45
+      },
+      "changeFee": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 500.0,
+       "alt": [
+        {
+         "t": "double",
+         "lo": 0.0,
+         "hi": 500.0,
+         "aw": 0.11
+        }
+       ]
+      },
+      "baggage": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "carry_on": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 2
+        },
+        "checked": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 3
+        }
+       }
+      }
+     }
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "legacy_carrier": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CA"
+    },
+    "old_dest": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AP"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "origin",
+       1
+      ],
+      [
+       "s_dest",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "carrier",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "fares.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "FAR-"
+   },
+   "search_indexes": [
+    {
+     "name": "fare_quotes_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "origin": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "s_dest": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "carrier": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "cabin": {
+         "type": "token"
+        },
+        "at": {
+         "type": "date"
+        },
+        "deleted_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  }
+ ]
+}

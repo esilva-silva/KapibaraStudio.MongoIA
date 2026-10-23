@@ -1,0 +1,2410 @@
+{
+ "schema_id": "v3_granite_cnt",
+ "domain": "content",
+ "holdout": false,
+ "description": "content v3 realista EN, camel",
+ "name_style": "camel",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "media: campos raros (<10% dos docs): import_batch, deleted_at",
+  "media: campos legados/duplicados em formato antigo: legacy_bytes, legacy_width",
+  "media: aninhamento profundo extra.options.policy.zone.config.* (5 niveis de objeto)",
+  "media: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "revisions: campos raros (<10% dos docs): deleted_at",
+  "revisions: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "newsletters: campos raros (<10% dos docs): notes",
+  "newsletters: aninhamento profundo audit.zone.limits.system.runtime.network.* (6 niveis de objeto)",
+  "newsletters: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "pages: campos raros (<10% dos docs): external_ref",
+  "pages: heterogeneidade de tipo no mesmo campo: bool_string=1",
+  "comments: campos raros (<10% dos docs): override",
+  "comments: aninhamento profundo origin.client.system.runtime.* (4 niveis de objeto)",
+  "comments: heterogeneidade de tipo no mesmo campo: date_string=2, ref_string=1",
+  "ab_tests: campos raros (<10% dos docs): migrated_from, external_ref",
+  "ab_tests: campos legados/duplicados em formato antigo: winner_old",
+  "ab_tests: aninhamento profundo info.client.config.flags.* (4 niveis de objeto)",
+  "translations: campos raros (<10% dos docs): override",
+  "translations: campos legados/duplicados em formato antigo: legacy_translator",
+  "translations: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "subscribers: campos raros (<10% dos docs): notes",
+  "subscribers: campos legados/duplicados em formato antigo: last_open_v2, since_v2",
+  "authors: campos raros (<10% dos docs): deleted_at",
+  "authors: campos legados/duplicados em formato antigo: legacy_verified, bio_v2",
+  "authors: aninhamento profundo trace.flags.runtime.config.system.* (5 niveis de objeto)",
+  "articles: campos raros (<10% dos docs): deleted_at, review_state",
+  "_id mistos: objectid=8, string=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante camel; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, name_abbr=1, name_hung=1, name_style=7, name_suffix=3, name_underscore=1, name_upper=1",
+  "campos heterogeneos (alt) no schema: 10; mapas dinamicos: 2; max_depth=7",
+  "dominio content: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "media",
+   "name": "media",
+   "doc_count": 300,
+   "fields": {
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "image",
+      "video",
+      "audio",
+      "pdf"
+     ],
+     "w": [
+      26.3,
+      60.0,
+      38.2,
+      100.0
+     ]
+    },
+    "url": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "url"
+    },
+    "bytes": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1000,
+     "hi": 90000000
+    },
+    "width": {
+     "t": "int32",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 4000
+    },
+    "height": {
+     "t": "int32",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": 100,
+     "hi": 4000
+    },
+    "uploadedBy": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "authors"
+    },
+    "checksum": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.09
+      }
+     ]
+    },
+    "legacyBytes": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1000,
+     "hi": 90000000,
+     "dec": 0
+    },
+    "legacyWidth": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 100,
+     "hi": 4000,
+     "dec": 0
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "options": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "policy": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "Zone": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "config": {
+             "t": "object",
+             "p": 0.3,
+             "n": 0.0,
+             "f": {
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100,
+               "sk": 1.47
+              },
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "checksum",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "uploadedBy",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "MED-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "image",
+        "video",
+        "audio",
+        "pdf"
+       ]
+      },
+      "url": {
+       "bsonType": "string"
+      },
+      "bytes": {
+       "bsonType": "long"
+      },
+      "width": {
+       "bsonType": "int"
+      },
+      "height": {
+       "bsonType": "int"
+      },
+      "uploadedBy": {
+       "bsonType": "objectId"
+      },
+      "checksum": {
+       "bsonType": "string"
+      },
+      "uuid": {
+       "bsonType": "binData"
+      },
+      "importBatch": {
+       "bsonType": "string"
+      },
+      "deletedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "legacyBytes": {
+       "bsonType": "string"
+      },
+      "legacyWidth": {
+       "bsonType": "string"
+      },
+      "extra": {
+       "bsonType": "object",
+       "properties": {
+        "options": {
+         "bsonType": "object",
+         "properties": {
+          "policy": {
+           "bsonType": "object",
+           "properties": {
+            "Zone": {
+             "bsonType": "object",
+             "properties": {
+              "config": {
+               "bsonType": "object",
+               "properties": {
+                "score": {
+                 "bsonType": "double"
+                },
+                "seenAt": {
+                 "bsonType": "date"
+                }
+               },
+               "required": [
+                "score",
+                "seenAt"
+               ]
+              }
+             }
+            }
+           }
+          },
+          "score": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "score"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "kind",
+      "url",
+      "bytes",
+      "uploadedBy",
+      "checksum",
+      "uuid"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "validationLevel": "moderate",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "revisions",
+   "name": "revisions",
+   "doc_count": 1100,
+   "fields": {
+    "articleId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "articles"
+    },
+    "editor": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "authors"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "diff": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "added": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      },
+      "removed": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900,
+       "sk": 1.69
+      }
+     }
+    },
+    "note": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.18
+      }
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "articleId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "articleId": {
+       "bsonType": "objectId"
+      },
+      "editor": {
+       "bsonType": "objectId"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "diff": {
+       "bsonType": "object",
+       "properties": {
+        "added": {
+         "bsonType": "int"
+        },
+        "removed": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "added",
+        "removed"
+       ]
+      },
+      "note": {
+       "bsonType": "string"
+      },
+      "deletedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      }
+     },
+     "required": [
+      "articleId",
+      "editor",
+      "at",
+      "diff"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "newsletters",
+   "name": "newsletters",
+   "doc_count": 1150,
+   "fields": {
+    "subject": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "sentAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "nAudience": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 90000,
+     "sk": 2.55
+    },
+    "openRate": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 1.0
+    },
+    "clickRate": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 0.4
+    },
+    "articles": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "articles"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "auditX": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "limits": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "system": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "runtime": {
+             "t": "object",
+             "p": 0.9,
+             "n": 0.0,
+             "f": {
+              "network": {
+               "t": "object",
+               "p": 0.7,
+               "n": 0.0,
+               "f": {
+                "seen_at": {
+                 "t": "date",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30"
+                }
+               }
+              },
+              "count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900,
+               "sk": 1.51
+              }
+             }
+            }
+           }
+          },
+          "seen_at": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30",
+           "alt": [
+            {
+             "t": "string",
+             "g": "isodate",
+             "lo": "2025-01-01",
+             "hi": "2026-09-30",
+             "fmt": "date",
+             "aw": 0.07
+            }
+           ]
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.65
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sentAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "articles",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "pages",
+   "name": "pages",
+   "doc_count": 950,
+   "fields": {
+    "path": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "layout": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "home",
+      "landing",
+      "doc"
+     ],
+     "w": [
+      100.0,
+      31.0,
+      56.2
+     ]
+    },
+    "blocks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Type": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "hero",
+         "text",
+         "gallery",
+         "cta"
+        ],
+        "w": [
+         17.0,
+         24.4,
+         53.3,
+         100.0
+        ]
+       },
+       "data": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Text": {
+          "t": "string",
+          "p": 0.4,
+          "n": 0.0,
+          "g": "sentence"
+         },
+         "Src": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "url"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "published": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "UpdatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "path",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "published",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "path": {
+       "bsonType": "string"
+      },
+      "title": {
+       "bsonType": "string"
+      },
+      "layout": {
+       "bsonType": "string",
+       "enum": [
+        "home",
+        "landing",
+        "doc"
+       ]
+      },
+      "blocks": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Type": {
+          "bsonType": "string",
+          "enum": [
+           "hero",
+           "text",
+           "gallery",
+           "cta"
+          ]
+         },
+         "data": {
+          "bsonType": "object",
+          "properties": {
+           "Text": {
+            "bsonType": "string"
+           },
+           "Src": {
+            "bsonType": "string"
+           }
+          }
+         }
+        },
+        "required": [
+         "Type",
+         "data"
+        ]
+       }
+      },
+      "published": {
+       "bsonType": [
+        "bool",
+        "string"
+       ]
+      },
+      "UpdatedAt": {
+       "bsonType": "date"
+      },
+      "externalRef": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "path",
+      "title",
+      "layout",
+      "blocks",
+      "published",
+      "UpdatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "comments",
+   "name": "comments",
+   "doc_count": 550,
+   "fields": {
+    "articleId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "articles",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "articles",
+       "as": "string",
+       "aw": 0.19
+      }
+     ]
+    },
+    "user": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "body": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "likes": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 300,
+     "sk": 1.42
+    },
+    "flagged": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.2
+    },
+    "replies": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "user": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "body": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "at": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30",
+        "alt": [
+         {
+          "t": "string",
+          "g": "isodate",
+          "lo": "2025-01-01",
+          "hi": "2026-09-30",
+          "fmt": "date",
+          "aw": 0.15
+         }
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "atOld": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "date",
+         "aw": 0.14
+        }
+       ]
+      }
+     }
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "system": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "runtime": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "seen_at": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.7
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "sk": 2.42
+            }
+           }
+          },
+          "level": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "low",
+            "mid",
+            "high"
+           ],
+           "w": [
+            41.5,
+            100.0,
+            61.8
+           ]
+          }
+         }
+        },
+        "level": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "low",
+          "mid",
+          "high"
+         ],
+         "w": [
+          28.8,
+          42.1,
+          100.0
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "articleId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "articleId",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "flagged": true
+     }
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "COM-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "articleId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "user": {
+       "bsonType": "string"
+      },
+      "body": {
+       "bsonType": "string"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "likes": {
+       "bsonType": "int"
+      },
+      "flagged": {
+       "bsonType": "bool"
+      },
+      "replies": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "user": {
+          "bsonType": "string"
+         },
+         "body": {
+          "bsonType": "string"
+         },
+         "at": {
+          "bsonType": [
+           "date",
+           "string"
+          ]
+         }
+        },
+        "required": [
+         "user",
+         "body",
+         "at"
+        ]
+       }
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "atOld": {
+         "bsonType": [
+          "date",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "atOld"
+       ]
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "system": {
+           "bsonType": "object",
+           "properties": {
+            "runtime": {
+             "bsonType": "object",
+             "properties": {
+              "seen_at": {
+               "bsonType": "date"
+              },
+              "enabled": {
+               "bsonType": "bool"
+              },
+              "count": {
+               "bsonType": "int"
+              }
+             },
+             "required": [
+              "seen_at",
+              "enabled",
+              "count"
+             ]
+            },
+            "level": {
+             "bsonType": "string",
+             "enum": [
+              "low",
+              "mid",
+              "high"
+             ]
+            }
+           },
+           "required": [
+            "level"
+           ]
+          },
+          "level": {
+           "bsonType": "string",
+           "enum": [
+            "low",
+            "mid",
+            "high"
+           ]
+          }
+         },
+         "required": [
+          "level"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "articleId",
+      "user",
+      "body",
+      "at",
+      "likes",
+      "flagged"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "ab_tests",
+   "name": "abTests",
+   "doc_count": 600,
+   "fields": {
+    "articleId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "articles",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "articles",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "variantsX": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "key": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "V"
+       },
+       "title": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "weight": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 1.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "metrics": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "metric",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      }
+     }
+    },
+    "winner": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.1,
+     "g": "code",
+     "prefix": "V"
+    },
+    "started": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      35.9,
+      52.8,
+      27.0
+     ]
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "winnerOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.1,
+     "g": "code",
+     "prefix": "V"
+    },
+    "info": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "config": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "flags": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              41.6,
+              29.2,
+              100.0
+             ]
+            },
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "articleId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "started",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "metrics.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "articleId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "variantsX": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "key": {
+          "bsonType": "string"
+         },
+         "title": {
+          "bsonType": "string"
+         },
+         "weight": {
+          "bsonType": "double"
+         }
+        },
+        "required": [
+         "key",
+         "title",
+         "weight"
+        ]
+       }
+      },
+      "metrics": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "double"
+       }
+      },
+      "winner": {
+       "bsonType": [
+        "string",
+        "null"
+       ]
+      },
+      "started": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "winnerOld": {
+       "bsonType": [
+        "string",
+        "null"
+       ]
+      },
+      "info": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "config": {
+           "bsonType": "object",
+           "properties": {
+            "flags": {
+             "bsonType": "object",
+             "properties": {
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              },
+              "seenAt": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "level",
+              "seenAt"
+             ]
+            }
+           }
+          },
+          "name": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "config",
+          "name"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "articleId",
+      "variantsX",
+      "metrics",
+      "started"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "translations",
+   "name": "translations",
+   "doc_count": 850,
+   "fields": {
+    "articleId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "articles"
+    },
+    "lang": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pt",
+      "en",
+      "es",
+      "fr",
+      "de"
+     ],
+     "w": [
+      38.4,
+      100.0,
+      46.6,
+      25.7,
+      20.1
+     ]
+    },
+    "fields": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "draft",
+      "review",
+      "live"
+     ],
+     "w": [
+      100.0,
+      51.1,
+      27.7
+     ]
+    },
+    "translator": {
+     "t": "string",
+     "p": 0.95,
+     "n": 0.0,
+     "g": "name"
+    },
+    "memory": {
+     "t": "array",
+     "p": 0.08,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "TM"
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "REASON": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "iso",
+         "aw": 0.18
+        }
+       ]
+      }
+     }
+    },
+    "legacyTranslator": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "name"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "articleId",
+       1
+      ],
+      [
+       "lang",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "status",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "subscribers",
+   "name": "subscribers",
+   "doc_count": 1400,
+   "fields": {
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "plan": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "free",
+      "plus",
+      "pro"
+     ],
+     "w": [
+      100.0,
+      52.6,
+      27.7
+     ]
+    },
+    "since": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "topics": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "confirmed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.74
+    },
+    "_lastOpen": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "lastOpenV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "sinceV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "plan",
+       1
+      ],
+      [
+       "confirmed",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "topics",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "subscribers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "email": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "notes": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "plan": {
+         "type": "token"
+        },
+        "since": {
+         "type": "date"
+        },
+        "_lastOpen": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "authors",
+   "name": "tbl_authors",
+   "doc_count": 1150,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "bio": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "social": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "twitter": {
+       "t": "string",
+       "p": 0.7,
+       "n": 0.0,
+       "g": "slug"
+      },
+      "site": {
+       "t": "string",
+       "p": 0.3,
+       "n": 0.0,
+       "g": "url"
+      }
+     }
+    },
+    "joinedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "verified": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.59
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "legacyVerified": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.43
+    },
+    "bioV2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "flags": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "runtime": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "config": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "system": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.68
+              },
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.77
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "verified",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "joinedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "articles",
+   "name": "articles",
+   "doc_count": 800,
+   "fields": {
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "slug": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "author_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "authors"
+    },
+    "body": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "draft",
+      "review",
+      "published",
+      "archived"
+     ],
+     "w": [
+      32.5,
+      33.9,
+      40.6,
+      100.0
+     ]
+    },
+    "publishedAt": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "tags": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "views": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000,
+     "sk": 2.3
+    },
+    "seo": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "title": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "title"
+      },
+      "keywords": {
+       "t": "array",
+       "p": 0.8,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "og": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "image": {
+         "t": "string",
+         "p": 0.6,
+         "n": 0.0,
+         "g": "url"
+        },
+        "type": {
+         "t": "string",
+         "p": 0.9,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "lang": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pt",
+      "en",
+      "es"
+     ],
+     "w": [
+      44.9,
+      48.7,
+      100.0
+     ]
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      45.9,
+      28.6
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "slug",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "author_id",
+       1
+      ],
+      [
+       "publishedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "st",
+       1
+      ],
+      [
+       "lang",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "title",
+       "text"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "articles_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "title": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "slug": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "body": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "st": {
+         "type": "token"
+        },
+        "lang": {
+         "type": "token"
+        },
+        "publishedAt": {
+         "type": "date"
+        },
+        "views": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

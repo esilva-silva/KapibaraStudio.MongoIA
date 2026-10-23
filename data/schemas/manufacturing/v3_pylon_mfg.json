@@ -1,0 +1,4175 @@
+{
+ "schema_id": "v3_pylon_mfg",
+ "domain": "manufacturing",
+ "holdout": false,
+ "description": "manufacturing v3 realista EN, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "maintenance_orders: campos raros (<10% dos docs): beta_flag",
+  "maintenance_orders: campos legados/duplicados em formato antigo: cost_old, closed_v2",
+  "maintenance_orders: heterogeneidade de tipo no mesmo campo: date_string=1, ref_string=1",
+  "production_lines: campos raros (<10% dos docs): migrated_from, external_ref",
+  "production_lines: campos legados/duplicados em formato antigo: takt_s_v2",
+  "plants: campos raros (<10% dos docs): deleted_at",
+  "plants: campos legados/duplicados em formato antigo: lines_count_old, old_country",
+  "plants: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "shipments: campos raros (<10% dos docs): review_state, beta_flag",
+  "shipments: aninhamento profundo audit.route.tenant.stack.runtime.* (5 niveis de objeto)",
+  "shipments: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "tools: campos raros (<10% dos docs): notes, migrated_from",
+  "tools: campos legados/duplicados em formato antigo: legacy_location",
+  "work_orders: campos raros (<10% dos docs): external_ref",
+  "work_orders: campos legados/duplicados em formato antigo: old_qty_done, legacy_priority",
+  "work_orders: aninhamento profundo origin.network.profile.stack.* (4 niveis de objeto)",
+  "work_orders: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "parts: campos raros (<10% dos docs): notes, import_batch",
+  "parts: aninhamento profundo ext.flags.profile.route.limits.* (5 niveis de objeto)",
+  "machine_readings: campos raros (<10% dos docs): beta_flag",
+  "machine_readings: colecao time-series (timeField=at, metaField=src)",
+  "batches: campos raros (<10% dos docs): beta_flag, notes",
+  "batches: campos legados/duplicados em formato antigo: legacy_expires, legacy_qty",
+  "batches: heterogeneidade de tipo no mesmo campo: bool_string=1, date_string=1",
+  "suppliers: campos raros (<10% dos docs): notes",
+  "suppliers: campos legados/duplicados em formato antigo: old_country, legacy_lead_days",
+  "suppliers: aninhamento profundo audit.config.device.profile.runtime.* (5 niveis de objeto)",
+  "suppliers: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "boms: campos raros (<10% dos docs): override, beta_flag",
+  "boms: campos legados/duplicados em formato antigo: legacy_effective",
+  "boms: aninhamento profundo ctx.network.config.stack.system.* (5 niveis de objeto)",
+  "boms: heterogeneidade de tipo no mesmo campo: date_string=1, num_mixed=1, ref_string=1",
+  "downtime: campos raros (<10% dos docs): deleted_at, review_state",
+  "downtime: colecao time-series (timeField=at, metaField=line)",
+  "inspections: campos raros (<10% dos docs): override, migrated_from",
+  "inspections: aninhamento profundo ctx.region.source.limits.zone.* (5 niveis de objeto)",
+  "inspections: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "machines: campos raros (<10% dos docs): beta_flag, override",
+  "machines: campos legados/duplicados em formato antigo: model_v2",
+  "_id mistos: objectid=11, string=1, uuid=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_suffix=2, name_abbr=7, name_hung=7, name_style=7, name_suffix=9, name_underscore=4",
+  "campos heterogeneos (alt) no schema: 16; mapas dinamicos: 6; max_depth=6",
+  "dominio manufacturing: BOM aninhado, ordens de producao, leituras de maquina e paradas (time-series)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "maintenance_orders",
+   "name": "maintenance_orders",
+   "doc_count": 1350,
+   "fields": {
+    "machine_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "preventive",
+      "corrective",
+      "predictive"
+     ],
+     "w": [
+      100.0,
+      53.4,
+      24.6
+     ]
+    },
+    "d_opened": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.06
+      }
+     ]
+    },
+    "tasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "step": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 20
+       },
+       "text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.74
+       },
+       "parts": {
+        "t": "array",
+        "p": 0.4,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "part": {
+           "t": "objectid",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts",
+           "alt": [
+            {
+             "t": "objectid",
+             "ref": "parts",
+             "as": "string",
+             "aw": 0.15
+            }
+           ]
+          },
+          "qty": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 1,
+           "hi": 9
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 40000.0,
+     "sk": 2.19
+    },
+    "technician": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "downtime_min": {
+     "t": "double",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 900.0
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.53
+    },
+    "str_cost_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10.0,
+     "hi": 40000.0,
+     "dec": 2
+    },
+    "closed_v2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "machine_id",
+       1
+      ],
+      [
+       "d_opened",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ],
+      [
+       "closed",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "machine_id",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "machine_id": {
+       "bsonType": "objectId"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "preventive",
+        "corrective",
+        "predictive"
+       ]
+      },
+      "d_opened": {
+       "bsonType": "date"
+      },
+      "closed": {
+       "bsonType": [
+        "date",
+        "string",
+        "null"
+       ]
+      },
+      "tasks": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "step": {
+          "bsonType": "int"
+         },
+         "text": {
+          "bsonType": "string"
+         },
+         "done": {
+          "bsonType": "bool"
+         },
+         "parts": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "object",
+           "properties": {
+            "part": {
+             "bsonType": [
+              "objectId",
+              "string"
+             ]
+            },
+            "qty": {
+             "bsonType": "int"
+            }
+           },
+           "required": [
+            "part",
+            "qty"
+           ]
+          }
+         }
+        },
+        "required": [
+         "step",
+         "text",
+         "done"
+        ]
+       }
+      },
+      "cost": {
+       "bsonType": "decimal"
+      },
+      "technician": {
+       "bsonType": "string"
+      },
+      "downtime_min": {
+       "bsonType": "double"
+      },
+      "beta_flag": {
+       "bsonType": "bool"
+      },
+      "str_cost_old": {
+       "bsonType": "string"
+      },
+      "closed_v2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "machine_id",
+      "kind",
+      "d_opened",
+      "tasks",
+      "cost",
+      "technician"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "production_lines",
+   "name": "production_lines",
+   "doc_count": 1400,
+   "fields": {
+    "plant_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "plants",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "plants",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LN"
+    },
+    "product_family": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "engines",
+      "gearboxes",
+      "pcb",
+      "plastics",
+      "cables"
+     ],
+     "w": [
+      52.6,
+      20.3,
+      26.9,
+      28.9,
+      100.0
+     ]
+    },
+    "takt_s": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5.0,
+     "hi": 600.0
+    },
+    "stations": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "seq": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 40
+       },
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "machine_id": {
+        "t": "objectid",
+        "p": 0.6,
+        "n": 0.0,
+        "ref": "machines"
+       },
+       "cycle_s_new": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1.0,
+        "hi": 300.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "capacity_per_h": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 9000
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "running",
+      "idle",
+      "maint",
+      "changeover"
+     ],
+     "w": [
+      27.1,
+      65.0,
+      100.0,
+      22.9
+     ]
+    },
+    "migrated_from_old": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      26.1,
+      100.0,
+      65.5,
+      49.7
+     ]
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "takt_s_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 5.0,
+     "hi": 600.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "plant_id",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "stations.machine_id",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PRO-"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "plants",
+   "name": "plants",
+   "doc_count": 550,
+   "fields": {
+    "code_v2": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PL"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "location": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "Point"
+       ],
+       "w": null
+      },
+      "coordinates": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -180,
+        "hi": 180
+       },
+       "min": 2,
+       "max": 2
+      }
+     },
+     "geo": {
+      "lat": [
+       -33.0,
+       5.0
+      ],
+      "lng": [
+       -73.0,
+       -35.0
+      ]
+     }
+    },
+    "str_country": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "lines_count": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 40
+    },
+    "certifications": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "ISO9001",
+       "ISO14001",
+       "IATF16949",
+       "ISO45001"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "shifts": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "start": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "end": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "crew": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 5,
+         "hi": 200
+        }
+       }
+      }
+     }
+    },
+    "commissioned": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "energy": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "grid_kw": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 500,
+       "hi": 90000
+      },
+      "solar": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "kwp": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000
+        }
+       }
+      }
+     }
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.14
+      }
+     ]
+    },
+    "lines_count_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 40,
+     "dec": 0
+    },
+    "old_country": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "country"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code_v2",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "str_country",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "location",
+       "2dsphere"
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "search_indexes": [
+    {
+     "name": "plants_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "code_v2": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "str_country": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "lines_count": {
+         "type": "number"
+        },
+        "commissioned": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 1,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "shipments",
+   "name": "shipments_bkp",
+   "doc_count": 1350,
+   "fields": {
+    "wo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "work_orders",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "work_orders",
+       "as": "string",
+       "aw": 0.06
+      }
+     ]
+    },
+    "customer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "shipped_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "pallets": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "sscc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SS"
+       },
+       "items": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "part": {
+           "t": "objectid",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts"
+          },
+          "qty": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 1,
+           "hi": 900,
+           "sk": 1.47
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "carrier_new": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "docs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "url"
+      }
+     }
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "packed",
+      "shipped",
+      "delivered"
+     ],
+     "w": [
+      32.5,
+      100.0,
+      56.9
+     ]
+    },
+    "_review_state": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      61.8,
+      100.0,
+      35.0
+     ]
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.43
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "route": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "tenant": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "stack": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "runtime": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              },
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                35.8,
+                100.0,
+                44.1
+               ]
+              }
+             }
+            }
+           }
+          },
+          "version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "wo_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "customer",
+       1
+      ],
+      [
+       "shipped_at",
+       -1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "docs.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "tools",
+   "name": "tools",
+   "doc_count": 600,
+   "fields": {
+    "tool_no": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TL"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "drill",
+      "mill",
+      "insert",
+      "gauge",
+      "fixture"
+     ],
+     "w": [
+      100.0,
+      40.9,
+      19.3,
+      38.1,
+      36.4
+     ]
+    },
+    "life": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "max_cycles": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100,
+       "hi": 90000
+      },
+      "used": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 90000
+      }
+     }
+    },
+    "calibration": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "last": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "due_2": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "history": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "at": {
+          "t": "date",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": "2025-01-01",
+          "hi": "2026-09-30"
+         },
+         "by": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "name"
+         },
+         "result": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "ok",
+           "adjusted",
+           "failed"
+          ],
+          "w": [
+           100.0,
+           24.9,
+           43.5
+          ]
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "location": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      44.6,
+      43.9,
+      32.2,
+      100.0
+     ]
+    },
+    "s_legacy_loc": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "word"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tool_no",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "calibration.due_2",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "work_orders",
+   "name": "work_orders",
+   "doc_count": 1550,
+   "fields": {
+    "wo_no": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "WO"
+    },
+    "product_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts"
+    },
+    "line_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "production_lines",
+     "g": "word"
+    },
+    "qty_planned": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 9000,
+     "sk": 1.87
+    },
+    "qty_done": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000,
+     "sk": 2.22
+    },
+    "str_st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "planned",
+      "released",
+      "running",
+      "done",
+      "cancelled"
+     ],
+     "w": [
+      16.1,
+      24.9,
+      100.0,
+      40.5,
+      64.3
+     ]
+    },
+    "planned": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "start": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "end": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "actual": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "start": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "end": {
+       "t": "date",
+       "p": 0.5,
+       "n": 0.1,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "routing": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "op": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 10,
+        "hi": 90,
+        "sk": 1.81
+       },
+       "station": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "std_min": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 120.0,
+        "sk": 2.5
+       },
+       "tools": {
+        "t": "array",
+        "p": 0.4,
+        "n": 0.0,
+        "item": {
+         "t": "objectid",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "tools"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "lot": {
+     "t": "objectid",
+     "p": 0.95,
+     "n": 0.0,
+     "ref": "batches"
+    },
+    "priority": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "customer_ref": {
+     "t": "int32",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": 100000,
+     "hi": 999999,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 100000,
+       "hi": 999999,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ]
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "old_qty_done": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 9000,
+     "dec": 0
+    },
+    "_legacy_priority": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 5,
+     "dec": 0
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "network": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "profile": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "stack": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100,
+             "sk": 1.67
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "wo_no",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "line_id",
+       1
+      ],
+      [
+       "str_st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "planned.start",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "priority",
+       1
+      ],
+      [
+       "str_st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "external_ref",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "parts",
+   "name": "parts",
+   "doc_count": 600,
+   "fields": {
+    "part_no": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PN"
+    },
+    "_descr": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "raw",
+      "component",
+      "assembly",
+      "finished"
+     ],
+     "w": [
+      100.0,
+      35.5,
+      42.8,
+      41.1
+     ]
+    },
+    "uom": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "un",
+      "kg",
+      "m",
+      "l"
+     ],
+     "w": [
+      100.0,
+      62.9,
+      43.2,
+      19.3
+     ]
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.1,
+     "hi": 9000.0,
+     "sk": 2.06
+    },
+    "ref_supp_id": {
+     "t": "objectid",
+     "p": 0.95,
+     "n": 0.0,
+     "ref": "suppliers"
+    },
+    "_params": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "hazmat": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "class": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "un_no": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "UN"
+      }
+     }
+    },
+    "lead_days": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 120
+    },
+    "drawings": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "rev": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "R"
+       },
+       "url": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "url"
+       },
+       "format": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "pdf",
+         "dwg",
+         "step"
+        ],
+        "w": [
+         43.7,
+         100.0,
+         36.8
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "flags": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "profile": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "route": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "limits": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                43.5,
+                100.0,
+                42.7
+               ]
+              },
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              },
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100
+              }
+             }
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.44
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "part_no",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "kind",
+       1
+      ],
+      [
+       "cost",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ref_supp_id",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "_descr",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "_params.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "part_no": {
+       "bsonType": "string"
+      },
+      "_descr": {
+       "bsonType": "string"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "raw",
+        "component",
+        "assembly",
+        "finished"
+       ]
+      },
+      "uom": {
+       "bsonType": "string",
+       "enum": [
+        "un",
+        "kg",
+        "m",
+        "l"
+       ]
+      },
+      "cost": {
+       "bsonType": "decimal"
+      },
+      "ref_supp_id": {
+       "bsonType": "objectId"
+      },
+      "_params": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "string"
+       }
+      },
+      "hazmat": {
+       "bsonType": "object",
+       "properties": {
+        "class": {
+         "bsonType": "string"
+        },
+        "un_no": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "class",
+        "un_no"
+       ]
+      },
+      "lead_days": {
+       "bsonType": "int"
+      },
+      "drawings": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "rev": {
+          "bsonType": "string"
+         },
+         "url": {
+          "bsonType": "string"
+         },
+         "format": {
+          "bsonType": "string",
+          "enum": [
+           "pdf",
+           "dwg",
+           "step"
+          ]
+         }
+        },
+        "required": [
+         "rev",
+         "url",
+         "format"
+        ]
+       }
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "import_batch": {
+       "bsonType": "string"
+      },
+      "ext": {
+       "bsonType": "object",
+       "properties": {
+        "flags": {
+         "bsonType": "object",
+         "properties": {
+          "profile": {
+           "bsonType": "object",
+           "properties": {
+            "route": {
+             "bsonType": "object",
+             "properties": {
+              "limits": {
+               "bsonType": "object",
+               "properties": {
+                "level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                },
+                "name": {
+                 "bsonType": "string"
+                },
+                "score": {
+                 "bsonType": "double"
+                }
+               },
+               "required": [
+                "level",
+                "name",
+                "score"
+               ]
+              },
+              "version": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "limits",
+              "version"
+             ]
+            }
+           },
+           "required": [
+            "route"
+           ]
+          },
+          "enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "enabled"
+         ]
+        }
+       },
+       "required": [
+        "flags"
+       ]
+      }
+     },
+     "required": [
+      "part_no",
+      "_descr",
+      "kind",
+      "uom",
+      "cost",
+      "_params",
+      "lead_days"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "machine_readings",
+   "name": "machine_readings",
+   "doc_count": 2400,
+   "fields": {
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "machine_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines"
+    },
+    "src": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "machine": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "MC"
+      },
+      "channel": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "vib",
+        "temp",
+        "current",
+        "pressure"
+       ],
+       "w": [
+        59.6,
+        25.7,
+        37.7,
+        100.0
+       ]
+      }
+     }
+    },
+    "value": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -50.0,
+     "hi": 900.0
+    },
+    "unit": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "C",
+      "A",
+      "bar",
+      "mm_s",
+      "rpm"
+     ],
+     "w": [
+      100.0,
+      19.2,
+      23.7,
+      49.4,
+      47.3
+     ]
+    },
+    "quality": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "alarms": {
+     "t": "array",
+     "p": 0.08,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "code",
+      "prefix": "AL"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.57
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "machine_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "src.channel",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "at",
+     "metaField": "src",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "batches",
+   "name": "batches",
+   "doc_count": 750,
+   "fields": {
+    "lot_no": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LT"
+    },
+    "part_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts"
+    },
+    "qty": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000
+    },
+    "dt_produced": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "expires": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "qc": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "st": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "released",
+        "hold",
+        "rejected"
+       ],
+       "w": [
+        57.7,
+        37.9,
+        100.0
+       ]
+      },
+      "tests": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "value": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.0,
+           "hi": 100.0
+          },
+          "spec": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      },
+      "released_by": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "name"
+      }
+     }
+    },
+    "genealogy": {
+     "t": "array",
+     "p": 0.05,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "LT"
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.65,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "legacy_expires": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "legacy_qty": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 90000,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "lot_no",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "part_id",
+       1
+      ],
+      [
+       "dt_produced",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "qc.st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "beta_flag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "qc.tests.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "suppliers",
+   "name": "suppliers",
+   "doc_count": 350,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "tax_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "Rating": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5.0
+    },
+    "country": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "certs": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "scorecard": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "delivery2": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      },
+      "quality": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      },
+      "cost": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      }
+     }
+    },
+    "lead_days": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90,
+     "sk": 1.64,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 1,
+       "hi": 90,
+       "dec": 0,
+       "aw": 0.11
+      }
+     ]
+    },
+    "contacts": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "email": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "email"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "old_country": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "country"
+    },
+    "legacy_lead_days": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 90,
+     "dec": 0
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "config": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "device": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "profile": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "runtime": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100,
+               "sk": 1.85
+              }
+             }
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "level": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "low",
+          "mid",
+          "high"
+         ],
+         "w": [
+          64.2,
+          100.0,
+          39.4
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "tax_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "country",
+       1
+      ],
+      [
+       "Rating",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "tax_id": {
+       "bsonType": "string"
+      },
+      "Rating": {
+       "bsonType": "double"
+      },
+      "country": {
+       "bsonType": "string"
+      },
+      "certs": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "scorecard": {
+       "bsonType": "object",
+       "properties": {
+        "delivery2": {
+         "bsonType": "double"
+        },
+        "quality": {
+         "bsonType": "double"
+        },
+        "cost": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "delivery2",
+        "quality",
+        "cost"
+       ]
+      },
+      "lead_days": {
+       "bsonType": [
+        "int",
+        "string"
+       ]
+      },
+      "contacts": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "name": {
+          "bsonType": "string"
+         },
+         "email": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "name",
+         "email"
+        ]
+       }
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "old_country": {
+       "bsonType": "string"
+      },
+      "legacy_lead_days": {
+       "bsonType": "string"
+      },
+      "audit": {
+       "bsonType": "object",
+       "properties": {
+        "config": {
+         "bsonType": "object",
+         "properties": {
+          "device": {
+           "bsonType": "object",
+           "properties": {
+            "profile": {
+             "bsonType": "object",
+             "properties": {
+              "runtime": {
+               "bsonType": "object",
+               "properties": {
+                "score": {
+                 "bsonType": "double"
+                }
+               },
+               "required": [
+                "score"
+               ]
+              },
+              "name": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "name"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "profile",
+            "name"
+           ]
+          },
+          "level": {
+           "bsonType": "string",
+           "enum": [
+            "low",
+            "mid",
+            "high"
+           ]
+          }
+         },
+         "required": [
+          "level"
+         ]
+        }
+       },
+       "required": [
+        "config"
+       ]
+      }
+     },
+     "required": [
+      "name",
+      "tax_id",
+      "Rating",
+      "country",
+      "certs",
+      "scorecard",
+      "lead_days"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "boms",
+   "name": "boms",
+   "doc_count": 300,
+   "fields": {
+    "parent": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts"
+    },
+    "revision": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "components_old": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "part": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "parts"
+       },
+       "qty": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.1,
+        "hi": 40.0,
+        "alt": [
+         {
+          "t": "int32",
+          "lo": 0,
+          "hi": 41,
+          "aw": 0.19
+         }
+        ]
+       },
+       "uom": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "un",
+         "kg",
+         "m",
+         "l"
+        ],
+        "w": [
+         58.4,
+         47.2,
+         20.2,
+         100.0
+        ]
+       },
+       "alt": {
+        "t": "array",
+        "p": 0.3,
+        "n": 0.0,
+        "item": {
+         "t": "objectid",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "parts"
+        },
+        "min": 0,
+        "max": 4
+       },
+       "children": {
+        "t": "array",
+        "p": 0.95,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "part": {
+           "t": "objectid",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts",
+           "alt": [
+            {
+             "t": "objectid",
+             "ref": "parts",
+             "as": "string",
+             "aw": 0.19
+            }
+           ]
+          },
+          "qty": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.1,
+           "hi": 10.0
+          },
+          "scrap_pct": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.0,
+           "hi": 0.1
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "effective": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.09
+      }
+     ]
+    },
+    "obsolete": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "approved": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.48
+    },
+    "legacy_effective": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "ctx": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "network": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Config": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "Stack": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "System": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "EnabledX": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.49
+              },
+              "Score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100
+              },
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "Version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          },
+          "Score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "parent",
+       1
+      ],
+      [
+       "revision",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "components_old.part",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "obsolete",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "beta_flag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "boms_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "revision": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "effective": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "downtime",
+   "name": "downtime",
+   "doc_count": 2300,
+   "fields": {
+    "machine_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "duration_min": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 600.0,
+     "sk": 2.55
+    },
+    "reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "breakdown",
+      "changeover",
+      "material",
+      "quality",
+      "planned",
+      "no_operator"
+     ],
+     "w": [
+      58.6,
+      10.0,
+      24.9,
+      100.0,
+      22.3,
+      33.3
+     ]
+    },
+    "line": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "code": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "LN"
+      },
+      "plant": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "PL"
+      }
+     }
+    },
+    "details": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "error_code": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "ER"
+      },
+      "stop_codes": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SC"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      27.7,
+      52.0
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "machine_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reason",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "at",
+     "metaField": "line",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "inspections",
+   "name": "inspections",
+   "doc_count": 1400,
+   "fields": {
+    "wo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "work_orders"
+    },
+    "part_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "parts",
+       "as": "string",
+       "aw": 0.09
+      }
+     ]
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "inspector": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "incoming",
+      "inprocess",
+      "final",
+      "audit"
+     ],
+     "w": [
+      27.8,
+      48.6,
+      32.0,
+      100.0
+     ]
+    },
+    "measurements": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "dim": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Nominal": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 500.0,
+        "sk": 2.14
+       },
+       "actual": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 500.0
+       },
+       "tol": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.001,
+        "hi": 2.0
+       },
+       "pass": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.75
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "result": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pass",
+      "fail",
+      "rework"
+     ],
+     "w": [
+      100.0,
+      27.1,
+      50.1
+     ]
+    },
+    "sample": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "size": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 200
+      },
+      "aql": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.065,
+       "hi": 4.0
+      }
+     }
+    },
+    "override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by_old": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      47.7,
+      100.0,
+      19.6,
+      28.6
+     ]
+    },
+    "ctx": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "region": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "source": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "limits": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "zone": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.45
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "wo_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "result",
+       1
+      ],
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "measurements.pass",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "migrated_from",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "inspector",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "wo_id": {
+       "bsonType": "objectId"
+      },
+      "part_id": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "at": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "inspector": {
+       "bsonType": "string"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "incoming",
+        "inprocess",
+        "final",
+        "audit"
+       ]
+      },
+      "measurements": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "dim": {
+          "bsonType": "string"
+         },
+         "Nominal": {
+          "bsonType": "double"
+         },
+         "actual": {
+          "bsonType": "double"
+         },
+         "tol": {
+          "bsonType": "double"
+         },
+         "pass": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "dim",
+         "Nominal",
+         "actual",
+         "tol",
+         "pass"
+        ]
+       }
+      },
+      "result": {
+       "bsonType": "string",
+       "enum": [
+        "pass",
+        "fail",
+        "rework"
+       ]
+      },
+      "sample": {
+       "bsonType": "object",
+       "properties": {
+        "size": {
+         "bsonType": "int"
+        },
+        "aql": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "size",
+        "aql"
+       ]
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by_old": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by_old",
+        "reason",
+        "at"
+       ]
+      },
+      "migrated_from": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "ctx": {
+       "bsonType": "object",
+       "properties": {
+        "region": {
+         "bsonType": "object",
+         "properties": {
+          "source": {
+           "bsonType": "object",
+           "properties": {
+            "limits": {
+             "bsonType": "object",
+             "properties": {
+              "zone": {
+               "bsonType": "object",
+               "properties": {
+                "count": {
+                 "bsonType": "int"
+                },
+                "version": {
+                 "bsonType": "string"
+                },
+                "enabled": {
+                 "bsonType": "bool"
+                }
+               },
+               "required": [
+                "count",
+                "version",
+                "enabled"
+               ]
+              }
+             },
+             "required": [
+              "zone"
+             ]
+            }
+           },
+           "required": [
+            "limits"
+           ]
+          }
+         }
+        }
+       },
+       "required": [
+        "region"
+       ]
+      }
+     },
+     "required": [
+      "wo_id",
+      "part_id",
+      "at",
+      "inspector",
+      "kind",
+      "measurements",
+      "result",
+      "sample"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "machines",
+   "name": "machines_old",
+   "doc_count": 400,
+   "fields": {
+    "asset_tag": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MC"
+    },
+    "line_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "production_lines",
+     "g": "word"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cnc",
+      "press",
+      "robot",
+      "oven",
+      "injector",
+      "agv"
+     ],
+     "w": [
+      43.8,
+      26.4,
+      38.3,
+      12.6,
+      100.0,
+      10.2
+     ]
+    },
+    "vendor": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MD"
+    },
+    "commissioned": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "spec": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "power_kw": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 900.0,
+       "sk": 1.49
+      },
+      "axes": {
+       "t": "int32",
+       "p": 0.05,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 9
+      },
+      "tolerances": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.001,
+         "hi": 1.0
+        }
+       }
+      },
+      "controller": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "vendor": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "fw": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "FW"
+        },
+        "params": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {},
+         "map": {
+          "keys": "word",
+          "min": 2,
+          "max": 6,
+          "value": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "running",
+      "idle",
+      "down",
+      "maint"
+     ],
+     "w": [
+      100.0,
+      54.2,
+      32.8,
+      32.1
+     ]
+    },
+    "oee": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "availability": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.3,
+       "hi": 1.0
+      },
+      "performance": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.3,
+       "hi": 1.0
+      },
+      "quality": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.5,
+       "hi": 1.0
+      }
+     }
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.45
+    },
+    "override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "model_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MD"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "asset_tag",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "line_id",
+       1
+      ],
+      [
+       "kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "st",
+       1
+      ],
+      [
+       "oee.availability",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "spec.tolerances.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

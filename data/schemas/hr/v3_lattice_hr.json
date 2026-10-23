@@ -1,0 +1,2504 @@
+{
+ "schema_id": "v3_lattice_hr",
+ "domain": "hr",
+ "holdout": false,
+ "description": "hr v3 realista EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "org_changes: campos raros (<10% dos docs): review_state, beta_flag",
+  "org_changes: aninhamento profundo trace.route.region.rule.client.* (5 niveis de objeto)",
+  "org_changes: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "surveys: campos raros (<10% dos docs): migrated_from",
+  "surveys: campos legados/duplicados em formato antigo: old_title, anonymous_v2",
+  "leave_requests: campos raros (<10% dos docs): beta_flag",
+  "leave_requests: campos legados/duplicados em formato antigo: from_v2, to_old",
+  "interviews: campos raros (<10% dos docs): migrated_from",
+  "interviews: campos legados/duplicados em formato antigo: legacy_at",
+  "interviews: aninhamento profundo audit.rule.source.system.region.* (5 niveis de objeto)",
+  "interviews: heterogeneidade de tipo no mesmo campo: date_string=1, ref_string=1",
+  "benefits: campos raros (<10% dos docs): notes",
+  "benefits: campos legados/duplicados em formato antigo: monthly_cost_old",
+  "timesheets: campos raros (<10% dos docs): override",
+  "timesheets: campos legados/duplicados em formato antigo: date_v2",
+  "timesheets: aninhamento profundo origin.profile.zone.flags.* (4 niveis de objeto)",
+  "payroll: campos raros (<10% dos docs): notes",
+  "payroll: campos legados/duplicados em formato antigo: legacy_paid_at, legacy_month",
+  "payroll: aninhamento profundo ctx.region.route.stack.device.* (5 niveis de objeto)",
+  "payroll: heterogeneidade de tipo no mesmo campo: date_string=1, num_mixed=1",
+  "candidates: campos raros (<10% dos docs): notes",
+  "candidates: campos legados/duplicados em formato antigo: legacy_score, name_v2",
+  "employees: campos raros (<10% dos docs): migrated_from",
+  "employees: campos legados/duplicados em formato antigo: legacy_salary",
+  "employees: aninhamento profundo info.client.region.device.profile.* (5 niveis de objeto)",
+  "employees: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "departments: campos raros (<10% dos docs): beta_flag",
+  "departments: campos legados/duplicados em formato antigo: legacy_budget, name_v2",
+  "departments: aninhamento profundo origin.stack.system.device.region.* (5 niveis de objeto)",
+  "_id mistos: objectid=7, string=1, uuid=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_space=1, coll_suffix=2, name_abbr=8, name_hung=2, name_style=7, name_suffix=3, name_underscore=3",
+  "campos heterogeneos (alt) no schema: 7; mapas dinamicos: 2; max_depth=6",
+  "dominio hr: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "org_changes",
+   "name": "OrgChanges_new",
+   "doc_count": 1550,
+   "fields": {
+    "EmpId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "Effective": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Changes": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "From": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "To": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "ApprovedBy": {
+     "t": "objectid",
+     "p": 0.9,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "_Reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "promotion",
+      "transfer",
+      "restructure",
+      "backfill"
+     ],
+     "w": [
+      62.2,
+      37.6,
+      100.0,
+      25.2
+     ]
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      28.1,
+      58.9
+     ]
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.66
+    },
+    "Trace": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "Route": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "Region": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "Rule": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Client": {
+             "t": "object",
+             "p": 0.3,
+             "n": 0.0,
+             "f": {
+              "Enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.61
+              },
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30",
+               "alt": [
+                {
+                 "t": "string",
+                 "g": "isodate",
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30",
+                 "fmt": "iso",
+                 "aw": 0.19
+                }
+               ]
+              },
+              "Level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                100.0,
+                58.2,
+                49.0
+               ]
+              }
+             }
+            },
+            "SeenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "EmpId",
+       1
+      ],
+      [
+       "Effective",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "_Reason",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "EmpId": {
+       "bsonType": "objectId"
+      },
+      "Effective": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Changes": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "object",
+        "properties": {
+         "From": {
+          "bsonType": "string"
+         },
+         "To": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "From",
+         "To"
+        ]
+       }
+      },
+      "ApprovedBy": {
+       "bsonType": "objectId"
+      },
+      "_Reason": {
+       "bsonType": "string",
+       "enum": [
+        "promotion",
+        "transfer",
+        "restructure",
+        "backfill"
+       ]
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "betaFlag": {
+       "bsonType": "bool"
+      },
+      "Trace": {
+       "bsonType": "object",
+       "properties": {
+        "Route": {
+         "bsonType": "object",
+         "properties": {
+          "Region": {
+           "bsonType": "object",
+           "properties": {
+            "Rule": {
+             "bsonType": "object",
+             "properties": {
+              "Client": {
+               "bsonType": "object",
+               "properties": {
+                "Enabled": {
+                 "bsonType": "bool"
+                },
+                "SeenAt": {
+                 "bsonType": [
+                  "date",
+                  "string"
+                 ]
+                },
+                "Level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                }
+               },
+               "required": [
+                "Enabled",
+                "SeenAt",
+                "Level"
+               ]
+              },
+              "SeenAt": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "SeenAt"
+             ]
+            }
+           },
+           "required": [
+            "Rule"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "EmpId",
+      "Effective",
+      "Changes",
+      "_Reason"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "surveys",
+   "name": "col_surveys",
+   "doc_count": 700,
+   "fields": {
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Audience": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Departments": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "departments"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Levels": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "junior",
+         "mid",
+         "senior",
+         "lead"
+        ],
+        "w": null
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "Questions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Id": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "Q"
+       },
+       "Text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Scale": {
+        "t": "array",
+        "p": 0.95,
+        "n": 0.0,
+        "item": {
+         "t": "array",
+         "p": 1.0,
+         "n": 0.0,
+         "item": {
+          "t": "int32",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 1,
+          "hi": 5
+         },
+         "min": 2,
+         "max": 4
+        },
+        "min": 1,
+        "max": 3
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Responses": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "day",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 400
+      }
+     }
+    },
+    "Anonymous": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "MigratedFromV2": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      44.8,
+      19.9,
+      43.0,
+      100.0
+     ]
+    },
+    "OldTitle": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "title"
+    },
+    "AnonymousV2": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.95
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Title",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Audience.Departments",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Responses.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Title": {
+       "bsonType": "string"
+      },
+      "Audience": {
+       "bsonType": "object",
+       "properties": {
+        "Departments": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "objectId"
+         }
+        },
+        "Levels": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "string",
+          "enum": [
+           "junior",
+           "mid",
+           "senior",
+           "lead"
+          ]
+         }
+        }
+       },
+       "required": [
+        "Departments",
+        "Levels"
+       ]
+      },
+      "Questions": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Id": {
+          "bsonType": "string"
+         },
+         "Text": {
+          "bsonType": "string"
+         },
+         "Scale": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "array",
+           "items": {
+            "bsonType": "int"
+           }
+          }
+         }
+        },
+        "required": [
+         "Id",
+         "Text"
+        ]
+       }
+      },
+      "Responses": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "Anonymous": {
+       "bsonType": "bool"
+      },
+      "MigratedFromV2": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "OldTitle": {
+       "bsonType": "string"
+      },
+      "AnonymousV2": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "Title",
+      "Audience",
+      "Questions",
+      "Responses",
+      "Anonymous"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "leave_requests",
+   "name": "Leave Requests",
+   "doc_count": 1550,
+   "fields": {
+    "EmpId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "vacation",
+      "sick",
+      "parental",
+      "unpaid"
+     ],
+     "w": [
+      35.7,
+      50.2,
+      100.0,
+      52.1
+     ]
+    },
+    "From": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "To": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "approved",
+      "rejected"
+     ],
+     "w": [
+      100.0,
+      55.6,
+      40.9
+     ]
+    },
+    "ApprovedBy": {
+     "t": "objectid",
+     "p": 0.3,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.62
+    },
+    "FromV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "ToOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "EmpId",
+       1
+      ],
+      [
+       "From",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "EmpId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "BetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "EmpId": {
+       "bsonType": "objectId"
+      },
+      "Kind": {
+       "bsonType": "string",
+       "enum": [
+        "vacation",
+        "sick",
+        "parental",
+        "unpaid"
+       ]
+      },
+      "From": {
+       "bsonType": "date"
+      },
+      "To": {
+       "bsonType": "date"
+      },
+      "Status": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "approved",
+        "rejected"
+       ]
+      },
+      "ApprovedBy": {
+       "bsonType": "objectId"
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "FromV2": {
+       "bsonType": "string"
+      },
+      "ToOld": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "EmpId",
+      "Kind",
+      "From",
+      "To",
+      "Status"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "interviews",
+   "name": "Interviews",
+   "doc_count": 2250,
+   "fields": {
+    "CandidateId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "candidates",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "candidates",
+       "as": "string",
+       "aw": 0.19
+      }
+     ]
+    },
+    "Interviewer": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "phone",
+      "technical",
+      "culture"
+     ],
+     "w": [
+      100.0,
+      41.9,
+      25.8
+     ]
+    },
+    "FeedbackLegacy": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "Score": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 5
+      },
+      "Notes": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "Recommend": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.54
+      }
+     }
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      38.7,
+      26.2,
+      47.1
+     ]
+    },
+    "LegacyAt": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "Audit": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Rule": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "Source": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "System": {
+           "t": "object",
+           "p": 0.7,
+           "n": 0.0,
+           "f": {
+            "Region": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            }
+           }
+          },
+          "SeenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30",
+           "alt": [
+            {
+             "t": "string",
+             "g": "isodate",
+             "lo": "2025-01-01",
+             "hi": "2026-09-30",
+             "fmt": "date",
+             "aw": 0.16
+            }
+           ]
+          }
+         }
+        },
+        "Level": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "low",
+          "mid",
+          "high"
+         ],
+         "w": [
+          41.9,
+          100.0,
+          32.3
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CandidateId",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Interviewer",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "benefits",
+   "name": "Benefits",
+   "doc_count": 750,
+   "fields": {
+    "EmpId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "health",
+      "dental",
+      "meal",
+      "transport",
+      "gym"
+     ],
+     "w": [
+      21.9,
+      29.6,
+      26.5,
+      100.0,
+      51.3
+     ]
+    },
+    "MonthlyCost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20.0,
+     "hi": 900.0,
+     "sk": 2.43
+    },
+    "Since": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "dependents": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "Relation": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "spouse",
+         "child",
+         "parent"
+        ],
+        "w": [
+         100.0,
+         62.7,
+         47.8
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "MonthlyCostOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 20.0,
+     "hi": 900.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "EmpId",
+       1
+      ],
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "timesheets",
+   "name": "Timesheets",
+   "doc_count": 900,
+   "fields": {
+    "EmployeeId2": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "Date": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Project": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "PR"
+       },
+       "Hours": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 9.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Approved": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.91
+    },
+    "_Override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "DateV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "Profile": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "Zone": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "Flags": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            }
+           }
+          }
+         }
+        },
+        "Name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "EmployeeId2",
+       1
+      ],
+      [
+       "Date",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Date",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "Approved": true
+     }
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "payroll",
+   "name": "Payroll",
+   "doc_count": 1000,
+   "fields": {
+    "EmpId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "Month": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "gross": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1500.0,
+     "hi": 60000.0
+    },
+    "Net": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1200.0,
+     "hi": 48000.0
+    },
+    "Deductions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "inss",
+         "irrf",
+         "health",
+         "union"
+        ],
+        "w": [
+         52.4,
+         43.5,
+         31.7,
+         100.0
+        ]
+       },
+       "Amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 10.0,
+        "hi": 5000.0,
+        "sk": 1.85
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "PaidAt": {
+     "t": "date",
+     "p": 0.8,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.14
+      }
+     ]
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "LegacyPaidAt": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "LegacyMonth": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "Ctx": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "Region": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "route": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "stack": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "dev": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.79
+              }
+             }
+            }
+           }
+          },
+          "score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100,
+           "sk": 2.14,
+           "alt": [
+            {
+             "t": "int32",
+             "lo": 0,
+             "hi": 101,
+             "aw": 0.17
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "EmpId",
+       1
+      ],
+      [
+       "Month",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "PaidAt",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PAY-"
+   },
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "candidates",
+   "name": "Candidates_v2",
+   "doc_count": 1050,
+   "fields": {
+    "SName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "Position": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Stage": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "applied",
+      "screen",
+      "interview",
+      "offer",
+      "hired",
+      "rejected"
+     ],
+     "w": [
+      100.0,
+      49.1,
+      25.6,
+      42.2,
+      41.3,
+      24.7
+     ]
+    },
+    "Src": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "referral",
+      "site",
+      "agency",
+      "social"
+     ],
+     "w": [
+      16.9,
+      56.4,
+      100.0,
+      34.0
+     ]
+    },
+    "ResumeUrl": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "url"
+    },
+    "Score": {
+     "t": "double",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": 0.0,
+     "hi": 10.0
+    },
+    "AppliedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "LegacyScore": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.0,
+     "hi": 10.0,
+     "dec": 2
+    },
+    "NameV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "name"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Stage",
+       1
+      ],
+      [
+       "Src",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Position",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "AppliedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "SName": {
+       "bsonType": "string"
+      },
+      "Email": {
+       "bsonType": "string"
+      },
+      "Position": {
+       "bsonType": "string"
+      },
+      "Stage": {
+       "bsonType": "string",
+       "enum": [
+        "applied",
+        "screen",
+        "interview",
+        "offer",
+        "hired",
+        "rejected"
+       ]
+      },
+      "Src": {
+       "bsonType": "string",
+       "enum": [
+        "referral",
+        "site",
+        "agency",
+        "social"
+       ]
+      },
+      "ResumeUrl": {
+       "bsonType": "string"
+      },
+      "Score": {
+       "bsonType": [
+        "double",
+        "null"
+       ]
+      },
+      "AppliedAt": {
+       "bsonType": "date"
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "LegacyScore": {
+       "bsonType": "string"
+      },
+      "NameV2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "SName",
+      "Email",
+      "Position",
+      "Stage",
+      "Src",
+      "AppliedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "employees",
+   "name": "Employees",
+   "doc_count": 1400,
+   "fields": {
+    "FullName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "DepartmentId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "departments",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "departments",
+       "as": "string",
+       "aw": 0.18
+      }
+     ]
+    },
+    "Position": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Salary": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1500.0,
+     "hi": 45000.0
+    },
+    "HiredAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "FkManagerId": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.0,
+     "ref": "employees"
+    },
+    "St": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "leave",
+      "terminated"
+     ],
+     "w": [
+      100.0,
+      48.1,
+      46.3
+     ]
+    },
+    "Addr": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "City": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "country": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      },
+      "Geo": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "lat": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -34.0,
+         "hi": 5.0
+        },
+        "lng": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -74.0,
+         "hi": -35.0
+        }
+       }
+      }
+     }
+    },
+    "Skills": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      48.2,
+      100.0,
+      19.9,
+      30.3
+     ]
+    },
+    "LegacySalary": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1500.0,
+     "hi": 45000.0,
+     "dec": 2
+    },
+    "_Info": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Client": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Region": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Device": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "Profile": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.72
+              },
+              "Name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "DepartmentId",
+       1
+      ],
+      [
+       "St",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "HiredAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Skills",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "FkManagerId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "FullName": {
+       "bsonType": "string"
+      },
+      "Email": {
+       "bsonType": "string"
+      },
+      "DepartmentId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "Position": {
+       "bsonType": "string"
+      },
+      "Salary": {
+       "bsonType": "decimal"
+      },
+      "HiredAt": {
+       "bsonType": "date"
+      },
+      "FkManagerId": {
+       "bsonType": "objectId"
+      },
+      "St": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "leave",
+        "terminated"
+       ]
+      },
+      "Addr": {
+       "bsonType": "object",
+       "properties": {
+        "City": {
+         "bsonType": "string"
+        },
+        "country": {
+         "bsonType": "string"
+        },
+        "Geo": {
+         "bsonType": "object",
+         "properties": {
+          "lat": {
+           "bsonType": "double"
+          },
+          "lng": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "lat",
+          "lng"
+         ]
+        }
+       },
+       "required": [
+        "City",
+        "country"
+       ]
+      },
+      "Skills": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "Uuid": {
+       "bsonType": "binData"
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "LegacySalary": {
+       "bsonType": "string"
+      },
+      "_Info": {
+       "bsonType": "object",
+       "properties": {
+        "Client": {
+         "bsonType": "object",
+         "properties": {
+          "Region": {
+           "bsonType": "object",
+           "properties": {
+            "Device": {
+             "bsonType": "object",
+             "properties": {
+              "Profile": {
+               "bsonType": "object",
+               "properties": {
+                "Enabled": {
+                 "bsonType": "bool"
+                },
+                "Name": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "Enabled",
+                "Name"
+               ]
+              }
+             },
+             "required": [
+              "Profile"
+             ]
+            }
+           }
+          }
+         },
+         "required": [
+          "Region"
+         ]
+        }
+       },
+       "required": [
+        "Client"
+       ]
+      }
+     },
+     "required": [
+      "FullName",
+      "Email",
+      "DepartmentId",
+      "Position",
+      "Salary",
+      "HiredAt",
+      "St",
+      "Uuid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "departments",
+   "name": "Departments",
+   "doc_count": 300,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "DP"
+    },
+    "Budget": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10000.0,
+     "hi": 2000000.0
+    },
+    "parent": {
+     "t": "objectid",
+     "p": 0.5,
+     "n": 0.0,
+     "ref": "departments"
+    },
+    "CostCenter": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CC"
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.64
+    },
+    "LegacyBudget": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10000.0,
+     "hi": 2000000.0,
+     "dec": 2
+    },
+    "NameV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Stack": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "System": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "device": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "region": {
+             "t": "object",
+             "p": 0.9,
+             "n": 0.0,
+             "f": {
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100
+              }
+             }
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "parent",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Name": {
+       "bsonType": "string"
+      },
+      "Code": {
+       "bsonType": "string"
+      },
+      "Budget": {
+       "bsonType": "decimal"
+      },
+      "parent": {
+       "bsonType": "objectId"
+      },
+      "CostCenter": {
+       "bsonType": "string"
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "LegacyBudget": {
+       "bsonType": "string"
+      },
+      "NameV2": {
+       "bsonType": "string"
+      },
+      "Origin": {
+       "bsonType": "object",
+       "properties": {
+        "Stack": {
+         "bsonType": "object",
+         "properties": {
+          "System": {
+           "bsonType": "object",
+           "properties": {
+            "device": {
+             "bsonType": "object",
+             "properties": {
+              "region": {
+               "bsonType": "object",
+               "properties": {
+                "score": {
+                 "bsonType": "double"
+                }
+               },
+               "required": [
+                "score"
+               ]
+              },
+              "version": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "version"
+             ]
+            }
+           },
+           "required": [
+            "device"
+           ]
+          }
+         },
+         "required": [
+          "System"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "Name",
+      "Code",
+      "Budget",
+      "CostCenter"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

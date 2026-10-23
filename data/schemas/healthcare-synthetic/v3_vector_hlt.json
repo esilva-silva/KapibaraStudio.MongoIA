@@ -1,0 +1,1519 @@
+{
+ "schema_id": "v3_vector_hlt",
+ "domain": "healthcare-synthetic",
+ "holdout": false,
+ "description": "healthcare-synthetic v3 realista EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "claims: campos raros (<10% dos docs): external_ref, override",
+  "claims: campos legados/duplicados em formato antigo: old_amount, legacy_submitted_at",
+  "patients: campos raros (<10% dos docs): override",
+  "patients: campos legados/duplicados em formato antigo: birth_old",
+  "lab_results: campos raros (<10% dos docs): notes",
+  "lab_results: campos legados/duplicados em formato antigo: value_v2",
+  "lab_results: aninhamento profundo meta.client.source.rule.flags.route.* (6 niveis de objeto)",
+  "lab_results: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "facilities: campos raros (<10% dos docs): override, beta_flag",
+  "facilities: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "visits: campos raros (<10% dos docs): override, beta_flag",
+  "visits: heterogeneidade de tipo no mesmo campo: bool_string=1, num_mixed=1",
+  "practitioners: campos raros (<10% dos docs): review_state",
+  "practitioners: campos legados/duplicados em formato antigo: legacy_active",
+  "practitioners: aninhamento profundo ctx.config.policy.zone.* (4 niveis de objeto)",
+  "_id mistos: objectid=5, uuid=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_suffix=1, name_abbr=1, name_hung=1, name_style=4",
+  "campos heterogeneos (alt) no schema: 4; mapas dinamicos: 0; max_depth=7",
+  "dominio healthcare-synthetic: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "claims",
+   "name": "Claims",
+   "doc_count": 1400,
+   "fields": {
+    "PatientId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "patients"
+    },
+    "VisitId": {
+     "t": "objectid",
+     "p": 0.95,
+     "n": 0.0,
+     "ref": "visits"
+    },
+    "Amt": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20.0,
+     "hi": 90000.0
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "submitted",
+      "paid",
+      "denied",
+      "appeal"
+     ],
+     "w": [
+      28.4,
+      61.9,
+      100.0,
+      24.7
+     ]
+    },
+    "submitted_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Lines": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "code": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "CPT"
+       },
+       "units": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 5
+       },
+       "amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 5.0,
+        "hi": 9000.0,
+        "sk": 2.06
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "OldAmount": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 20.0,
+     "hi": 90000.0,
+     "dec": 2
+    },
+    "LegacySubmittedAt": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PatientId",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "submitted_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "PatientId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "patients",
+   "name": "Patients",
+   "doc_count": 1450,
+   "fields": {
+    "Mrn": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MRN"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "DtBirth": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "1930-01-01",
+     "hi": "2024-01-01"
+    },
+    "Sex": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "F",
+      "M",
+      "X"
+     ],
+     "w": [
+      100.0,
+      51.0,
+      65.4
+     ]
+    },
+    "Blood": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "A+",
+      "A-",
+      "B+",
+      "O+",
+      "O-",
+      "AB+"
+     ],
+     "w": [
+      15.2,
+      100.0,
+      43.4,
+      19.1,
+      31.7,
+      26.0
+     ]
+    },
+    "Address": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "city": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "state": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "SP",
+        "RJ",
+        "MG",
+        "BA",
+        "RS"
+       ],
+       "w": [
+        100.0,
+        34.4,
+        52.9,
+        34.5,
+        30.0
+       ]
+      },
+      "zip": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "Z"
+      }
+     }
+    },
+    "Insurance": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "plan": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "member_id": {
+       "t": "uuid",
+       "p": 1.0,
+       "n": 0.0,
+       "v": 4
+      }
+     }
+    },
+    "Consent": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.93
+    },
+    "Allergies": {
+     "t": "array",
+     "p": 0.95,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "BirthOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "1930-01-01",
+     "hi": "2024-01-01",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Mrn",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Sex",
+       1
+      ],
+      [
+       "Blood",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Address.city",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Mrn": {
+       "bsonType": "string"
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "DtBirth": {
+       "bsonType": "date"
+      },
+      "Sex": {
+       "bsonType": "string",
+       "enum": [
+        "F",
+        "M",
+        "X"
+       ]
+      },
+      "Blood": {
+       "bsonType": "string",
+       "enum": [
+        "A+",
+        "A-",
+        "B+",
+        "O+",
+        "O-",
+        "AB+"
+       ]
+      },
+      "Address": {
+       "bsonType": "object",
+       "properties": {
+        "city": {
+         "bsonType": "string"
+        },
+        "state": {
+         "bsonType": "string",
+         "enum": [
+          "SP",
+          "RJ",
+          "MG",
+          "BA",
+          "RS"
+         ]
+        },
+        "zip": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "city",
+        "state",
+        "zip"
+       ]
+      },
+      "Insurance": {
+       "bsonType": "object",
+       "properties": {
+        "plan": {
+         "bsonType": "string"
+        },
+        "member_id": {
+         "bsonType": "binData"
+        }
+       },
+       "required": [
+        "plan",
+        "member_id"
+       ]
+      },
+      "Consent": {
+       "bsonType": "bool"
+      },
+      "Allergies": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "Override": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Reason": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "By",
+        "Reason",
+        "At"
+       ]
+      },
+      "BirthOld": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "Mrn",
+      "Name",
+      "DtBirth",
+      "Sex",
+      "Blood",
+      "Consent"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "lab_results",
+   "name": "LabResults_new",
+   "doc_count": 350,
+   "fields": {
+    "PatientId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "patients"
+    },
+    "Test": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cbc",
+      "glucose",
+      "lipid",
+      "tsh",
+      "creatinine"
+     ],
+     "w": [
+      100.0,
+      25.3,
+      36.1,
+      30.7,
+      47.0
+     ]
+    },
+    "Value": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 300.0
+    },
+    "Unit": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "RefRange": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Low": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 100.0
+      },
+      "High": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100.0,
+       "hi": 300.0
+      }
+     }
+    },
+    "Flag": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "normal",
+      "high",
+      "low"
+     ],
+     "w": [
+      55.3,
+      100.0,
+      29.9
+     ]
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.18
+      }
+     ]
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ValueV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.0,
+     "hi": 300.0,
+     "dec": 2
+    },
+    "Meta": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "source": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "rule": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Flags": {
+             "t": "object",
+             "p": 0.4,
+             "n": 0.0,
+             "f": {
+              "Route": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "SeenAt": {
+                 "t": "date",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100,
+           "sk": 2.19
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PatientId",
+       1
+      ],
+      [
+       "Test",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Flag",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "PatientId": {
+       "bsonType": "objectId"
+      },
+      "Test": {
+       "bsonType": "string",
+       "enum": [
+        "cbc",
+        "glucose",
+        "lipid",
+        "tsh",
+        "creatinine"
+       ]
+      },
+      "Value": {
+       "bsonType": "double"
+      },
+      "Unit": {
+       "bsonType": "string"
+      },
+      "RefRange": {
+       "bsonType": "object",
+       "properties": {
+        "Low": {
+         "bsonType": "double"
+        },
+        "High": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "Low",
+        "High"
+       ]
+      },
+      "Flag": {
+       "bsonType": "string",
+       "enum": [
+        "normal",
+        "high",
+        "low"
+       ]
+      },
+      "At": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Notes": {
+       "bsonType": "string"
+      },
+      "ValueV2": {
+       "bsonType": "string"
+      },
+      "Meta": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "source": {
+           "bsonType": "object",
+           "properties": {
+            "rule": {
+             "bsonType": "object",
+             "properties": {
+              "Flags": {
+               "bsonType": "object",
+               "properties": {
+                "Route": {
+                 "bsonType": "object",
+                 "properties": {
+                  "SeenAt": {
+                   "bsonType": "date"
+                  }
+                 },
+                 "required": [
+                  "SeenAt"
+                 ]
+                }
+               },
+               "required": [
+                "Route"
+               ]
+              }
+             }
+            },
+            "score": {
+             "bsonType": "double"
+            }
+           },
+           "required": [
+            "rule",
+            "score"
+           ]
+          }
+         }
+        }
+       },
+       "required": [
+        "client"
+       ]
+      }
+     },
+     "required": [
+      "PatientId",
+      "Test",
+      "Value",
+      "Unit",
+      "RefRange",
+      "Flag",
+      "At"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "facilities",
+   "name": "Facilities",
+   "doc_count": 600,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hospital",
+      "clinic",
+      "lab",
+      "pharmacy"
+     ],
+     "w": [
+      100.0,
+      25.3,
+      50.5,
+      28.0
+     ]
+    },
+    "City": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "Beds": {
+     "t": "int32",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 0,
+       "hi": 900,
+       "dec": 0,
+       "aw": 0.06
+      }
+     ]
+    },
+    "Accredited": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.46
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.56
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ],
+      [
+       "City",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "BetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Name": {
+       "bsonType": "string"
+      },
+      "Kind": {
+       "bsonType": "string",
+       "enum": [
+        "hospital",
+        "clinic",
+        "lab",
+        "pharmacy"
+       ]
+      },
+      "City": {
+       "bsonType": "string"
+      },
+      "Beds": {
+       "bsonType": [
+        "int",
+        "string"
+       ]
+      },
+      "Accredited": {
+       "bsonType": "bool"
+      },
+      "Override": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Reason": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "By",
+        "Reason",
+        "At"
+       ]
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "Name",
+      "Kind",
+      "City",
+      "Accredited"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "visits",
+   "name": "Visits",
+   "doc_count": 1600,
+   "fields": {
+    "PatientId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "patients"
+    },
+    "PractitionerId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "practitioners"
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "outpatient",
+      "emergency",
+      "inpatient",
+      "telehealth"
+     ],
+     "w": [
+      42.4,
+      100.0,
+      40.6,
+      30.0
+     ]
+    },
+    "Reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Vitals": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "bp": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "sys": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 80,
+         "hi": 190,
+         "sk": 2.26
+        },
+        "dia": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 50,
+         "hi": 120
+        }
+       }
+      },
+      "hr": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 40,
+       "hi": 160,
+       "sk": 2.35,
+       "alt": [
+        {
+         "t": "string",
+         "g": "numstr",
+         "lo": 40,
+         "hi": 160,
+         "dec": 0,
+         "aw": 0.08
+        }
+       ]
+      },
+      "temp": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 35.0,
+       "hi": 41.0
+      },
+      "spo2": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 80,
+       "hi": 100
+      }
+     }
+    },
+    "Diagnoses": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Code": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "ICD"
+       },
+       "desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Discharged": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.62,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PatientId",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "PractitionerId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "BetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "practitioners",
+   "name": "Practitioners",
+   "doc_count": 1500,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "License": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CRM"
+    },
+    "Specialty": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cardio",
+      "derm",
+      "ortho",
+      "peds",
+      "neuro",
+      "gp"
+     ],
+     "w": [
+      28.8,
+      57.8,
+      100.0,
+      10.6,
+      22.8,
+      38.3
+     ]
+    },
+    "Active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.88
+    },
+    "FacilityId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "facilities"
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      48.5,
+      59.9
+     ]
+    },
+    "LegacyActive": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "Ctx": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "Config": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Policy": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Zone": {
+           "t": "object",
+           "p": 0.3,
+           "n": 0.0,
+           "f": {
+            "Level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              45.1,
+              63.8,
+              100.0
+             ]
+            },
+            "Count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            }
+           }
+          }
+         }
+        },
+        "SeenAt": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "License",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Specialty",
+       1
+      ],
+      [
+       "Active",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "FacilityId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

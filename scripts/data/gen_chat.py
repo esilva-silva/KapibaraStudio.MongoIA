@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import blind_guard  # noqa: E402
 import chat_describe as cd  # noqa: E402
 import chat_validate as cv  # noqa: E402
+import hom_guard  # noqa: E402
 from gen_snippets import CONFIG_PATH, ROOT, Ctor, Style, load_config, load_schemas, render_snippet  # noqa: E402
 
 SCHEMA_VERSION = "kapi-ds-record-v2"
@@ -1987,7 +1988,7 @@ CHAT_SNIP_KEYS = ("id", "kind", "op", "plan", "schema_id", "collection", "domain
 
 
 def load_chat_pool(snip_path: Path, val_path: Path, max_train: int = 0, max_eval: int = 0, salt: str = "",
-                   survivors: set | None = None) -> tuple[list[dict], dict]:
+                   survivors: set | None = None, include_hom: bool = False) -> tuple[list[dict], dict]:
     """Streaming: so os snippets uteis ao chat (leituras executadas e nao vazias + escritas), com os campos usados.
     `max_train`/`max_eval` > 0: teto por (tipo leitura/escrita x split) por amostra uniforme deterministica (hash) -- com ~3 M de
     snippets so uma fracao e consumida pelo chat (<= ~40 mil registros). Devolve (snippets enxutos, validacao {id: {exec, empty}})."""
@@ -1999,7 +2000,7 @@ def load_chat_pool(snip_path: Path, val_path: Path, max_train: int = 0, max_eval
         val[r["id"]] = shared.setdefault(key, {"exec": key[0], "empty": key[1]})
     res: dict = {}
     keep: list[dict] = []
-    for r in iter_jsonl(snip_path):
+    for r in hom_guard.drop_hom(iter_jsonl(snip_path), include_hom):
         if survivors is not None and r["split"] == "train" and r["id"] not in survivors:
             continue            # pre-filtro de decontaminacao (mesmo indice do gen_fim): o chat so parte de documentos que sobrevivem
         if r["kind"] == "read":
@@ -2028,6 +2029,8 @@ def main(argv=None):
     ap.add_argument("--ver")
     ap.add_argument("--snippets")
     ap.add_argument("--validation")
+    ap.add_argument("--include-hom", action="store_true",
+                    help="SO para scripts de homologacao (outro diretorio, split `homolog`); nunca em jobs de treino")
     ap.add_argument("--survivors", help="fim.survivors.txt do gen_fim (ids de snippets de treino que sobrevivem a decontaminacao)")
     ap.add_argument("--out")
     ap.add_argument("--report", action="store_true")
@@ -2049,8 +2052,8 @@ def main(argv=None):
     snips, val = load_chat_pool(Path(a.snippets) if a.snippets else gdir / "snippets.jsonl",
                                 Path(a.validation) if a.validation else gdir / "validation.jsonl",
                                 int(cfg["chat"].get("pool_max_train", 0) or 0), int(cfg["chat"].get("pool_max_eval", 0) or 0),
-                                str(cfg.get("seed")), surv)
-    schemas = load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"))
+                                str(cfg.get("seed")), surv, a.include_hom)
+    schemas = load_schemas(ROOT / cfg.get("schemas_dir", "data/schemas"), include_hom=a.include_hom)
     count = a.count or cfg["chat"]["count"]
     t0 = time.perf_counter()
     ex = cv.Executor(cfg)

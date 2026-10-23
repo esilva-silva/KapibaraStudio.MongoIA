@@ -120,7 +120,7 @@ split_policy:
   enabled: true
   eval_fractions: {val: 0.50, test: 0.25, bench: 0.25}
 
-schema_split:                # papel por schema (campo `split_role` no JSON do schema e em data/fixtures/manifest.json)
+schema_split:                # papel por schema train|eval|hom (campo `split_role` no JSON do schema e em data/fixtures/manifest.json)
   seed: 20261008
   eval_fraction: 0.25        # dominios nao-holdout: ~25% dos schemas "eval", o resto "train"
   min_schemas_for_eval: 6    # dominio com >= 6 schemas tem >= 1 schema "eval"
@@ -129,6 +129,16 @@ schema_split:                # papel por schema (campo `split_role` no JSON do s
     os primeiros round(eval_fraction*n) sao "eval", o resto "train"; cada (name_style, language) fica
     representado nos dois lados (troca por menor hash se faltar). Implementacao: scripts/data/split_roles.py
     (assign_roles/role_for); geradores devem usar role_for(schema) e nunca misturar train/eval de um mesmo schema.
+  # --- lote v3 (schemas `v3_*`, seed 20261022; ADITIVO: os 110 schemas antigos mantem papel/hash) ---
+  # Papel "hom" = HOMOLOGACAO (medir o modelo sem conjunto cego humano): NUNCA entra em train/val/test/bench dos conjuntos
+  # antigos; so no conjunto de homologacao. Geradores que so conhecem train|eval DEVEM ignorar/recusar schemas "hom".
+  v3:
+    id_prefix: "v3_"
+    seed: 20261022
+    hom_domains: [telecom, adtech]   # dominios inteiros novos => "hom"
+    eval_fraction: 0.15              # dos demais (exceto holdout education/legal => eval): ~15% "eval", o resto "train"
+    roles: [train, eval, hom]
+    hom_policy: exclude_from_train_val_test_bench
 
 validation:
   uri: mongodb://127.0.0.1:27017

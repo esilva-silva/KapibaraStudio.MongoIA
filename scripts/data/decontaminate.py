@@ -28,6 +28,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import blind_guard as bg  # noqa: E402
+import hom_guard  # noqa: E402
 
 ROOT = HERE.parents[1]
 NGRAM_N = 13
@@ -528,6 +529,26 @@ def public_report(res: dict, extra: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- CLI
+HOMOLOG_DIR = ROOT / "data" / "homolog" / "v1"
+
+
+def load_homolog(homolog_dir: Path | None = None) -> list[tuple[str, dict]]:
+    """Registros do conjunto de homologacao (data/homolog/v1/*.jsonl, se existir) como referencia de avaliacao
+    [("homolog", rec)]; entram na decontaminacao do treino com a MESMA regra oficial (13-grama, chave aproximada, MinHash)."""
+    d = Path(homolog_dir) if homolog_dir else HOMOLOG_DIR
+    out: list[tuple[str, dict]] = []
+    if not d.is_dir():
+        return out
+    for p in sorted(d.glob("*.jsonl")):
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    if record_kind(r) != "unknown":
+                        out.append(("homolog", r))
+    return out
+
+
 def _read_jsonl(path: Path) -> list[dict]:
     bg.check_path(path)
     with open(path, encoding="utf-8") as f:
@@ -543,6 +564,8 @@ def main(argv=None):
     ap.add_argument("--ngram-min-content", type=int, default=DEFAULT_NGRAM_MIN_CONTENT,
                     help="N>0 (padrao 2) exige >= N tokens de conteudo (campos/colecoes) no 13-grama; 0 = regra literal da spec")
     ap.add_argument("--report-dir", default=str(ROOT / "reports" / "decontam"))
+    ap.add_argument("--homolog", help="diretorio do conjunto de homologacao (padrao: data/homolog/v1 se existir)")
+    ap.add_argument("--no-homolog", action="store_true", help="NAO decontaminar contra o conjunto de homologacao")
     ap.add_argument("--out-ids", help="grava os ids removidos (um por linha)")
     a = ap.parse_args(argv)
     files = [Path(p) for p in a.inputs]
@@ -551,6 +574,9 @@ def main(argv=None):
     evals = [(r["split"], r) for r in recs if r.get("split") in set(a.eval_splits)]
     for p in a.legacy:
         evals += [("legacy-v1", r) for r in _read_jsonl(Path(p))]
+    hom_guard.assert_no_hom(recs, "entradas do decontaminate (train/val/test/bench)")     # exit != 0 se houver schema hom no treino
+    if not a.no_homolog:
+        evals += load_homolog(a.homolog)
     res = run(train, evals, seed=a.seed, min_content=a.ngram_min_content)
     dh = dataset_hash(files + [Path(p) for p in a.legacy], {"seed": a.seed, "params": res["params"]})
     rep = public_report(res, {"dataset_hash": dh, "inputs": [str(p) for p in files], "legacy": a.legacy})

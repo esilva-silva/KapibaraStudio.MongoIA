@@ -1,0 +1,1447 @@
+{
+ "schema_id": "v3_flint_fin",
+ "domain": "finance",
+ "holdout": false,
+ "description": "finance v3 realista pt-BR sem acento, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "pt-BR",
+ "realism_notes": [
+  "transactions: campos raros (<10% dos docs): migrated_from, deleted_at",
+  "transactions: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "market_ticks: campos raros (<10% dos docs): review_state",
+  "market_ticks: colecao time-series (timeField=em, metaField=symbol)",
+  "accounts: campos raros (<10% dos docs): beta_flag, deleted_at",
+  "accounts: campos legados/duplicados em formato antigo: legacy_opened_em",
+  "accounts: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "statements: campos raros (<10% dos docs): external_ref",
+  "statements: campos legados/duplicados em formato antigo: old_opening",
+  "statements: aninhamento profundo info.rule.limits.source.route.* (5 niveis de objeto)",
+  "customers: campos raros (<10% dos docs): override, deleted_at",
+  "customers: aninhamento profundo ctx.client.device.region.* (4 niveis de objeto)",
+  "customers: heterogeneidade de tipo no mesmo campo: scalar_or_array=1",
+  "_id mistos: objectid=5 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_suffix=1, name_abbr=1, name_hung=1, name_style=2, name_suffix=3",
+  "campos heterogeneos (alt) no schema: 3; mapas dinamicos: 1; max_depth=6",
+  "dominio finance: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "transactions",
+   "name": "transacoes",
+   "doc_count": 2350,
+   "fields": {
+    "conta_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "s_tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "debit",
+      "credit",
+      "pix",
+      "transfer",
+      "fee"
+     ],
+     "w": [
+      100.0,
+      26.3,
+      41.2,
+      47.2,
+      29.0
+     ]
+    },
+    "valor": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 9000.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0.5,
+       "hi": 9000.0,
+       "aw": 0.12
+      }
+     ]
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "counterparty": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "nome": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "banco": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "BK"
+      },
+      "conta": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "AC"
+      }
+     }
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "posted",
+      "pending",
+      "reversed"
+     ],
+     "w": [
+      100.0,
+      35.2,
+      43.1
+     ]
+    },
+    "memo": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ref": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      36.1,
+      55.9,
+      41.6
+     ]
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "conta_id",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "s_tipo",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "conta_id",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "conta_id": {
+       "bsonType": "objectId"
+      },
+      "s_tipo": {
+       "bsonType": "string",
+       "enum": [
+        "debit",
+        "credit",
+        "pix",
+        "transfer",
+        "fee"
+       ]
+      },
+      "valor": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "counterparty": {
+       "bsonType": "object",
+       "properties": {
+        "nome": {
+         "bsonType": "string"
+        },
+        "banco": {
+         "bsonType": "string"
+        },
+        "conta": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "nome",
+        "banco",
+        "conta"
+       ]
+      },
+      "situacao": {
+       "bsonType": "string",
+       "enum": [
+        "posted",
+        "pending",
+        "reversed"
+       ]
+      },
+      "memo": {
+       "bsonType": "string"
+      },
+      "ref": {
+       "bsonType": "binData"
+      },
+      "migrated_from": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "conta_id",
+      "s_tipo",
+      "valor",
+      "em",
+      "situacao",
+      "ref"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "market_ticks",
+   "name": "cotacoes_tick_v2",
+   "doc_count": 2450,
+   "fields": {
+    "symbol": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TK"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "bid": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0
+    },
+    "ask": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0
+    },
+    "ultimo": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0,
+     "sk": 2.37
+    },
+    "vol": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000
+    },
+    "venue": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "B3",
+      "NYSE",
+      "NASDAQ",
+      "LSE"
+     ],
+     "w": [
+      32.2,
+      65.1,
+      100.0,
+      30.5
+     ]
+    },
+    "flags": {
+     "t": "array",
+     "p": 0.08,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      28.2,
+      57.6
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "symbol",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "venue",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "em",
+     "metaField": "symbol",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "accounts",
+   "name": "contas",
+   "doc_count": 600,
+   "fields": {
+    "cliente_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "customers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "checking",
+      "savings",
+      "investment"
+     ],
+     "w": [
+      63.7,
+      43.8,
+      100.0
+     ]
+    },
+    "saldo": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "moeda": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": [
+      100.0,
+      41.3,
+      38.2
+     ]
+    },
+    "opened_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.13
+    },
+    "limits": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100.0,
+       "hi": 9000.0,
+       "sk": 2.3
+      },
+      "overdraft": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 5000.0,
+       "sk": 1.82
+      }
+     }
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.41
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "legacy_opened_em": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "numero",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cliente_id",
+       1
+      ],
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "saldo",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "closed": true
+     }
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "statements",
+   "name": "extratos",
+   "doc_count": 650,
+   "fields": {
+    "conta_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "period": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "year_v2": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 2025,
+       "hi": 2026
+      },
+      "month": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 12
+      }
+     }
+    },
+    "opening": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "closing": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0
+    },
+    "entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "day_x": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 31
+       },
+       "desc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "valor_2": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -9000.0,
+        "hi": 9000.0
+       },
+       "etiquetas": {
+        "t": "array",
+        "p": 0.4,
+        "n": 0.0,
+        "item": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "fees": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 90.0
+      }
+     }
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "old_opening": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": -500.0,
+     "hi": 90000.0,
+     "dec": 2
+    },
+    "info": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "limits": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "source": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "route": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900,
+         "sk": 2.26
+        }
+       }
+      }
+     }
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "conta_id",
+       1
+      ],
+      [
+       "period.year_v2",
+       1
+      ],
+      [
+       "period.month",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "fees.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "conta_id": {
+       "bsonType": "objectId"
+      },
+      "period": {
+       "bsonType": "object",
+       "properties": {
+        "year_v2": {
+         "bsonType": "int"
+        },
+        "month": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "year_v2",
+        "month"
+       ]
+      },
+      "opening": {
+       "bsonType": "decimal"
+      },
+      "closing": {
+       "bsonType": "decimal"
+      },
+      "entries": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "day_x": {
+          "bsonType": "int"
+         },
+         "desc": {
+          "bsonType": "string"
+         },
+         "valor_2": {
+          "bsonType": "decimal"
+         },
+         "etiquetas": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "day_x",
+         "desc",
+         "valor_2"
+        ]
+       }
+      },
+      "fees": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "decimal"
+       }
+      },
+      "external_ref": {
+       "bsonType": "string"
+      },
+      "old_opening": {
+       "bsonType": "string"
+      },
+      "info": {
+       "bsonType": "object",
+       "properties": {
+        "rule": {
+         "bsonType": "object",
+         "properties": {
+          "limits": {
+           "bsonType": "object",
+           "properties": {
+            "source": {
+             "bsonType": "object",
+             "properties": {
+              "route": {
+               "bsonType": "object",
+               "properties": {
+                "seenAt": {
+                 "bsonType": "date"
+                }
+               },
+               "required": [
+                "seenAt"
+               ]
+              }
+             },
+             "required": [
+              "route"
+             ]
+            }
+           },
+           "required": [
+            "source"
+           ]
+          },
+          "count": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "count"
+         ]
+        }
+       },
+       "required": [
+        "rule"
+       ]
+      },
+      "embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "conta_id",
+      "period",
+      "opening",
+      "closing",
+      "entries",
+      "fees"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "extratos_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "external_ref": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "opening": {
+         "type": "number"
+        },
+        "closing": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "extratos_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "cosine"
+       },
+       {
+        "type": "filter",
+        "path": "opening"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "customers",
+   "name": "clientes",
+   "doc_count": 550,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "imposto_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "segment": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "premium",
+      "corporate"
+     ],
+     "w": [
+      48.8,
+      100.0,
+      24.4
+     ]
+    },
+    "onboarded_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kyc": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "situacao": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "ok",
+        "pending",
+        "review"
+       ],
+       "w": [
+        100.0,
+        48.6,
+        55.8
+       ]
+      },
+      "checked_em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "docs": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4,
+       "alt": [
+        {
+         "t": "string",
+         "g": "word",
+         "aw": 0.13
+        }
+       ]
+      }
+     }
+    },
+    "risco_pontuacao": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100,
+     "sk": 2.09
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "ctx": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "dev": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "region": {
+           "t": "object",
+           "p": 0.3,
+           "n": 0.0,
+           "f": {
+            "seen_at": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "Count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "sk": 1.48
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.72
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "imposto_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "segment",
+       1
+      ],
+      [
+       "risco_pontuacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "imposto_id": {
+       "bsonType": "string"
+      },
+      "segment": {
+       "bsonType": "string",
+       "enum": [
+        "retail",
+        "premium",
+        "corporate"
+       ]
+      },
+      "onboarded_em": {
+       "bsonType": "date"
+      },
+      "kyc": {
+       "bsonType": "object",
+       "properties": {
+        "situacao": {
+         "bsonType": "string",
+         "enum": [
+          "ok",
+          "pending",
+          "review"
+         ]
+        },
+        "checked_em": {
+         "bsonType": "date"
+        },
+        "docs": {
+         "bsonType": [
+          "array",
+          "string"
+         ],
+         "items": {
+          "bsonType": "string"
+         }
+        }
+       },
+       "required": [
+        "situacao",
+        "checked_em",
+        "docs"
+       ]
+      },
+      "risco_pontuacao": {
+       "bsonType": "int"
+      },
+      "uuid": {
+       "bsonType": "binData"
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "at"
+       ]
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "ctx": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "dev": {
+           "bsonType": "object",
+           "properties": {
+            "region": {
+             "bsonType": "object",
+             "properties": {
+              "seen_at": {
+               "bsonType": "date"
+              },
+              "Count": {
+               "bsonType": "int"
+              },
+              "version": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "seen_at",
+              "Count",
+              "version"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "name"
+           ]
+          },
+          "enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "enabled"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "nome",
+      "imposto_id",
+      "segment",
+      "onboarded_em",
+      "risco_pontuacao",
+      "uuid"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "clientes_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "nome": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "imposto_id": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "segment": {
+         "type": "token"
+        },
+        "onboarded_em": {
+         "type": "date"
+        },
+        "risco_pontuacao": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

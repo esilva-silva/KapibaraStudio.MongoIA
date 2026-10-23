@@ -41,6 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gen_snippets import CONFIG_PATH, ROOT, load_config  # noqa: E402
 import blind_guard  # noqa: E402
+import hom_guard  # noqa: E402
 from jsonl_shards import HashReservoir, ShardWriter, iter_jsonl  # noqa: E402
 
 ROLE_TO_CURSOR = {
@@ -699,6 +700,8 @@ def main(argv=None):
     ap.add_argument("--ver")
     ap.add_argument("--snippets", help="snippets.jsonl (default: data/generated/<ver>/snippets.jsonl)")
     ap.add_argument("--validation", help="validation.jsonl: descarta snippets com exec=error")
+    ap.add_argument("--include-hom", action="store_true",
+                    help="SO para scripts de homologacao (outro diretorio, split `homolog`); nunca em jobs de treino")
     ap.add_argument("--emit-qwen", action="store_true")
     ap.add_argument("--approx-tokens", action="store_true", help="forca o fallback chars/3 (sem tokenizer Qwen)")
     ap.add_argument("--out")
@@ -734,7 +737,7 @@ def main(argv=None):
     report: dict = {}
     import par
     workers = a.workers if a.workers is not None else par.default_workers()
-    for r in iter_fim(lambda: iter_jsonl(snips_path), cfg, count, val, a.emit_qwen, tc, report, workers):
+    for r in iter_fim(lambda: hom_guard.drop_hom(iter_jsonl(snips_path), a.include_hom), cfg, count, val, a.emit_qwen, tc, report, workers):
         w.write(r)
         n += 1
         dist[r["cut_kind"]] += 1

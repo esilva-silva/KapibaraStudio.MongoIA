@@ -1,0 +1,3049 @@
+{
+ "schema_id": "v3_yarrow_adt",
+ "domain": "adtech",
+ "holdout": false,
+ "description": "adtech v3 realista pt-BR sem acento, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "pt-BR",
+ "realism_notes": [
+  "fraud_flags: campos raros (<10% dos docs): notes",
+  "fraud_flags: campos legados/duplicados em formato antigo: old_flagged_em",
+  "bid_events: campos raros (<10% dos docs): notes",
+  "bid_events: campos legados/duplicados em formato antigo: floor_v2",
+  "pacing: campos raros (<10% dos docs): deleted_at",
+  "pacing: aninhamento profundo audit.client.flags.stack.source.* (5 niveis de objeto)",
+  "creatives: campos raros (<10% dos docs): review_state",
+  "creatives: aninhamento profundo origin.stack.options.tenant.* (4 niveis de objeto)",
+  "ad_groups: campos raros (<10% dos docs): import_batch, external_ref",
+  "ad_groups: campos legados/duplicados em formato antigo: old_nome",
+  "ad_groups: aninhamento profundo origin.network.options.route.rule.* (5 niveis de objeto)",
+  "ad_groups: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "publishers: campos raros (<10% dos docs): override",
+  "publishers: aninhamento profundo origin.region.tenant.source.client.* (5 niveis de objeto)",
+  "publishers: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "campaigns: campos raros (<10% dos docs): deleted_at, review_state",
+  "placements: campos raros (<10% dos docs): deleted_at, notes",
+  "placements: campos legados/duplicados em formato antigo: floor_v2",
+  "placements: aninhamento profundo trace.route.device.rule.* (4 niveis de objeto)",
+  "placements: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "advertisers: campos raros (<10% dos docs): notes",
+  "_id mistos: int64=1, objectid=7, uuid=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_hyphen=1, name_ID=1, name_abbr=3, name_hung=2, name_style=9, name_suffix=2, name_underscore=1",
+  "campos heterogeneos (alt) no schema: 6; mapas dinamicos: 6; max_depth=6",
+  "dominio adtech: eventos de leilao/impressao/clique em alto volume, relatorios com mapas de metricas"
+ ],
+ "split_role": "hom",
+ "collections": [
+  {
+   "key": "fraud_flags",
+   "name": "MarcacoesFraude",
+   "doc_count": 650,
+   "fields": {
+    "PublisherId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "publishers"
+    },
+    "Tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "ivt",
+      "bot",
+      "click_farm",
+      "domain_spoof"
+     ],
+     "w": [
+      100.0,
+      41.3,
+      24.9,
+      51.0
+     ]
+    },
+    "Severity": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "Evidence": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "sample": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "uuid",
+        "p": 1.0,
+        "n": 0.0,
+        "v": 4
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Rates": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "metric",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        }
+       }
+      },
+      "Observacoes": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "FlaggedEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Resolved": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.56
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "OldFlaggedEm": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PublisherId",
+       1
+      ],
+      [
+       "Tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Severity",
+       1
+      ],
+      [
+       "FlaggedEm",
+       -1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Evidence.Rates.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "bid_events",
+   "name": "EventosLance",
+   "doc_count": 1700,
+   "fields": {
+    "Em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Exchange": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "google",
+      "xandr",
+      "magnite",
+      "pubmatic",
+      "openx"
+     ],
+     "w": [
+      35.6,
+      20.9,
+      28.1,
+      48.1,
+      100.0
+     ]
+    },
+    "RequestId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "Floor": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 5.0
+    },
+    "Bids": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Bidder": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Preco": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 20.0
+       },
+       "LatencyMs": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 5,
+        "hi": 400,
+        "sk": 1.74
+       },
+       "Won": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.14
+       },
+       "Reasons": {
+        "t": "array",
+        "p": 0.9,
+        "n": 0.0,
+        "item": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "ResultV2": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "won",
+      "lost",
+      "timeout",
+      "nobid"
+     ],
+     "w": [
+      64.6,
+      100.0,
+      33.4,
+      42.0
+     ]
+    },
+    "Local": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "domain": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "slug"
+      },
+      "page": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "url"
+      },
+      "categories": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "IAB"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "FloorV2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.0,
+     "hi": 5.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Exchange",
+       1
+      ],
+      [
+       "ResultV2",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    },
+    {
+     "keys": [
+      [
+       "Notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "pacing",
+   "name": "Ritmo",
+   "doc_count": 450,
+   "fields": {
+    "CmpID": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "v": 4
+    },
+    "Day": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Spent": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 30000.0,
+     "sk": 2.04
+    },
+    "Entregue": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000
+    },
+    "Tgt": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1000,
+     "hi": 9000000
+    },
+    "Hourly": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "hour",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 2000.0
+      }
+     }
+    },
+    "Underdelivery": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "Audit": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Client": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "Flags": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Stack": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Source": {
+             "t": "object",
+             "p": 0.9,
+             "n": 0.0,
+             "f": {
+              "Enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.56
+              },
+              "Version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              },
+              "Level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                55.8,
+                100.0,
+                34.5
+               ]
+              }
+             }
+            }
+           }
+          },
+          "Version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        },
+        "Enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.4
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CmpID",
+       1
+      ],
+      [
+       "Day",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Underdelivery",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "DeletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Hourly.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "CmpID": {
+       "bsonType": "binData"
+      },
+      "Day": {
+       "bsonType": "date"
+      },
+      "Spent": {
+       "bsonType": "decimal"
+      },
+      "Entregue": {
+       "bsonType": "long"
+      },
+      "Tgt": {
+       "bsonType": "long"
+      },
+      "Hourly": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "decimal"
+       }
+      },
+      "Underdelivery": {
+       "bsonType": "bool"
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "Audit": {
+       "bsonType": "object",
+       "properties": {
+        "Client": {
+         "bsonType": "object",
+         "properties": {
+          "Flags": {
+           "bsonType": "object",
+           "properties": {
+            "Stack": {
+             "bsonType": "object",
+             "properties": {
+              "Source": {
+               "bsonType": "object",
+               "properties": {
+                "Enabled": {
+                 "bsonType": "bool"
+                },
+                "Version": {
+                 "bsonType": "string"
+                },
+                "Level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                }
+               },
+               "required": [
+                "Enabled",
+                "Version",
+                "Level"
+               ]
+              }
+             }
+            },
+            "Version": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "Stack",
+            "Version"
+           ]
+          },
+          "Enabled": {
+           "bsonType": "bool"
+          }
+         },
+         "required": [
+          "Flags",
+          "Enabled"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "CmpID",
+      "Day",
+      "Spent",
+      "Entregue",
+      "Tgt",
+      "Hourly",
+      "Underdelivery"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "creatives",
+   "name": "Criativos",
+   "doc_count": 800,
+   "fields": {
+    "AdGroupId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "ad_groups",
+     "lo": 0,
+     "hi": 1
+    },
+    "Format": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "banner",
+      "video",
+      "native",
+      "html5",
+      "audio"
+     ],
+     "w": [
+      12.6,
+      100.0,
+      32.6,
+      50.5,
+      23.1
+     ]
+    },
+    "Tamanho": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "w": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 1920,
+       "sk": 1.66
+      },
+      "h": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 1080,
+       "sk": 1.53
+      }
+     }
+    },
+    "Assets": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Tipo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "image",
+         "video",
+         "text"
+        ],
+        "w": [
+         100.0,
+         24.7,
+         57.8
+        ]
+       },
+       "Url": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "url"
+       },
+       "Bytes": {
+        "t": "int64",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1000,
+        "hi": 90000000,
+        "sk": 1.54
+       },
+       "Meta": {
+        "t": "object",
+        "p": 0.3,
+        "n": 0.0,
+        "f": {},
+        "map": {
+         "keys": "word",
+         "min": 2,
+         "max": 6,
+         "value": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "approved",
+      "pending",
+      "rejected"
+     ],
+     "w": [
+      30.7,
+      100.0,
+      58.2
+     ]
+    },
+    "Review": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "Observacoes": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "LandingUrl": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "url"
+    },
+    "Version": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 9
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      27.9,
+      100.0,
+      41.7
+     ]
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "stack": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "options": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Tenant": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            },
+            "Name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            },
+            "SeenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          }
+         }
+        },
+        "Score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "AdGroupId",
+       1
+      ],
+      [
+       "Situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Format",
+       1
+      ],
+      [
+       "Version",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ReviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "AdGroupId": {
+       "bsonType": "long"
+      },
+      "Format": {
+       "bsonType": "string",
+       "enum": [
+        "banner",
+        "video",
+        "native",
+        "html5",
+        "audio"
+       ]
+      },
+      "Tamanho": {
+       "bsonType": "object",
+       "properties": {
+        "w": {
+         "bsonType": "int"
+        },
+        "h": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "w",
+        "h"
+       ]
+      },
+      "Assets": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Tipo": {
+          "bsonType": "string",
+          "enum": [
+           "image",
+           "video",
+           "text"
+          ]
+         },
+         "Url": {
+          "bsonType": "string"
+         },
+         "Bytes": {
+          "bsonType": "long"
+         },
+         "Meta": {
+          "bsonType": "object",
+          "additionalProperties": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "Tipo",
+         "Url",
+         "Bytes"
+        ]
+       }
+      },
+      "Situacao": {
+       "bsonType": "string",
+       "enum": [
+        "approved",
+        "pending",
+        "rejected"
+       ]
+      },
+      "Review": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Em": {
+         "bsonType": "date"
+        },
+        "Observacoes": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "Em"
+       ]
+      },
+      "LandingUrl": {
+       "bsonType": "string"
+      },
+      "Version": {
+       "bsonType": "int"
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "Origin": {
+       "bsonType": "object",
+       "properties": {
+        "stack": {
+         "bsonType": "object",
+         "properties": {
+          "options": {
+           "bsonType": "object",
+           "properties": {
+            "Tenant": {
+             "bsonType": "object",
+             "properties": {
+              "Count": {
+               "bsonType": "int"
+              },
+              "Name": {
+               "bsonType": "string"
+              },
+              "SeenAt": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "Count",
+              "Name",
+              "SeenAt"
+             ]
+            }
+           },
+           "required": [
+            "Tenant"
+           ]
+          },
+          "Score": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "options",
+          "Score"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "AdGroupId",
+      "Format",
+      "Tamanho",
+      "Assets",
+      "Situacao",
+      "LandingUrl",
+      "Version"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "ad_groups",
+   "name": "grupos-anuncio",
+   "doc_count": 650,
+   "fields": {
+    "CampaignId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "campaigns",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "campaigns",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "Nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "live",
+      "paused",
+      "ended"
+     ],
+     "w": [
+      51.3,
+      100.0,
+      44.7
+     ]
+    },
+    "BidModifiers": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "slot",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.1,
+       "hi": 3.0
+      }
+     }
+    },
+    "Keywords": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Placements": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "placements"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "CriadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ImportBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "_OldNome": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "Network": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "Options": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "route": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "rule": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "seen_at": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30",
+               "alt": [
+                {
+                 "t": "string",
+                 "g": "isodate",
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30",
+                 "fmt": "iso",
+                 "aw": 0.13
+                }
+               ]
+              },
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100,
+               "sk": 1.61
+              }
+             }
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              43.7,
+              40.1,
+              100.0
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CampaignId",
+       1
+      ],
+      [
+       "Situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Keywords",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ImportBatch",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "CriadoEm",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "BidModifiers.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "CampaignId": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "Nome": {
+       "bsonType": "string"
+      },
+      "Situacao": {
+       "bsonType": "string",
+       "enum": [
+        "live",
+        "paused",
+        "ended"
+       ]
+      },
+      "BidModifiers": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "double"
+       }
+      },
+      "Keywords": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "Placements": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "CriadoEm": {
+       "bsonType": "date"
+      },
+      "ImportBatch": {
+       "bsonType": "string"
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "_OldNome": {
+       "bsonType": "string"
+      },
+      "Origin": {
+       "bsonType": "object",
+       "properties": {
+        "Network": {
+         "bsonType": "object",
+         "properties": {
+          "Options": {
+           "bsonType": "object",
+           "properties": {
+            "route": {
+             "bsonType": "object",
+             "properties": {
+              "rule": {
+               "bsonType": "object",
+               "properties": {
+                "seen_at": {
+                 "bsonType": [
+                  "date",
+                  "string"
+                 ]
+                },
+                "score": {
+                 "bsonType": "double"
+                }
+               },
+               "required": [
+                "seen_at",
+                "score"
+               ]
+              },
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "rule",
+              "level"
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "CampaignId",
+      "Nome",
+      "Situacao",
+      "BidModifiers",
+      "Keywords",
+      "CriadoEm"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "publishers",
+   "name": "Editores",
+   "doc_count": 300,
+   "fields": {
+    "StrDomain": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "Nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "categoria": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "news",
+      "sports",
+      "games",
+      "shopping",
+      "video",
+      "social"
+     ],
+     "w": [
+      27.2,
+      100.0,
+      43.3,
+      34.1,
+      33.9,
+      24.8
+     ]
+    },
+    "TrafficTier": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "t1",
+      "t2",
+      "t3"
+     ],
+     "w": [
+      46.9,
+      100.0,
+      58.4
+     ]
+    },
+    "AdsTxt": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Verificado": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.74
+      },
+      "Linhas": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 400
+      },
+      "Sellers": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "id": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "SL"
+         },
+         "rel": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "DIRECT",
+           "RESELLER"
+          ],
+          "w": [
+           60.3,
+           100.0
+          ]
+         }
+        }
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "RevenueShare": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.3,
+     "hi": 0.9
+    },
+    "FloorPrices": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "cur",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.01,
+       "hi": 3.0
+      }
+     }
+    },
+    "Pais": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "iso",
+         "aw": 0.07
+        }
+       ]
+      }
+     }
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Region": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "Tenant": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "source": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "client": {
+             "t": "object",
+             "p": 0.5,
+             "n": 0.0,
+             "f": {
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                45.4,
+                37.7,
+                100.0
+               ]
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.58
+              }
+             }
+            },
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "Name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "Embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "StrDomain",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "categoria",
+       1
+      ],
+      [
+       "TrafficTier",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "FloorPrices.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "StrDomain": {
+       "bsonType": "string"
+      },
+      "Nome": {
+       "bsonType": "string"
+      },
+      "categoria": {
+       "bsonType": "string",
+       "enum": [
+        "news",
+        "sports",
+        "games",
+        "shopping",
+        "video",
+        "social"
+       ]
+      },
+      "TrafficTier": {
+       "bsonType": "string",
+       "enum": [
+        "t1",
+        "t2",
+        "t3"
+       ]
+      },
+      "AdsTxt": {
+       "bsonType": "object",
+       "properties": {
+        "Verificado": {
+         "bsonType": "bool"
+        },
+        "Linhas": {
+         "bsonType": "int"
+        },
+        "Sellers": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "id": {
+            "bsonType": "string"
+           },
+           "rel": {
+            "bsonType": "string",
+            "enum": [
+             "DIRECT",
+             "RESELLER"
+            ]
+           }
+          },
+          "required": [
+           "id",
+           "rel"
+          ]
+         }
+        }
+       },
+       "required": [
+        "Verificado",
+        "Linhas",
+        "Sellers"
+       ]
+      },
+      "RevenueShare": {
+       "bsonType": "double"
+      },
+      "FloorPrices": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "double"
+       }
+      },
+      "Pais": {
+       "bsonType": "string"
+      },
+      "Override": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Reason": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": [
+          "date",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "By",
+        "Reason",
+        "At"
+       ]
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "Region": {
+         "bsonType": "object",
+         "properties": {
+          "Tenant": {
+           "bsonType": "object",
+           "properties": {
+            "source": {
+             "bsonType": "object",
+             "properties": {
+              "client": {
+               "bsonType": "object",
+               "properties": {
+                "level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                },
+                "enabled": {
+                 "bsonType": "bool"
+                }
+               },
+               "required": [
+                "level",
+                "enabled"
+               ]
+              },
+              "score": {
+               "bsonType": "double"
+              }
+             },
+             "required": [
+              "score"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "name"
+           ]
+          },
+          "Name": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "Name"
+         ]
+        }
+       }
+      },
+      "Embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "StrDomain",
+      "Nome",
+      "categoria",
+      "TrafficTier",
+      "RevenueShare",
+      "FloorPrices",
+      "Pais"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "editores_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "StrDomain": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Nome": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "Pais": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "categoria": {
+         "type": "token"
+        },
+        "TrafficTier": {
+         "type": "token"
+        },
+        "RevenueShare": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "editores_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "Embedding",
+        "numDimensions": 8,
+        "similarity": "euclidean"
+       },
+       {
+        "type": "filter",
+        "path": "categoria"
+       },
+       {
+        "type": "filter",
+        "path": "RevenueShare"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "campaigns",
+   "name": "Campanhas",
+   "doc_count": 1150,
+   "fields": {
+    "AdvertiserId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "advertisers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "advertisers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "Nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Objective": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "awareness",
+      "traffic",
+      "conversion",
+      "app_install"
+     ],
+     "w": [
+      55.4,
+      25.0,
+      18.5,
+      100.0
+     ]
+    },
+    "Situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "draft",
+      "live",
+      "paused",
+      "ended"
+     ],
+     "w": [
+      28.2,
+      16.7,
+      49.0,
+      100.0
+     ]
+    },
+    "Budget": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "tot": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 500.0,
+       "hi": 900000.0
+      },
+      "daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10.0,
+       "hi": 30000.0
+      },
+      "Moeda": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "BRL",
+        "USD"
+       ],
+       "w": [
+        62.0,
+        100.0
+       ]
+      },
+      "pacing": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "even",
+        "asap",
+        "smart"
+       ],
+       "w": [
+        42.9,
+        28.6,
+        100.0
+       ]
+      }
+     }
+    },
+    "Voo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "inicio": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "fim": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Targeting": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Geo": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "country"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Devices": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "mobile",
+         "desktop",
+         "tv",
+         "ctv"
+        ],
+        "w": null
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Age": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "min": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 13,
+         "hi": 40
+        },
+        "max": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 41,
+         "hi": 90,
+         "sk": 1.93
+        }
+       }
+      },
+      "Languages": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "lang",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.5
+        }
+       }
+      }
+     }
+    },
+    "BidStrategy": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Tipo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "cpc",
+        "cpm",
+        "cpa",
+        "roas"
+       ],
+       "w": [
+        33.0,
+        58.5,
+        43.9,
+        100.0
+       ]
+      },
+      "Target": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.1,
+       "hi": 90.0,
+       "sk": 1.69
+      },
+      "Caps": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "MaxBid": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.5,
+         "hi": 20.0
+        },
+        "MinBid": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        }
+       }
+      }
+     }
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      49.5,
+      32.0,
+      100.0
+     ]
+    },
+    "Embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "AdvertiserId",
+       1
+      ],
+      [
+       "Situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Voo.inicio",
+       1
+      ],
+      [
+       "Voo.fim",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Objective",
+       1
+      ],
+      [
+       "Budget.tot",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ReviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "Nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "search_indexes": [
+    {
+     "name": "campanhas_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Nome": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Objective": {
+         "type": "token"
+        },
+        "Situacao": {
+         "type": "token"
+        },
+        "DeletedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "campanhas_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "Embedding",
+        "numDimensions": 8,
+        "similarity": "dotProduct"
+       },
+       {
+        "type": "filter",
+        "path": "Objective"
+       },
+       {
+        "type": "filter",
+        "path": "DeletedAt"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "placements",
+   "name": "Posicoes",
+   "doc_count": 300,
+   "fields": {
+    "PublisherId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "publishers"
+    },
+    "Slot": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SLOT"
+    },
+    "Format": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "banner",
+       "video",
+       "native"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Sizes": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 50,
+       "hi": 970
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "viewability": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.2,
+     "hi": 0.95
+    },
+    "Ativo": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.95
+    },
+    "Floor": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 4.0
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "FloorV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.0,
+     "hi": 4.0,
+     "dec": 2
+    },
+    "Trace": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Route": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "Device": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Rule": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "SeenAtV2": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          },
+          "Enabled": {
+           "t": "bool",
+           "p": 1.0,
+           "n": 0.0,
+           "pt": 0.56
+          }
+         }
+        },
+        "SeenAt": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "alt": [
+          {
+           "t": "string",
+           "g": "isodate",
+           "lo": "2025-01-01",
+           "hi": "2026-09-30",
+           "fmt": "iso",
+           "aw": 0.18
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PublisherId",
+       1
+      ],
+      [
+       "Ativo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Slot",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "DeletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "PublisherId": {
+       "bsonType": "objectId"
+      },
+      "Slot": {
+       "bsonType": "string"
+      },
+      "Format": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "banner",
+         "video",
+         "native"
+        ]
+       }
+      },
+      "Sizes": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "array",
+        "items": {
+         "bsonType": "int"
+        }
+       }
+      },
+      "viewability": {
+       "bsonType": "double"
+      },
+      "Ativo": {
+       "bsonType": "bool"
+      },
+      "Floor": {
+       "bsonType": "double"
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "Notes": {
+       "bsonType": "string"
+      },
+      "FloorV2": {
+       "bsonType": "string"
+      },
+      "Trace": {
+       "bsonType": "object",
+       "properties": {
+        "Route": {
+         "bsonType": "object",
+         "properties": {
+          "Device": {
+           "bsonType": "object",
+           "properties": {
+            "Rule": {
+             "bsonType": "object",
+             "properties": {
+              "SeenAtV2": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "SeenAtV2"
+             ]
+            },
+            "Enabled": {
+             "bsonType": "bool"
+            }
+           },
+           "required": [
+            "Rule",
+            "Enabled"
+           ]
+          },
+          "SeenAt": {
+           "bsonType": [
+            "date",
+            "string"
+           ]
+          }
+         },
+         "required": [
+          "Device",
+          "SeenAt"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "PublisherId",
+      "Slot",
+      "Format",
+      "Sizes",
+      "viewability",
+      "Ativo",
+      "Floor"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "advertisers",
+   "name": "Anunciantes",
+   "doc_count": 600,
+   "fields": {
+    "Nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "LegalId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "Vertical": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "finance",
+      "auto",
+      "telecom",
+      "gaming",
+      "travel"
+     ],
+     "w": [
+      100.0,
+      30.1,
+      31.9,
+      18.1,
+      47.4,
+      32.5
+     ]
+    },
+    "Billing": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Moeda": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "BRL",
+        "USD",
+        "EUR"
+       ],
+       "w": [
+        100.0,
+        41.3,
+        31.4
+       ]
+      },
+      "TermsDays": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 90,
+       "sk": 2.3
+      },
+      "imposto": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "Taxa": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 0.3
+        },
+        "Exempt": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.05
+        }
+       }
+      }
+     }
+    },
+    "DCriadoEm": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "paused",
+      "closed"
+     ],
+     "w": [
+      51.4,
+      100.0,
+      27.8
+     ]
+    },
+    "Contacts": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "email": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "email"
+       },
+       "papel": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "billing",
+         "tech",
+         "exec"
+        ],
+        "w": [
+         24.4,
+         43.8,
+         100.0
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "LegalId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Vertical",
+       1
+      ],
+      [
+       "Situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

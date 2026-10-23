@@ -1,0 +1,4763 @@
+{
+ "schema_id": "v3_quasar_pos",
+ "domain": "retail-pos",
+ "holdout": false,
+ "description": "retail-pos v3 realista EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "shifts: campos raros (<10% dos docs): review_state",
+  "shifts: aninhamento profundo trace.profile.system.limits.route.* (5 niveis de objeto)",
+  "shifts: heterogeneidade de tipo no mesmo campo: bool_string=1, num_mixed=1",
+  "purchase_orders: campos raros (<10% dos docs): beta_flag, migrated_from",
+  "purchase_orders: campos legados/duplicados em formato antigo: legacy_eta",
+  "purchase_orders: aninhamento profundo ctx.client.region.rule.config.profile.* (6 niveis de objeto)",
+  "items: campos raros (<10% dos docs): override, review_state",
+  "items: campos legados/duplicados em formato antigo: description_old, active_v2",
+  "items: aninhamento profundo ctx.config.zone.source.flags.* (5 niveis de objeto)",
+  "items: heterogeneidade de tipo no mesmo campo: date_string=1, num_mixed=1",
+  "sales: campos raros (<10% dos docs): notes, review_state",
+  "sales: campos legados/duplicados em formato antigo: total_old",
+  "sales: aninhamento profundo ctx.route.runtime.options.device.* (5 niveis de objeto)",
+  "sales: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "suppliers: campos raros (<10% dos docs): review_state, external_ref",
+  "suppliers: aninhamento profundo info.runtime.route.region.flags.zone.* (6 niveis de objeto)",
+  "promotions: campos raros (<10% dos docs): override, beta_flag",
+  "promotions: campos legados/duplicados em formato antigo: old_name, old_starts",
+  "stock_counts: campos raros (<10% dos docs): deleted_at, beta_flag",
+  "stock_counts: campos legados/duplicados em formato antigo: old_sku",
+  "stock_counts: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "terminals: campos raros (<10% dos docs): beta_flag",
+  "z_reports: campos raros (<10% dos docs): import_batch",
+  "z_reports: campos legados/duplicados em formato antigo: old_date",
+  "z_reports: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "cashiers: campos raros (<10% dos docs): import_batch",
+  "cashiers: heterogeneidade de tipo no mesmo campo: bool_string=1",
+  "price_changes: campos raros (<10% dos docs): beta_flag",
+  "price_changes: campos legados/duplicados em formato antigo: legacy_new_price, legacy_effective",
+  "price_changes: aninhamento profundo ctx.profile.source.options.config.route.* (6 niveis de objeto)",
+  "price_changes: heterogeneidade de tipo no mesmo campo: date_string=1, num_mixed=1",
+  "returns: campos raros (<10% dos docs): notes, external_ref",
+  "returns: campos legados/duplicados em formato antigo: legacy_at",
+  "returns: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "cash_events: campos raros (<10% dos docs): override, migrated_from",
+  "cash_events: aninhamento profundo audit.limits.zone.stack.policy.rule.* (6 niveis de objeto)",
+  "cash_events: colecao capped (max=2700 docs)",
+  "stores: campos raros (<10% dos docs): external_ref, override",
+  "stores: campos legados/duplicados em formato antigo: old_name, legacy_opened_at",
+  "_id mistos: int64=1, objectid=8, string=1, uuid=4 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_hyphen=1, coll_prefix=1, coll_suffix=3, name_ID=1, name_abbr=6, name_hung=8, name_style=13, name_suffix=8, name_underscore=3",
+  "campos heterogeneos (alt) no schema: 22; mapas dinamicos: 7; max_depth=7",
+  "dominio retail-pos: vendas PDV com linhas, pagamentos divididos e fechamentos de caixa"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "shifts",
+   "name": "Shifts",
+   "doc_count": 450,
+   "fields": {
+    "CashierIdX": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cashiers"
+    },
+    "TerminalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "terminals",
+     "v": 4
+    },
+    "OpenedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ClosedAt": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "FloatOpen": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 500.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0.0,
+       "hi": 500.0,
+       "aw": 0.16
+      }
+     ]
+    },
+    "Counted": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 9000.0
+      }
+     }
+    },
+    "Variance": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -80.0,
+     "hi": 80.0
+    },
+    "SupervisorOk": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.9
+    },
+    "SReviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      53.9,
+      100.0,
+      29.4
+     ]
+    },
+    "_trace": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Profile": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "System": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Limits": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "route": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.41,
+               "alt": [
+                {
+                 "t": "string",
+                 "g": "enum",
+                 "values": [
+                  "Y",
+                  "N",
+                  "true",
+                  "false",
+                  "1",
+                  "0"
+                 ],
+                 "aw": 0.06
+                }
+               ]
+              },
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100
+              }
+             }
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          },
+          "Name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "CashierIdX",
+       1
+      ],
+      [
+       "OpenedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "TerminalId",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "CashierIdX": {
+       "bsonType": "objectId"
+      },
+      "TerminalId": {
+       "bsonType": "binData"
+      },
+      "OpenedAt": {
+       "bsonType": "date"
+      },
+      "ClosedAt": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "FloatOpen": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "Counted": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "decimal"
+       }
+      },
+      "Variance": {
+       "bsonType": "decimal"
+      },
+      "SupervisorOk": {
+       "bsonType": "bool"
+      },
+      "SReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "_trace": {
+       "bsonType": "object",
+       "properties": {
+        "Profile": {
+         "bsonType": "object",
+         "properties": {
+          "System": {
+           "bsonType": "object",
+           "properties": {
+            "Limits": {
+             "bsonType": "object",
+             "properties": {
+              "route": {
+               "bsonType": "object",
+               "properties": {
+                "enabled": {
+                 "bsonType": [
+                  "bool",
+                  "string"
+                 ]
+                },
+                "score": {
+                 "bsonType": "double"
+                }
+               },
+               "required": [
+                "enabled",
+                "score"
+               ]
+              },
+              "name": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "route",
+              "name"
+             ]
+            },
+            "Name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "Name"
+           ]
+          }
+         },
+         "required": [
+          "System"
+         ]
+        }
+       },
+       "required": [
+        "Profile"
+       ]
+      }
+     },
+     "required": [
+      "CashierIdX",
+      "TerminalId",
+      "OpenedAt",
+      "FloatOpen",
+      "Counted",
+      "Variance",
+      "SupervisorOk"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "purchase_orders",
+   "name": "PurchaseOrders",
+   "doc_count": 350,
+   "fields": {
+    "SuppId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "suppliers"
+    },
+    "StoreId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "IssuedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Lines": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Sku": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sku"
+       },
+       "Qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 900,
+        "sk": 1.79
+       },
+       "Cost": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.3,
+        "hi": 700.0
+       },
+       "Received": {
+        "t": "int32",
+        "p": 0.95,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 900,
+        "sk": 2.48
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "St": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "partial",
+      "received",
+      "cancelled"
+     ],
+     "w": [
+      48.4,
+      61.2,
+      100.0,
+      24.1
+     ]
+    },
+    "Eta": {
+     "t": "date",
+     "p": 0.9,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.54
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      42.0,
+      41.8,
+      100.0,
+      19.2
+     ]
+    },
+    "LegacyEta": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "Ctx": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "Client": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "Region": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Rule": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Config": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Profile": {
+               "t": "object",
+               "p": 0.4,
+               "n": 0.0,
+               "f": {
+                "Count": {
+                 "t": "int32",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 900
+                }
+               }
+              }
+             }
+            },
+            "Version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        },
+        "SeenAt": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "SuppId",
+       1
+      ],
+      [
+       "IssuedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "St",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Lines.Sku",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "SuppId": {
+       "bsonType": "objectId"
+      },
+      "StoreId": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "IssuedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Lines": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Sku": {
+          "bsonType": "string"
+         },
+         "Qty": {
+          "bsonType": "int"
+         },
+         "Cost": {
+          "bsonType": "decimal"
+         },
+         "Received": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "Sku",
+         "Qty",
+         "Cost"
+        ]
+       }
+      },
+      "St": {
+       "bsonType": "string",
+       "enum": [
+        "open",
+        "partial",
+        "received",
+        "cancelled"
+       ]
+      },
+      "Eta": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "LegacyEta": {
+       "bsonType": "string"
+      },
+      "Ctx": {
+       "bsonType": "object",
+       "properties": {
+        "Client": {
+         "bsonType": "object",
+         "properties": {
+          "Region": {
+           "bsonType": "object",
+           "properties": {
+            "Rule": {
+             "bsonType": "object",
+             "properties": {
+              "Config": {
+               "bsonType": "object",
+               "properties": {
+                "Profile": {
+                 "bsonType": "object",
+                 "properties": {
+                  "Count": {
+                   "bsonType": "int"
+                  }
+                 },
+                 "required": [
+                  "Count"
+                 ]
+                }
+               }
+              },
+              "Version": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "Config",
+              "Version"
+             ]
+            }
+           },
+           "required": [
+            "Rule"
+           ]
+          },
+          "SeenAt": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "Region",
+          "SeenAt"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "SuppId",
+      "StoreId",
+      "IssuedAt",
+      "Lines",
+      "St"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "validationLevel": "moderate",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "items",
+   "name": "Items_new",
+   "doc_count": 500,
+   "fields": {
+    "Sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "Ean": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "789"
+    },
+    "Description": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Dept": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "grocery",
+      "bakery",
+      "dairy",
+      "beauty",
+      "home",
+      "electronics"
+     ],
+     "w": [
+      23.8,
+      26.1,
+      28.3,
+      55.4,
+      25.7,
+      100.0
+     ]
+    },
+    "Price": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900.0,
+     "sk": 2.25
+    },
+    "Cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.3,
+     "hi": 700.0,
+     "sk": 1.9
+    },
+    "Unit": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "un",
+      "kg",
+      "l",
+      "pack"
+     ],
+     "w": [
+      52.5,
+      19.1,
+      29.2,
+      100.0
+     ]
+    },
+    "Taxes": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Icms": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 0.25
+      },
+      "Pis": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 0.05
+      },
+      "Cofins": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 0.1,
+       "alt": [
+        {
+         "t": "int32",
+         "lo": 0,
+         "hi": 1,
+         "aw": 0.18
+        }
+       ]
+      }
+     }
+    },
+    "Attrs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "Suppliers": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "suppliers"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.8
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "date",
+         "aw": 0.11
+        }
+       ]
+      }
+     }
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      37.6,
+      60.5
+     ]
+    },
+    "DescriptionOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "title"
+    },
+    "ActiveV2": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.82
+    },
+    "Ctx": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "config": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Zone": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "Source": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Flags": {
+             "t": "object",
+             "p": 0.6,
+             "n": 0.0,
+             "f": {
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "Count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "sk": 2.31
+            }
+           }
+          }
+         }
+        },
+        "Name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Sku",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Ean",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Dept",
+       1
+      ],
+      [
+       "Price",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ReviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Attrs.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Sku": {
+       "bsonType": "string"
+      },
+      "Ean": {
+       "bsonType": "string"
+      },
+      "Description": {
+       "bsonType": "string"
+      },
+      "Dept": {
+       "bsonType": "string",
+       "enum": [
+        "grocery",
+        "bakery",
+        "dairy",
+        "beauty",
+        "home",
+        "electronics"
+       ]
+      },
+      "Price": {
+       "bsonType": "decimal"
+      },
+      "Cost": {
+       "bsonType": "decimal"
+      },
+      "Unit": {
+       "bsonType": "string",
+       "enum": [
+        "un",
+        "kg",
+        "l",
+        "pack"
+       ]
+      },
+      "Taxes": {
+       "bsonType": "object",
+       "properties": {
+        "Icms": {
+         "bsonType": "double"
+        },
+        "Pis": {
+         "bsonType": "double"
+        },
+        "Cofins": {
+         "bsonType": [
+          "double",
+          "int"
+         ]
+        }
+       },
+       "required": [
+        "Icms",
+        "Pis",
+        "Cofins"
+       ]
+      },
+      "Attrs": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "string"
+       }
+      },
+      "Suppliers": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "Active": {
+       "bsonType": "bool"
+      },
+      "Override": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Reason": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": [
+          "date",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "By",
+        "Reason",
+        "At"
+       ]
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "DescriptionOld": {
+       "bsonType": "string"
+      },
+      "ActiveV2": {
+       "bsonType": "bool"
+      },
+      "Ctx": {
+       "bsonType": "object",
+       "properties": {
+        "config": {
+         "bsonType": "object",
+         "properties": {
+          "Zone": {
+           "bsonType": "object",
+           "properties": {
+            "Source": {
+             "bsonType": "object",
+             "properties": {
+              "Flags": {
+               "bsonType": "object",
+               "properties": {
+                "seenAt": {
+                 "bsonType": "date"
+                }
+               },
+               "required": [
+                "seenAt"
+               ]
+              },
+              "Count": {
+               "bsonType": "int"
+              }
+             },
+             "required": [
+              "Count"
+             ]
+            }
+           },
+           "required": [
+            "Source"
+           ]
+          },
+          "Name": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "Name"
+         ]
+        }
+       },
+       "required": [
+        "config"
+       ]
+      }
+     },
+     "required": [
+      "Sku",
+      "Ean",
+      "Description",
+      "Dept",
+      "Price",
+      "Cost",
+      "Unit",
+      "Taxes",
+      "Attrs",
+      "Suppliers",
+      "Active"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "sales",
+   "name": "Sales_v2",
+   "doc_count": 2250,
+   "fields": {
+    "ReceiptNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "NF"
+    },
+    "StoreId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "TermIdX": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "terminals",
+     "v": 4
+    },
+    "CashierId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cashiers"
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Lines": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Sku": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sku"
+       },
+       "Qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 12,
+        "alt": [
+         {
+          "t": "string",
+          "g": "numstr",
+          "lo": 1,
+          "hi": 12,
+          "dec": 0,
+          "aw": 0.08
+         }
+        ]
+       },
+       "UnitPrice": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 900.0
+       },
+       "Discount": {
+        "t": "object",
+        "p": 0.7,
+        "n": 0.0,
+        "f": {
+         "kind": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "pct",
+           "abs",
+           "promo"
+          ],
+          "w": [
+           33.7,
+           47.6,
+           100.0
+          ]
+         },
+         "value": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0.0,
+          "hi": 50.0,
+          "sk": 1.44
+         },
+         "promo_id": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "ref": "promotions",
+          "g": "word"
+         }
+        }
+       },
+       "Tax": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Code": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "TX"
+         },
+         "rate": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0.0,
+          "hi": 0.3,
+          "alt": [
+           {
+            "t": "int32",
+            "lo": 0,
+            "hi": 1,
+            "aw": 0.15
+           }
+          ]
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Payments": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Method": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "cash",
+         "credit",
+         "debit",
+         "pix",
+         "voucher"
+        ],
+        "w": [
+         18.3,
+         56.7,
+         33.9,
+         17.3,
+         100.0
+        ]
+       },
+       "Amount": {
+        "t": "decimal128",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1.0,
+        "hi": 3000.0
+       },
+       "Card": {
+        "t": "object",
+        "p": 0.4,
+        "n": 0.0,
+        "f": {
+         "Brand": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "visa",
+           "master",
+           "elo"
+          ],
+          "w": [
+           36.1,
+           100.0,
+           46.2
+          ]
+         },
+         "Last4": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "code",
+          "prefix": ""
+         },
+         "Nsu": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "hex"
+         },
+         "Installments": {
+          "t": "int32",
+          "p": 0.3,
+          "n": 0.0,
+          "lo": 1,
+          "hi": 12
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5000.0,
+     "sk": 2.11
+    },
+    "Customer": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "cpfHash": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      },
+      "loyalty": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "card": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "LC"
+        },
+        "points": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000
+        }
+       }
+      }
+     }
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "closed",
+      "voided",
+      "suspended"
+     ],
+     "w": [
+      100.0,
+      65.3,
+      39.0
+     ]
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      52.2,
+      25.5,
+      100.0
+     ]
+    },
+    "TotOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1.0,
+     "hi": 5000.0,
+     "dec": 2
+    },
+    "Ctx": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Route": {
+       "t": "object",
+       "p": 0.3,
+       "n": 0.0,
+       "f": {
+        "runtime": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "Options": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "device": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.63
+              },
+              "count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              62.7,
+              100.0,
+              46.1
+             ]
+            }
+           }
+          },
+          "enabled": {
+           "t": "bool",
+           "p": 1.0,
+           "n": 0.0,
+           "pt": 0.59
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ReceiptNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "StoreId",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Lines.Sku",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Payments.Method",
+       1
+      ],
+      [
+       "total",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CashierId",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ReceiptNo": {
+       "bsonType": "string"
+      },
+      "StoreId": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "TermIdX": {
+       "bsonType": "binData"
+      },
+      "CashierId": {
+       "bsonType": "objectId"
+      },
+      "At": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Lines": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Sku": {
+          "bsonType": "string"
+         },
+         "Qty": {
+          "bsonType": [
+           "int",
+           "string"
+          ]
+         },
+         "UnitPrice": {
+          "bsonType": "decimal"
+         },
+         "Discount": {
+          "bsonType": "object",
+          "properties": {
+           "kind": {
+            "bsonType": "string",
+            "enum": [
+             "pct",
+             "abs",
+             "promo"
+            ]
+           },
+           "value": {
+            "bsonType": "double"
+           },
+           "promo_id": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "kind",
+           "value"
+          ]
+         },
+         "Tax": {
+          "bsonType": "object",
+          "properties": {
+           "Code": {
+            "bsonType": "string"
+           },
+           "rate": {
+            "bsonType": [
+             "double",
+             "int"
+            ]
+           }
+          },
+          "required": [
+           "Code",
+           "rate"
+          ]
+         }
+        },
+        "required": [
+         "Sku",
+         "Qty",
+         "UnitPrice",
+         "Tax"
+        ]
+       }
+      },
+      "Payments": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Method": {
+          "bsonType": "string",
+          "enum": [
+           "cash",
+           "credit",
+           "debit",
+           "pix",
+           "voucher"
+          ]
+         },
+         "Amount": {
+          "bsonType": "decimal"
+         },
+         "Card": {
+          "bsonType": "object",
+          "properties": {
+           "Brand": {
+            "bsonType": "string",
+            "enum": [
+             "visa",
+             "master",
+             "elo"
+            ]
+           },
+           "Last4": {
+            "bsonType": "string"
+           },
+           "Nsu": {
+            "bsonType": "string"
+           },
+           "Installments": {
+            "bsonType": "int"
+           }
+          },
+          "required": [
+           "Brand",
+           "Last4",
+           "Nsu"
+          ]
+         }
+        },
+        "required": [
+         "Method",
+         "Amount"
+        ]
+       }
+      },
+      "total": {
+       "bsonType": "decimal"
+      },
+      "Customer": {
+       "bsonType": "object",
+       "properties": {
+        "cpfHash": {
+         "bsonType": "string"
+        },
+        "loyalty": {
+         "bsonType": "object",
+         "properties": {
+          "card": {
+           "bsonType": "string"
+          },
+          "points": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "card",
+          "points"
+         ]
+        }
+       },
+       "required": [
+        "cpfHash"
+       ]
+      },
+      "Status": {
+       "bsonType": "string",
+       "enum": [
+        "closed",
+        "voided",
+        "suspended"
+       ]
+      },
+      "Notes": {
+       "bsonType": "string"
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "TotOld": {
+       "bsonType": "string"
+      },
+      "Ctx": {
+       "bsonType": "object",
+       "properties": {
+        "Route": {
+         "bsonType": "object",
+         "properties": {
+          "runtime": {
+           "bsonType": "object",
+           "properties": {
+            "Options": {
+             "bsonType": "object",
+             "properties": {
+              "device": {
+               "bsonType": "object",
+               "properties": {
+                "seenAt": {
+                 "bsonType": "date"
+                },
+                "enabled": {
+                 "bsonType": "bool"
+                },
+                "count": {
+                 "bsonType": "int"
+                }
+               },
+               "required": [
+                "seenAt",
+                "enabled",
+                "count"
+               ]
+              },
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "device",
+              "level"
+             ]
+            },
+            "enabled": {
+             "bsonType": "bool"
+            }
+           },
+           "required": [
+            "enabled"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "ReceiptNo",
+      "StoreId",
+      "TermIdX",
+      "CashierId",
+      "At",
+      "Lines",
+      "Payments",
+      "total",
+      "Status"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 4,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "suppliers",
+   "name": "Suppliers",
+   "doc_count": 600,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "TaxId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "lead_days_v2": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 60,
+     "sk": 1.46
+    },
+    "Terms": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "net30",
+      "net60",
+      "cash"
+     ],
+     "w": [
+      26.0,
+      100.0,
+      57.4
+     ]
+    },
+    "Contact": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Name": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Email": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "email"
+      },
+      "Phone": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "phone"
+      }
+     }
+    },
+    "FlActive": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.86
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      46.0,
+      100.0,
+      28.4
+     ]
+    },
+    "StrExternalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Info": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Runtime": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "Route": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "region": {
+           "t": "object",
+           "p": 0.9,
+           "n": 0.0,
+           "f": {
+            "flags": {
+             "t": "object",
+             "p": 0.6,
+             "n": 0.0,
+             "f": {
+              "zone": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "seen_at": {
+                 "t": "date",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30"
+                },
+                "version": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "code",
+                 "prefix": "v"
+                }
+               }
+              },
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                39.1,
+                57.1,
+                100.0
+               ]
+              }
+             }
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          },
+          "seenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TaxId",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "FlActive",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "StrExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Name": {
+       "bsonType": "string"
+      },
+      "TaxId": {
+       "bsonType": "string"
+      },
+      "lead_days_v2": {
+       "bsonType": "int"
+      },
+      "Terms": {
+       "bsonType": "string",
+       "enum": [
+        "net30",
+        "net60",
+        "cash"
+       ]
+      },
+      "Contact": {
+       "bsonType": "object",
+       "properties": {
+        "Name": {
+         "bsonType": "string"
+        },
+        "Email": {
+         "bsonType": "string"
+        },
+        "Phone": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "Name",
+        "Email"
+       ]
+      },
+      "FlActive": {
+       "bsonType": "bool"
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "StrExternalRef": {
+       "bsonType": "string"
+      },
+      "Info": {
+       "bsonType": "object",
+       "properties": {
+        "Runtime": {
+         "bsonType": "object",
+         "properties": {
+          "Route": {
+           "bsonType": "object",
+           "properties": {
+            "region": {
+             "bsonType": "object",
+             "properties": {
+              "flags": {
+               "bsonType": "object",
+               "properties": {
+                "zone": {
+                 "bsonType": "object",
+                 "properties": {
+                  "seen_at": {
+                   "bsonType": "date"
+                  },
+                  "version": {
+                   "bsonType": "string"
+                  }
+                 },
+                 "required": [
+                  "seen_at",
+                  "version"
+                 ]
+                },
+                "level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                }
+               },
+               "required": [
+                "zone",
+                "level"
+               ]
+              },
+              "name": {
+               "bsonType": "string"
+              }
+             },
+             "required": [
+              "name"
+             ]
+            },
+            "seenAt": {
+             "bsonType": "date"
+            }
+           },
+           "required": [
+            "seenAt"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "Name",
+      "TaxId",
+      "lead_days_v2",
+      "Terms",
+      "Contact",
+      "FlActive"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "promotions",
+   "name": "Promotions",
+   "doc_count": 1250,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PM"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "bogo",
+      "pct",
+      "bundle",
+      "coupon"
+     ],
+     "w": [
+      39.6,
+      34.5,
+      100.0,
+      46.1
+     ]
+    },
+    "Rules": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "MinQty": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 10
+      },
+      "Skus": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sku"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Stores": {
+       "t": "array",
+       "p": 0.9,
+       "n": 0.0,
+       "item": {
+        "t": "uuid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "stores",
+        "v": 4
+       },
+       "min": 0,
+       "max": 4
+      },
+      "Customers": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "all",
+        "loyalty",
+        "new"
+       ],
+       "w": [
+        100.0,
+        42.8,
+        31.4
+       ]
+      }
+     }
+    },
+    "Starts": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "EndsOld": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "_stackable": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.24
+    },
+    "Redeemed": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "day",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 900
+      }
+     }
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "FlBetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.36
+    },
+    "OldName": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "title"
+    },
+    "OldStarts": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Starts",
+       1
+      ],
+      [
+       "EndsOld",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "FlBetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Redeemed.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PRO-"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "stock_counts",
+   "name": "StockCounts",
+   "doc_count": 1250,
+   "fields": {
+    "StoreId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "Sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "CountedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "SystemQty": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 400
+    },
+    "CountedQty": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 400,
+     "sk": 2.03,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0,
+       "hi": 400,
+       "aw": 0.12
+      }
+     ]
+    },
+    "Operator": {
+     "t": "objectid",
+     "p": 0.9,
+     "n": 0.0,
+     "ref": "cashiers"
+    },
+    "Reason": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cycle",
+      "audit",
+      "damage",
+      "theft"
+     ],
+     "w": [
+      34.8,
+      52.5,
+      19.4,
+      100.0
+     ]
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.62
+    },
+    "OldSku": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "sku"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "StoreId",
+       1
+      ],
+      [
+       "Sku",
+       1
+      ],
+      [
+       "CountedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Operator",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "CountedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "StoreId": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "Sku": {
+       "bsonType": "string"
+      },
+      "CountedAt": {
+       "bsonType": "date"
+      },
+      "SystemQty": {
+       "bsonType": "int"
+      },
+      "CountedQty": {
+       "bsonType": [
+        "int",
+        "double"
+       ]
+      },
+      "Operator": {
+       "bsonType": "objectId"
+      },
+      "Reason": {
+       "bsonType": "string",
+       "enum": [
+        "cycle",
+        "audit",
+        "damage",
+        "theft"
+       ]
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "OldSku": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "StoreId",
+      "Sku",
+      "CountedAt",
+      "SystemQty",
+      "CountedQty"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "terminals",
+   "name": "Terminals_new",
+   "doc_count": 1000,
+   "fields": {
+    "_StoreId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "Serial": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pos",
+      "selfcheckout",
+      "mobile"
+     ],
+     "w": [
+      100.0,
+      27.0,
+      42.4
+     ]
+    },
+    "Firmware": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "FW"
+    },
+    "LastSeen": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "StatusNew": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "online",
+      "offline",
+      "maint"
+     ],
+     "w": [
+      100.0,
+      43.1,
+      42.0
+     ]
+    },
+    "Peripherals": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "KindV2": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "printer",
+         "scanner",
+         "scale",
+         "pinpad"
+        ],
+        "w": [
+         41.4,
+         39.0,
+         100.0,
+         17.0
+        ]
+       },
+       "Vendor": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Model": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "MD"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.48
+    },
+    "Embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "_StoreId",
+       1
+      ],
+      [
+       "StatusNew",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Serial",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "BetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "_StoreId": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "Serial": {
+       "bsonType": "string"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "pos",
+        "selfcheckout",
+        "mobile"
+       ]
+      },
+      "Firmware": {
+       "bsonType": "string"
+      },
+      "LastSeen": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "StatusNew": {
+       "bsonType": "string",
+       "enum": [
+        "online",
+        "offline",
+        "maint"
+       ]
+      },
+      "Peripherals": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "KindV2": {
+          "bsonType": "string",
+          "enum": [
+           "printer",
+           "scanner",
+           "scale",
+           "pinpad"
+          ]
+         },
+         "Vendor": {
+          "bsonType": "string"
+         },
+         "Model": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "KindV2",
+         "Vendor",
+         "Model"
+        ]
+       }
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "Embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "_StoreId",
+      "Serial",
+      "kind",
+      "Firmware",
+      "LastSeen",
+      "StatusNew",
+      "Peripherals"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "terminals_new_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Serial": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Firmware": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "kind": {
+         "type": "token"
+        },
+        "StatusNew": {
+         "type": "token"
+        },
+        "LastSeen": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "terminals_new_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "Embedding",
+        "numDimensions": 8,
+        "similarity": "euclidean"
+       },
+       {
+        "type": "filter",
+        "path": "kind"
+       },
+       {
+        "type": "filter",
+        "path": "LastSeen"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "z_reports",
+   "name": "z-reports",
+   "doc_count": 500,
+   "fields": {
+    "StoreID": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "TerminalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "terminals",
+     "v": 4
+    },
+    "Date": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Totals": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 90000.0
+      }
+     }
+    },
+    "TaxSummary": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Base": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 90000.0
+        },
+        "Tax": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 9000.0
+        }
+       }
+      }
+     }
+    },
+    "Counters": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Sales": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10,
+       "hi": 900,
+       "sk": 2.26
+      },
+      "Voids": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 30,
+       "alt": [
+        {
+         "t": "string",
+         "g": "numstr",
+         "lo": 0,
+         "hi": 30,
+         "dec": 0,
+         "aw": 0.08
+        }
+       ]
+      },
+      "Returns": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 30
+      }
+     }
+    },
+    "ImportBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "OldDate": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "StoreID",
+       1
+      ],
+      [
+       "Date",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "TerminalId",
+       1
+      ],
+      [
+       "Date",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "TerminalId",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "StoreID": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "TerminalId": {
+       "bsonType": "binData"
+      },
+      "Date": {
+       "bsonType": "date"
+      },
+      "Totals": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "decimal"
+       }
+      },
+      "TaxSummary": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "object",
+        "properties": {
+         "Base": {
+          "bsonType": "decimal"
+         },
+         "Tax": {
+          "bsonType": "decimal"
+         }
+        },
+        "required": [
+         "Base",
+         "Tax"
+        ]
+       }
+      },
+      "Counters": {
+       "bsonType": "object",
+       "properties": {
+        "Sales": {
+         "bsonType": "int"
+        },
+        "Voids": {
+         "bsonType": [
+          "int",
+          "string"
+         ]
+        },
+        "Returns": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "Sales",
+        "Voids",
+        "Returns"
+       ]
+      },
+      "ImportBatch": {
+       "bsonType": "string"
+      },
+      "OldDate": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "StoreID",
+      "TerminalId",
+      "Date",
+      "Totals",
+      "TaxSummary",
+      "Counters"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "cashiers",
+   "name": "Cashiers",
+   "doc_count": 600,
+   "fields": {
+    "Badge": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "OP"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "StoreId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "StrRole": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cashier",
+      "supervisor",
+      "trainee"
+     ],
+     "w": [
+      53.4,
+      100.0,
+      31.3
+     ]
+    },
+    "HiredAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Permissions": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.37
+      }
+     }
+    },
+    "Active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.91,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "PinHash": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "ImportBatch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Badge",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "StoreId",
+       1
+      ],
+      [
+       "StrRole",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "cashiers_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Badge": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "PinHash": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "StrRole": {
+         "type": "token"
+        },
+        "HiredAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "price_changes",
+   "name": "PriceChanges",
+   "doc_count": 1200,
+   "fields": {
+    "Sku": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sku"
+    },
+    "StoreId": {
+     "t": "uuid",
+     "p": 0.4,
+     "n": 0.0,
+     "ref": "stores",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "stores",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "OldPrice": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900.0,
+     "sk": 2.55
+    },
+    "NewPrc": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 900.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 0.5,
+       "hi": 900.0,
+       "aw": 0.06
+      }
+     ]
+    },
+    "Effective": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "promo",
+      "cost",
+      "competitor",
+      "clearance"
+     ],
+     "w": [
+      34.9,
+      41.1,
+      52.4,
+      100.0
+     ]
+    },
+    "Approved": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.67
+    },
+    "LegacyNewPrice": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.5,
+     "hi": 900.0,
+     "dec": 2
+    },
+    "LegacyEffective": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "Ctx": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Profile": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Src": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Options": {
+           "t": "object",
+           "p": 0.3,
+           "n": 0.0,
+           "f": {
+            "config": {
+             "t": "object",
+             "p": 0.5,
+             "n": 0.0,
+             "f": {
+              "route": {
+               "t": "object",
+               "p": 0.95,
+               "n": 0.0,
+               "f": {
+                "score": {
+                 "t": "double",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 100
+                },
+                "name": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "word"
+                },
+                "version": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "code",
+                 "prefix": "v"
+                }
+               }
+              },
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                40.7,
+                100.0,
+                30.1
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "SeenAt": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Sku",
+       1
+      ],
+      [
+       "Effective",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Reason",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Sku": {
+       "bsonType": "string"
+      },
+      "StoreId": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "OldPrice": {
+       "bsonType": "decimal"
+      },
+      "NewPrc": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "Effective": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Reason": {
+       "bsonType": "string",
+       "enum": [
+        "promo",
+        "cost",
+        "competitor",
+        "clearance"
+       ]
+      },
+      "Approved": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "By",
+        "At"
+       ]
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "LegacyNewPrice": {
+       "bsonType": "string"
+      },
+      "LegacyEffective": {
+       "bsonType": "string"
+      },
+      "Ctx": {
+       "bsonType": "object",
+       "properties": {
+        "Profile": {
+         "bsonType": "object",
+         "properties": {
+          "Src": {
+           "bsonType": "object",
+           "properties": {
+            "Options": {
+             "bsonType": "object",
+             "properties": {
+              "config": {
+               "bsonType": "object",
+               "properties": {
+                "route": {
+                 "bsonType": "object",
+                 "properties": {
+                  "score": {
+                   "bsonType": "double"
+                  },
+                  "name": {
+                   "bsonType": "string"
+                  },
+                  "version": {
+                   "bsonType": "string"
+                  }
+                 },
+                 "required": [
+                  "score",
+                  "name",
+                  "version"
+                 ]
+                },
+                "level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                }
+               },
+               "required": [
+                "level"
+               ]
+              }
+             }
+            }
+           }
+          },
+          "SeenAt": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "Src",
+          "SeenAt"
+         ]
+        }
+       },
+       "required": [
+        "Profile"
+       ]
+      }
+     },
+     "required": [
+      "Sku",
+      "OldPrice",
+      "NewPrc",
+      "Effective",
+      "Reason"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "returns",
+   "name": "tbl_returns",
+   "doc_count": 1000,
+   "fields": {
+    "RefSaleId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sales",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "sales",
+       "as": "string",
+       "aw": 0.06
+      }
+     ]
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Lines": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "sku": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sku"
+       },
+       "Qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 4
+       },
+       "Reason": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "defect",
+         "regret",
+         "wrong"
+        ],
+        "w": [
+         47.1,
+         54.0,
+         100.0
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "VlRefund": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 2000.0
+    },
+    "Method": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "original",
+      "voucher",
+      "cash"
+     ],
+     "w": [
+      100.0,
+      47.5,
+      59.0
+     ]
+    },
+    "ApprovedBy": {
+     "t": "objectid",
+     "p": 0.9,
+     "n": 0.0,
+     "ref": "cashiers"
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "LegacyAt": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "RefSaleId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "RefSaleId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "At": {
+       "bsonType": "date"
+      },
+      "Lines": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "sku": {
+          "bsonType": "string"
+         },
+         "Qty": {
+          "bsonType": "int"
+         },
+         "Reason": {
+          "bsonType": "string",
+          "enum": [
+           "defect",
+           "regret",
+           "wrong"
+          ]
+         }
+        },
+        "required": [
+         "sku",
+         "Qty",
+         "Reason"
+        ]
+       }
+      },
+      "VlRefund": {
+       "bsonType": "decimal"
+      },
+      "Method": {
+       "bsonType": "string",
+       "enum": [
+        "original",
+        "voucher",
+        "cash"
+       ]
+      },
+      "ApprovedBy": {
+       "bsonType": "objectId"
+      },
+      "Notes": {
+       "bsonType": "string"
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "LegacyAt": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "RefSaleId",
+      "At",
+      "Lines",
+      "VlRefund",
+      "Method"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "cash_events",
+   "name": "CashEvents",
+   "doc_count": 2200,
+   "fields": {
+    "DAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "TerminalId": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "terminals",
+     "v": 4
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "sangria",
+      "suprimento",
+      "void",
+      "nosale",
+      "close"
+     ],
+     "w": [
+      100.0,
+      41.4,
+      13.7,
+      30.8,
+      39.8,
+      45.4
+     ]
+    },
+    "Amount": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 3000.0,
+     "sk": 1.88
+    },
+    "ApprovedBy": {
+     "t": "objectid",
+     "p": 0.6,
+     "n": 0.0,
+     "ref": "cashiers"
+    },
+    "NoteLegacy": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      38.9,
+      58.4,
+      100.0,
+      48.8
+     ]
+    },
+    "Audit": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Limits": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "zone": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "stack": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "policy": {
+             "t": "object",
+             "p": 0.4,
+             "n": 0.0,
+             "f": {
+              "Rule": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "Enabled": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.7
+                },
+                "Count": {
+                 "t": "int32",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 900
+                }
+               }
+              }
+             }
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "DAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ],
+      [
+       "TerminalId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ApprovedBy",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "capped": true,
+    "size": 36044800,
+    "max": 2700
+   },
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "capped"
+   }
+  },
+  {
+   "key": "stores",
+   "name": "Stores",
+   "doc_count": 450,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LJ"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Format": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "hyper",
+      "super",
+      "express",
+      "outlet"
+     ],
+     "w": [
+      100.0,
+      59.9,
+      33.6,
+      28.9
+     ]
+    },
+    "Address": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Street": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "title"
+      },
+      "City": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "State": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "SP",
+        "RJ",
+        "MG",
+        "PR",
+        "SC",
+        "RS"
+       ],
+       "w": [
+        23.8,
+        15.5,
+        100.0,
+        60.9,
+        31.4,
+        19.9
+       ]
+      },
+      "Geo": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "type": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "Point"
+         ],
+         "w": null
+        },
+        "coordinates": {
+         "t": "array",
+         "p": 1.0,
+         "n": 0.0,
+         "item": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": -180,
+          "hi": 180
+         },
+         "min": 2,
+         "max": 2
+        }
+       },
+       "geo": {
+        "lat": [
+         -33.0,
+         5.0
+        ],
+        "lng": [
+         -73.0,
+         -35.0
+        ]
+       }
+      }
+     }
+    },
+    "OpenedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Hours": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": "o",
+       "n": 0.0,
+       "f": {
+        "Open": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "Close": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        }
+       }
+      }
+     }
+    },
+    "Manager": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Region": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "N",
+      "NE",
+      "CO",
+      "SE",
+      "S"
+     ],
+     "w": [
+      100.0,
+      49.7,
+      16.7,
+      17.8,
+      62.6
+     ]
+    },
+    "Features": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "ByNew": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "OldName": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "title"
+    },
+    "legacyOpenedAt": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Region",
+       1
+      ],
+      [
+       "Format",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Address.Geo",
+       "2dsphere"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 1,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

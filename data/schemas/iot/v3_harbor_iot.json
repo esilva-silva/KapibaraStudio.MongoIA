@@ -1,0 +1,3445 @@
+{
+ "schema_id": "v3_harbor_iot",
+ "domain": "iot",
+ "holdout": false,
+ "description": "iot v3 realista EN, camel",
+ "name_style": "camel",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "ota_jobs: campos raros (<10% dos docs): external_ref, notes",
+  "metrics_1m: campos raros (<10% dos docs): notes, import_batch",
+  "metrics_1m: campos legados/duplicados em formato antigo: old_at, old_n",
+  "metrics_1m: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "firmware: campos raros (<10% dos docs): beta_flag, review_state",
+  "firmware: campos legados/duplicados em formato antigo: mandatory_old, legacy_notes",
+  "firmware: aninhamento profundo audit.tenant.route.network.* (4 niveis de objeto)",
+  "firmware: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "commands: campos raros (<10% dos docs): review_state",
+  "commands: aninhamento profundo origin.route.tenant.network.source.stack.* (6 niveis de objeto)",
+  "rules: campos raros (<10% dos docs): import_batch",
+  "rules: campos legados/duplicados em formato antigo: version_old, old_enabled",
+  "rules: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "telemetry_batches: campos raros (<10% dos docs): override, migrated_from",
+  "telemetry_batches: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "gateways: campos raros (<10% dos docs): override, review_state",
+  "gateways: campos legados/duplicados em formato antigo: old_uptime_s",
+  "alerts: campos raros (<10% dos docs): external_ref, migrated_from",
+  "alerts: campos legados/duplicados em formato antigo: opened_at_old, closed_at_v2",
+  "alerts: heterogeneidade de tipo no mesmo campo: date_string=1, ref_string=1",
+  "sites: campos raros (<10% dos docs): deleted_at, notes",
+  "sites: campos legados/duplicados em formato antigo: devices_expected_old",
+  "sites: aninhamento profundo ext.rule.source.flags.* (4 niveis de objeto)",
+  "readings: campos raros (<10% dos docs): review_state",
+  "maintenance: campos raros (<10% dos docs): deleted_at, review_state",
+  "maintenance: aninhamento profundo origin.flags.source.route.stack.* (5 niveis de objeto)",
+  "devices: campos raros (<10% dos docs): import_batch, beta_flag",
+  "devices: campos legados/duplicados em formato antigo: legacy_battery_pct",
+  "devices: heterogeneidade de tipo no mesmo campo: bool_string=1",
+  "sensors: campos raros (<10% dos docs): import_batch",
+  "sensors: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "_id mistos: int64=1, objectid=11, uuid=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante camel; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=2, name_ID=2, name_abbr=5, name_hung=2, name_style=6, name_suffix=7, name_underscore=3",
+  "campos heterogeneos (alt) no schema: 10; mapas dinamicos: 3; max_depth=7",
+  "dominio iot: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "ota_jobs",
+   "name": "otaJobs",
+   "doc_count": 300,
+   "fields": {
+    "firmwareID": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "firmware"
+    },
+    "targets": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "device": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "devices"
+       },
+       "state": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "queued",
+         "downloading",
+         "applied",
+         "failed",
+         "rolledback"
+        ],
+        "w": [
+         27.6,
+         100.0,
+         33.1,
+         18.3,
+         53.5
+        ]
+       },
+       "progress": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 100,
+        "sk": 2.15
+       },
+       "error": {
+        "t": "object",
+        "p": 0.5,
+        "n": 0.0,
+        "f": {
+         "code": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "ER"
+         },
+         "msg": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "sentence"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "started": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "policy": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Batch": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 500
+      },
+      "window": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "from": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "to": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        }
+       }
+      },
+      "retry": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "max": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5
+        },
+        "backoffS": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 1,
+         "hi": 900,
+         "alt": [
+          {
+           "t": "string",
+           "g": "numstr",
+           "lo": 1,
+           "hi": 900,
+           "dec": 0,
+           "aw": 0.08
+          }
+         ]
+        }
+       }
+      }
+     }
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "firmwareID",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "started",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "targets.state",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "firmwareID": {
+       "bsonType": "objectId"
+      },
+      "targets": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "device": {
+          "bsonType": "objectId"
+         },
+         "state": {
+          "bsonType": "string",
+          "enum": [
+           "queued",
+           "downloading",
+           "applied",
+           "failed",
+           "rolledback"
+          ]
+         },
+         "progress": {
+          "bsonType": "int"
+         },
+         "error": {
+          "bsonType": "object",
+          "properties": {
+           "code": {
+            "bsonType": "string"
+           },
+           "msg": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "code",
+           "msg"
+          ]
+         }
+        },
+        "required": [
+         "device",
+         "state",
+         "progress"
+        ]
+       }
+      },
+      "started": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "policy": {
+       "bsonType": "object",
+       "properties": {
+        "Batch": {
+         "bsonType": "int"
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "from": {
+           "bsonType": "string"
+          },
+          "to": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "from",
+          "to"
+         ]
+        },
+        "retry": {
+         "bsonType": "object",
+         "properties": {
+          "max": {
+           "bsonType": "int"
+          },
+          "backoffS": {
+           "bsonType": [
+            "int",
+            "string"
+           ]
+          }
+         },
+         "required": [
+          "max",
+          "backoffS"
+         ]
+        }
+       },
+       "required": [
+        "Batch",
+        "window"
+       ]
+      },
+      "externalRef": {
+       "bsonType": "string"
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "firmwareID",
+      "targets",
+      "started",
+      "policy"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "otajobs_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "cosine"
+       },
+       {
+        "type": "filter",
+        "path": "started"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "metrics_1m",
+   "name": "metrics1m",
+   "doc_count": 1000,
+   "fields": {
+    "deviceId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "vals": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "metric",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 999.0
+      }
+     }
+    },
+    "tags": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "site": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "ST"
+      },
+      "env": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "prod",
+        "test"
+       ],
+       "w": [
+        56.7,
+        100.0
+       ]
+      },
+      "fleet": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "n": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 60,
+     "sk": 2.11,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 1,
+       "hi": 60,
+       "aw": 0.15
+      }
+     ]
+    },
+    "_notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "oldAt": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "oldN": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 60,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "deviceId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tags.env",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "vals.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "firmware",
+   "name": "firmware",
+   "doc_count": 650,
+   "fields": {
+    "version": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "FW"
+    },
+    "model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "th-100",
+      "pm-200",
+      "gw-300",
+      "cam-9"
+     ],
+     "w": [
+      100.0,
+      61.6,
+      25.9,
+      24.5
+     ]
+    },
+    "releasedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.08
+      }
+     ]
+    },
+    "sizeKb": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 64,
+     "hi": 9000
+    },
+    "checksum": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "mandatory_old": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.2
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.49
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      58.1,
+      100.0,
+      24.5
+     ]
+    },
+    "mandatoryOld": {
+     "t": "bool",
+     "p": 0.25,
+     "n": 0.0,
+     "pt": 0.13
+    },
+    "legacyNotes": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "tenant": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "route": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              31.2,
+              46.7
+             ]
+            },
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            }
+           }
+          }
+         }
+        },
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100,
+         "sk": 1.72
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "version",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "model",
+       1
+      ],
+      [
+       "releasedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "commands",
+   "name": "commands",
+   "doc_count": 1450,
+   "fields": {
+    "deviceId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "reboot",
+      "calibrate",
+      "update",
+      "sample_rate"
+     ],
+     "w": [
+      18.2,
+      34.6,
+      64.4,
+      100.0
+     ]
+    },
+    "params": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "rateHz": {
+       "t": "int32",
+       "p": 0.3,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 100
+      },
+      "force": {
+       "t": "bool",
+       "p": 0.3,
+       "n": 0.0,
+       "pt": 0.21
+      }
+     }
+    },
+    "issuedAtV2": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "queued",
+      "sent",
+      "ack",
+      "failed"
+     ],
+     "w": [
+      100.0,
+      32.7,
+      44.3,
+      52.8
+     ]
+    },
+    "_reviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      43.3,
+      45.7
+     ]
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "route": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "tenant": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "source": {
+             "t": "object",
+             "p": 0.9,
+             "n": 0.0,
+             "f": {
+              "stack": {
+               "t": "object",
+               "p": 0.3,
+               "n": 0.0,
+               "f": {
+                "Enabled": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.76
+                },
+                "Level": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "enum",
+                 "values": [
+                  "low",
+                  "mid",
+                  "high"
+                 ],
+                 "w": [
+                  55.7,
+                  38.7,
+                  100.0
+                 ]
+                },
+                "Score": {
+                 "t": "double",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 100
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "version": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "v"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "deviceId",
+       1
+      ],
+      [
+       "issuedAtV2",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "st",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "_reviewState",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "deviceId": {
+       "bsonType": "objectId"
+      },
+      "name": {
+       "bsonType": "string",
+       "enum": [
+        "reboot",
+        "calibrate",
+        "update",
+        "sample_rate"
+       ]
+      },
+      "params": {
+       "bsonType": "object",
+       "properties": {
+        "rateHz": {
+         "bsonType": "int"
+        },
+        "force": {
+         "bsonType": "bool"
+        }
+       }
+      },
+      "issuedAtV2": {
+       "bsonType": "date"
+      },
+      "st": {
+       "bsonType": "string",
+       "enum": [
+        "queued",
+        "sent",
+        "ack",
+        "failed"
+       ]
+      },
+      "_reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "route": {
+         "bsonType": "object",
+         "properties": {
+          "tenant": {
+           "bsonType": "object",
+           "properties": {
+            "network": {
+             "bsonType": "object",
+             "properties": {
+              "source": {
+               "bsonType": "object",
+               "properties": {
+                "stack": {
+                 "bsonType": "object",
+                 "properties": {
+                  "Enabled": {
+                   "bsonType": "bool"
+                  },
+                  "Level": {
+                   "bsonType": "string",
+                   "enum": [
+                    "low",
+                    "mid",
+                    "high"
+                   ]
+                  },
+                  "Score": {
+                   "bsonType": "double"
+                  }
+                 },
+                 "required": [
+                  "Enabled",
+                  "Level",
+                  "Score"
+                 ]
+                }
+               }
+              }
+             }
+            }
+           },
+           "required": [
+            "network"
+           ]
+          },
+          "version": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "tenant",
+          "version"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "deviceId",
+      "name",
+      "params",
+      "issuedAtV2",
+      "st"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "rules",
+   "name": "t_rules",
+   "doc_count": 500,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "scope": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "site": {
+       "t": "objectid",
+       "p": 0.5,
+       "n": 0.0,
+       "ref": "sites"
+      },
+      "model": {
+       "t": "string",
+       "p": 0.95,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "th-100",
+        "pm-200",
+        "gw-300",
+        "cam-9"
+       ],
+       "w": [
+        45.6,
+        55.2,
+        24.3,
+        100.0
+       ]
+      },
+      "labels": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "condition": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "any": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "metric": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "temperature",
+           "humidity",
+           "co2"
+          ],
+          "w": [
+           45.9,
+           100.0,
+           31.6
+          ]
+         },
+         "op": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "gt",
+           "lt"
+          ],
+          "w": [
+           57.1,
+           100.0
+          ]
+         },
+         "threshold": {
+          "t": "double",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": -20.0,
+          "hi": 120.0
+         },
+         "forS": {
+          "t": "int32",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0,
+          "hi": 3600,
+          "alt": [
+           {
+            "t": "double",
+            "lo": 0,
+            "hi": 3600,
+            "aw": 0.18
+           }
+          ]
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      },
+      "window": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "sizeS": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 10,
+         "hi": 3600
+        },
+        "agg": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "avg",
+          "max",
+          "min"
+         ],
+         "w": [
+          100.0,
+          58.7,
+          44.9
+         ]
+        }
+       }
+      }
+     }
+    },
+    "actions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "kind": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "alert",
+         "command",
+         "webhook"
+        ],
+        "w": [
+         100.0,
+         50.9,
+         54.5
+        ]
+       },
+       "params": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {},
+        "map": {
+         "keys": "word",
+         "min": 2,
+         "max": 6,
+         "value": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "enabled": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.69
+    },
+    "version": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 30
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "versionOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 30,
+     "dec": 0
+    },
+    "oldEnabled": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.69
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "enabled",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "importBatch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "scope.labels.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "name": {
+       "bsonType": "string"
+      },
+      "scope": {
+       "bsonType": "object",
+       "properties": {
+        "site": {
+         "bsonType": "objectId"
+        },
+        "model": {
+         "bsonType": "string",
+         "enum": [
+          "th-100",
+          "pm-200",
+          "gw-300",
+          "cam-9"
+         ]
+        },
+        "labels": {
+         "bsonType": "object",
+         "additionalProperties": {
+          "bsonType": "string"
+         }
+        }
+       }
+      },
+      "condition": {
+       "bsonType": "object",
+       "properties": {
+        "any": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "metric": {
+            "bsonType": "string",
+            "enum": [
+             "temperature",
+             "humidity",
+             "co2"
+            ]
+           },
+           "op": {
+            "bsonType": "string",
+            "enum": [
+             "gt",
+             "lt"
+            ]
+           },
+           "threshold": {
+            "bsonType": "double"
+           },
+           "forS": {
+            "bsonType": [
+             "int",
+             "double"
+            ]
+           }
+          },
+          "required": [
+           "metric",
+           "op",
+           "threshold",
+           "forS"
+          ]
+         }
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "sizeS": {
+           "bsonType": "int"
+          },
+          "agg": {
+           "bsonType": "string",
+           "enum": [
+            "avg",
+            "max",
+            "min"
+           ]
+          }
+         },
+         "required": [
+          "sizeS",
+          "agg"
+         ]
+        }
+       },
+       "required": [
+        "any",
+        "window"
+       ]
+      },
+      "actions": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "kind": {
+          "bsonType": "string",
+          "enum": [
+           "alert",
+           "command",
+           "webhook"
+          ]
+         },
+         "params": {
+          "bsonType": "object",
+          "additionalProperties": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "kind",
+         "params"
+        ]
+       }
+      },
+      "enabled": {
+       "bsonType": "bool"
+      },
+      "version": {
+       "bsonType": "int"
+      },
+      "importBatch": {
+       "bsonType": "string"
+      },
+      "versionOld": {
+       "bsonType": "string"
+      },
+      "oldEnabled": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "name",
+      "scope",
+      "actions",
+      "enabled",
+      "version"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "t_rules_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "importBatch": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "version": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "telemetry_batches",
+   "name": "telemetryBatches",
+   "doc_count": 1200,
+   "fields": {
+    "gatewayId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "gateways"
+    },
+    "receivedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "count": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500
+    },
+    "points": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "dev": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "hex"
+       },
+       "t": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "v": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 100.0,
+        "alt": [
+         {
+          "t": "int32",
+          "lo": 0,
+          "hi": 101,
+          "aw": 0.23
+         }
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "compressed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.4
+    },
+    "override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      53.7,
+      17.8,
+      32.4,
+      100.0
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "gatewayId",
+       1
+      ],
+      [
+       "receivedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "receivedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "gatewayId": {
+       "bsonType": "objectId"
+      },
+      "receivedAt": {
+       "bsonType": "date"
+      },
+      "count": {
+       "bsonType": "int"
+      },
+      "points": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "dev": {
+          "bsonType": "string"
+         },
+         "t": {
+          "bsonType": "date"
+         },
+         "v": {
+          "bsonType": [
+           "double",
+           "int"
+          ]
+         }
+        },
+        "required": [
+         "dev",
+         "t",
+         "v"
+        ]
+       }
+      },
+      "compressed": {
+       "bsonType": "bool"
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "at"
+       ]
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      }
+     },
+     "required": [
+      "gatewayId",
+      "receivedAt",
+      "count",
+      "points",
+      "compressed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "telemetrybatches_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "migratedFrom": {
+         "type": "token"
+        },
+        "receivedAt": {
+         "type": "date"
+        },
+        "count": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "gateways",
+   "name": "t_gateways",
+   "doc_count": 600,
+   "fields": {
+    "mac": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "siteId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sites"
+    },
+    "ip": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "ip"
+    },
+    "uplink": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "lte",
+      "wifi",
+      "eth"
+     ],
+     "w": [
+      58.4,
+      100.0,
+      40.7
+     ]
+    },
+    "connected": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "devices"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "uptimeS": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000000,
+     "sk": 2.47
+    },
+    "override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      45.4,
+      46.5
+     ]
+    },
+    "oldUptimeS": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 9000000,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "mac",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "siteId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "uplink",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "mac": {
+       "bsonType": "string"
+      },
+      "siteId": {
+       "bsonType": "objectId"
+      },
+      "ip": {
+       "bsonType": "string"
+      },
+      "uplink": {
+       "bsonType": "string",
+       "enum": [
+        "lte",
+        "wifi",
+        "eth"
+       ]
+      },
+      "connected": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "uptimeS": {
+       "bsonType": "long"
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "at"
+       ]
+      },
+      "reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "oldUptimeS": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "mac",
+      "siteId",
+      "ip",
+      "uplink",
+      "uptimeS"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "alerts",
+   "name": "alerts",
+   "doc_count": 1600,
+   "fields": {
+    "deviceId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "devices",
+       "as": "string",
+       "aw": 0.19
+      }
+     ]
+    },
+    "rule": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "severity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "info",
+      "warn",
+      "crit"
+     ],
+     "w": [
+      100.0,
+      41.8,
+      46.2
+     ]
+    },
+    "openedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closedAt": {
+     "t": "date",
+     "p": 0.6,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ack": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "iso",
+         "aw": 0.11
+        }
+       ]
+      }
+     }
+    },
+    "context": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 200.0
+      },
+      "threshold": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 200.0,
+       "sk": 2.39
+      },
+      "window": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "From": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        },
+        "To": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "migratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      42.3,
+      35.3,
+      42.7
+     ]
+    },
+    "OpenedAtOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "closedAtV2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "deviceId",
+       1
+      ],
+      [
+       "severity",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "openedAt",
+       -1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "deviceId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "rule": {
+       "bsonType": "string"
+      },
+      "severity": {
+       "bsonType": "string",
+       "enum": [
+        "info",
+        "warn",
+        "crit"
+       ]
+      },
+      "openedAt": {
+       "bsonType": "date"
+      },
+      "closedAt": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "ack": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": [
+          "date",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "by",
+        "at"
+       ]
+      },
+      "context": {
+       "bsonType": "object",
+       "properties": {
+        "value": {
+         "bsonType": "double"
+        },
+        "threshold": {
+         "bsonType": "double"
+        },
+        "window": {
+         "bsonType": "object",
+         "properties": {
+          "From": {
+           "bsonType": "date"
+          },
+          "To": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "From",
+          "To"
+         ]
+        }
+       },
+       "required": [
+        "value",
+        "threshold",
+        "window"
+       ]
+      },
+      "externalRef": {
+       "bsonType": "string"
+      },
+      "migratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "OpenedAtOld": {
+       "bsonType": "string"
+      },
+      "closedAtV2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "deviceId",
+      "rule",
+      "severity",
+      "openedAt"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "search_indexes": [
+    {
+     "name": "alerts_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "rule": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "externalRef": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "severity": {
+         "type": "token"
+        },
+        "migratedFrom": {
+         "type": "token"
+        },
+        "openedAt": {
+         "type": "date"
+        },
+        "closedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "sites",
+   "name": "sites",
+   "doc_count": 350,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "city": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "geo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "lat_v2": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -34.0,
+       "hi": 5.0
+      },
+      "lng": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -74.0,
+       "hi": -35.0,
+       "sk": 1.88
+      }
+     }
+    },
+    "timezone": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "devicesExpected": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 300
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "devicesExpectedOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 300,
+     "dec": 0
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "src": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "flags": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.72
+            },
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "city",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "sites_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "name": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "city": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "timezone": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "devicesExpected": {
+         "type": "number"
+        },
+        "deletedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "sites_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "dotProduct"
+       },
+       {
+        "type": "filter",
+        "path": "devicesExpected"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "readings",
+   "name": "readings",
+   "doc_count": 1850,
+   "fields": {
+    "sensorId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sensors",
+     "lo": 0,
+     "hi": 1
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "value": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -20.0,
+     "hi": 120.0
+    },
+    "quality": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100
+    },
+    "RawNew": {
+     "t": "int64",
+     "p": 0.6,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 65535
+    },
+    "flags": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "spike",
+       "stale",
+       "interpolated"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      48.3,
+      41.0,
+      100.0
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sensorId",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "sensorId": {
+       "bsonType": "long"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "value": {
+       "bsonType": "double"
+      },
+      "quality": {
+       "bsonType": "int"
+      },
+      "RawNew": {
+       "bsonType": "long"
+      },
+      "flags": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "spike",
+         "stale",
+         "interpolated"
+        ]
+       }
+      },
+      "reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      }
+     },
+     "required": [
+      "sensorId",
+      "at",
+      "value",
+      "quality"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "search_indexes": [
+    {
+     "name": "readings_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "reviewState": {
+         "type": "token"
+        },
+        "sensorId": {
+         "type": "number"
+        },
+        "at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "maintenance",
+   "name": "maintenance",
+   "doc_count": 1400,
+   "fields": {
+    "deviceId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "technician": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "performedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 3000.0
+    },
+    "parts": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "code": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "PT"
+       },
+       "qty": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 5
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.95,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      25.5,
+      100.0,
+      47.5
+     ]
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "flags": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "src": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "route": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "stack": {
+             "t": "object",
+             "p": 0.8,
+             "n": 0.0,
+             "f": {
+              "seenAt2": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "deviceId",
+       1
+      ],
+      [
+       "performedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "deviceId": {
+       "bsonType": "objectId"
+      },
+      "technician": {
+       "bsonType": "string"
+      },
+      "performedAt": {
+       "bsonType": "date"
+      },
+      "cost": {
+       "bsonType": "decimal"
+      },
+      "parts": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "code": {
+          "bsonType": "string"
+         },
+         "qty": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "code",
+         "qty"
+        ]
+       }
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "deletedAt": {
+       "bsonType": "date"
+      },
+      "reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "flags": {
+         "bsonType": "object",
+         "properties": {
+          "src": {
+           "bsonType": "object",
+           "properties": {
+            "route": {
+             "bsonType": "object",
+             "properties": {
+              "stack": {
+               "bsonType": "object",
+               "properties": {
+                "seenAt2": {
+                 "bsonType": "date"
+                },
+                "version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "seenAt2",
+                "version"
+               ]
+              }
+             }
+            }
+           },
+           "required": [
+            "route"
+           ]
+          }
+         }
+        }
+       },
+       "required": [
+        "flags"
+       ]
+      }
+     },
+     "required": [
+      "deviceId",
+      "technician",
+      "performedAt",
+      "cost",
+      "parts"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "devices",
+   "name": "devices",
+   "doc_count": 900,
+   "fields": {
+    "serial": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "th-100",
+      "pm-200",
+      "gw-300",
+      "cam-9"
+     ],
+     "w": [
+      100.0,
+      25.2,
+      46.3,
+      31.7
+     ]
+    },
+    "siteId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "sites"
+    },
+    "firmware": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "FW"
+    },
+    "flOnline": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.77
+    },
+    "dtInstalledAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "batteryPct": {
+     "t": "int32",
+     "p": 0.95,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "labels": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "env2": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "prod",
+        "test"
+       ],
+       "w": [
+        100.0,
+        57.1
+       ]
+      },
+      "zone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "owner": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.58,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "legacyBatteryPct": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 100,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "serial",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "siteId",
+       1
+      ],
+      [
+       "flOnline",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "model",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "firmware",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "sensors",
+   "name": "sensors",
+   "doc_count": 450,
+   "fields": {
+    "devID": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "devices"
+    },
+    "_kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "temperature",
+      "humidity",
+      "pressure",
+      "vibration",
+      "co2"
+     ],
+     "w": [
+      100.0,
+      36.7,
+      20.7,
+      18.2,
+      45.0
+     ]
+    },
+    "unit": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "C",
+      "%",
+      "hPa",
+      "mm_s",
+      "ppm"
+     ],
+     "w": [
+      14.4,
+      44.2,
+      20.9,
+      46.3,
+      100.0
+     ]
+    },
+    "calibratedAt": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.12
+      }
+     ]
+    },
+    "range": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "minX": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": -50.0,
+       "hi": 0.0,
+       "sk": 1.82
+      },
+      "max": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10.0,
+       "hi": 200.0
+      }
+     }
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "devID",
+       1
+      ],
+      [
+       "_kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "devID",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "search_indexes": [
+    {
+     "name": "sensors_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "importBatch": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "_kind": {
+         "type": "token"
+        },
+        "unit": {
+         "type": "token"
+        },
+        "calibratedAt": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  }
+ ]
+}

@@ -1,0 +1,2630 @@
+{
+ "schema_id": "v3_jasper_hr",
+ "domain": "hr",
+ "holdout": false,
+ "description": "hr v3 realista EN, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "timesheets: campos raros (<10% dos docs): notes, deleted_at",
+  "timesheets: campos legados/duplicados em formato antigo: date_v2",
+  "org_changes: campos raros (<10% dos docs): deleted_at",
+  "departments: campos raros (<10% dos docs): deleted_at",
+  "departments: campos legados/duplicados em formato antigo: budget_v2",
+  "departments: aninhamento profundo ext.zone.system.network.* (4 niveis de objeto)",
+  "employees: campos raros (<10% dos docs): beta_flag, review_state",
+  "employees: campos legados/duplicados em formato antigo: position_old",
+  "employees: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "surveys: campos raros (<10% dos docs): external_ref",
+  "surveys: campos legados/duplicados em formato antigo: legacy_anonymous",
+  "surveys: aninhamento profundo ext.stack.system.client.source.* (5 niveis de objeto)",
+  "leave_requests: campos raros (<10% dos docs): deleted_at, review_state",
+  "leave_requests: campos legados/duplicados em formato antigo: to_old",
+  "leave_requests: aninhamento profundo ctx.rule.options.tenant.route.* (5 niveis de objeto)",
+  "leave_requests: heterogeneidade de tipo no mesmo campo: date_string=2, ref_string=1",
+  "interviews: campos raros (<10% dos docs): notes",
+  "performance_reviews: campos raros (<10% dos docs): migrated_from, beta_flag",
+  "performance_reviews: campos legados/duplicados em formato antigo: old_rating, legacy_comments",
+  "benefits: campos raros (<10% dos docs): notes, deleted_at",
+  "benefits: campos legados/duplicados em formato antigo: since_old",
+  "benefits: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "positions: campos raros (<10% dos docs): deleted_at, migrated_from",
+  "positions: aninhamento profundo extra.region.route.policy.source.client.* (6 niveis de objeto)",
+  "candidates: campos raros (<10% dos docs): migrated_from, beta_flag",
+  "candidates: campos legados/duplicados em formato antigo: old_name, old_resume_url",
+  "_id mistos: objectid=7, string=2, uuid=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_suffix=1, name_abbr=1, name_hung=1, name_style=6, name_suffix=4, name_upper=1",
+  "campos heterogeneos (alt) no schema: 4; mapas dinamicos: 2; max_depth=7",
+  "dominio hr: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "timesheets",
+   "name": "timesheets",
+   "doc_count": 900,
+   "fields": {
+    "employee_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "date": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "entries": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "project": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "PR"
+       },
+       "hours": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 9.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "approved": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.73
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "date_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "date",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "date",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "approved": true
+     }
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "org_changes",
+   "name": "org_changes",
+   "doc_count": 1000,
+   "fields": {
+    "employee_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "effective": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "changes": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "from": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "to": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "approved_by": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "promotion",
+      "transfer",
+      "restructure",
+      "backfill"
+     ],
+     "w": [
+      100.0,
+      48.7,
+      21.8,
+      36.2
+     ]
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "effective",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reason",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "employee_id",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "employee_id": {
+       "bsonType": "string"
+      },
+      "effective": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "changes": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "object",
+        "properties": {
+         "from": {
+          "bsonType": "string"
+         },
+         "to": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "from",
+         "to"
+        ]
+       }
+      },
+      "approved_by": {
+       "bsonType": "string"
+      },
+      "reason": {
+       "bsonType": "string",
+       "enum": [
+        "promotion",
+        "transfer",
+        "restructure",
+        "backfill"
+       ]
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "employee_id",
+      "effective",
+      "changes",
+      "reason"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "departments",
+   "name": "departments",
+   "doc_count": 350,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "DP"
+    },
+    "budget": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10000.0,
+     "hi": 2000000.0
+    },
+    "parent": {
+     "t": "objectid",
+     "p": 0.3,
+     "n": 0.0,
+     "ref": "departments"
+    },
+    "cost_center": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CC"
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "budget_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10000.0,
+     "hi": 2000000.0,
+     "dec": 2
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "system": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.68
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "parent",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "employees",
+   "name": "employees",
+   "doc_count": 900,
+   "fields": {
+    "full_name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "department_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "departments"
+    },
+    "position": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "salary": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1500.0,
+     "hi": 45000.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 1500.0,
+       "hi": 45000.0,
+       "aw": 0.06
+      }
+     ]
+    },
+    "hired_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "manager_id": {
+     "t": "string",
+     "p": 0.5,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "leave",
+      "terminated"
+     ],
+     "w": [
+      100.0,
+      61.0,
+      40.7
+     ]
+    },
+    "address": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "city_new": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "country": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      },
+      "geo": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "lat": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -34.0,
+         "hi": 5.0
+        },
+        "lng": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": -74.0,
+         "hi": -35.0
+        }
+       }
+      }
+     }
+    },
+    "skills": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "uuid_old": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.53
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      44.6,
+      51.3,
+      100.0
+     ]
+    },
+    "position_old": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "title"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "department_id",
+       1
+      ],
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "hired_at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "skills",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "manager_id",
+       "hashed"
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "EMP-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "full_name": {
+       "bsonType": "string"
+      },
+      "email": {
+       "bsonType": "string"
+      },
+      "department_id": {
+       "bsonType": "objectId"
+      },
+      "position": {
+       "bsonType": "string"
+      },
+      "salary": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "hired_at": {
+       "bsonType": "date"
+      },
+      "manager_id": {
+       "bsonType": "string"
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "active",
+        "leave",
+        "terminated"
+       ]
+      },
+      "address": {
+       "bsonType": "object",
+       "properties": {
+        "city_new": {
+         "bsonType": "string"
+        },
+        "country": {
+         "bsonType": "string"
+        },
+        "geo": {
+         "bsonType": "object",
+         "properties": {
+          "lat": {
+           "bsonType": "double"
+          },
+          "lng": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "lat",
+          "lng"
+         ]
+        }
+       },
+       "required": [
+        "city_new",
+        "country"
+       ]
+      },
+      "skills": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "uuid_old": {
+       "bsonType": "binData"
+      },
+      "beta_flag": {
+       "bsonType": "bool"
+      },
+      "review_state": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "position_old": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "full_name",
+      "email",
+      "department_id",
+      "position",
+      "salary",
+      "hired_at",
+      "status",
+      "uuid_old"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "surveys",
+   "name": "surveys",
+   "doc_count": 500,
+   "fields": {
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "audience": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "departments": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "departments"
+       },
+       "min": 0,
+       "max": 4
+      },
+      "levels": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "junior",
+         "mid",
+         "senior",
+         "lead"
+        ],
+        "w": null
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "questions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "id": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "Q"
+       },
+       "text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "scale": {
+        "t": "array",
+        "p": 0.6,
+        "n": 0.0,
+        "item": {
+         "t": "array",
+         "p": 1.0,
+         "n": 0.0,
+         "item": {
+          "t": "int32",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 1,
+          "hi": 5
+         },
+         "min": 2,
+         "max": 4
+        },
+        "min": 1,
+        "max": 3
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "responses": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "day",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 400
+      }
+     }
+    },
+    "anonymous": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.7
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "legacy_anonymous": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.87
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "stack": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "system": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "client": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "source": {
+             "t": "object",
+             "p": 0.8,
+             "n": 0.0,
+             "f": {
+              "seen_at": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            }
+           }
+          },
+          "enabled": {
+           "t": "bool",
+           "p": 1.0,
+           "n": 0.0,
+           "pt": 0.71
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "title",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "audience.departments",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "responses.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "title": {
+       "bsonType": "string"
+      },
+      "audience": {
+       "bsonType": "object",
+       "properties": {
+        "departments": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "objectId"
+         }
+        },
+        "levels": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "string",
+          "enum": [
+           "junior",
+           "mid",
+           "senior",
+           "lead"
+          ]
+         }
+        }
+       },
+       "required": [
+        "departments",
+        "levels"
+       ]
+      },
+      "questions": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "id": {
+          "bsonType": "string"
+         },
+         "text": {
+          "bsonType": "string"
+         },
+         "scale": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "array",
+           "items": {
+            "bsonType": "int"
+           }
+          }
+         }
+        },
+        "required": [
+         "id",
+         "text"
+        ]
+       }
+      },
+      "responses": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "anonymous": {
+       "bsonType": "bool"
+      },
+      "external_ref": {
+       "bsonType": "string"
+      },
+      "legacy_anonymous": {
+       "bsonType": "bool"
+      },
+      "ext": {
+       "bsonType": "object",
+       "properties": {
+        "stack": {
+         "bsonType": "object",
+         "properties": {
+          "system": {
+           "bsonType": "object",
+           "properties": {
+            "client": {
+             "bsonType": "object",
+             "properties": {
+              "source": {
+               "bsonType": "object",
+               "properties": {
+                "seen_at": {
+                 "bsonType": "date"
+                },
+                "version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "seen_at",
+                "version"
+               ]
+              }
+             }
+            },
+            "enabled": {
+             "bsonType": "bool"
+            }
+           },
+           "required": [
+            "client",
+            "enabled"
+           ]
+          }
+         }
+        }
+       },
+       "required": [
+        "stack"
+       ]
+      }
+     },
+     "required": [
+      "title",
+      "audience",
+      "questions",
+      "responses",
+      "anonymous"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "surveys_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "title": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "external_ref": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 1,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "leave_requests",
+   "name": "leave_requests",
+   "doc_count": 1550,
+   "fields": {
+    "employee_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "vacation",
+      "sick",
+      "parental",
+      "unpaid"
+     ],
+     "w": [
+      55.1,
+      19.2,
+      32.7,
+      100.0
+     ]
+    },
+    "from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "to": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.18
+      }
+     ]
+    },
+    "status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "approved",
+      "rejected"
+     ],
+     "w": [
+      41.3,
+      100.0,
+      63.1
+     ]
+    },
+    "approved_by": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "deletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "reviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      34.8,
+      53.8,
+      100.0
+     ]
+    },
+    "to_old": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "ctx_v2": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "options_new": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "tenant": {
+           "t": "object",
+           "p": 0.7,
+           "n": 0.0,
+           "f": {
+            "route": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100
+              },
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30",
+               "alt": [
+                {
+                 "t": "string",
+                 "g": "isodate",
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30",
+                 "fmt": "date",
+                 "aw": 0.13
+                }
+               ]
+              }
+             }
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "from",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "from",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "employee_id": {
+       "bsonType": "string"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "vacation",
+        "sick",
+        "parental",
+        "unpaid"
+       ]
+      },
+      "from": {
+       "bsonType": "date"
+      },
+      "to": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "status": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "approved",
+        "rejected"
+       ]
+      },
+      "approved_by": {
+       "bsonType": "string"
+      },
+      "deletedAt": {
+       "bsonType": "date"
+      },
+      "reviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "to_old": {
+       "bsonType": "string"
+      },
+      "ctx_v2": {
+       "bsonType": "object",
+       "properties": {
+        "rule": {
+         "bsonType": "object",
+         "properties": {
+          "options_new": {
+           "bsonType": "object",
+           "properties": {
+            "tenant": {
+             "bsonType": "object",
+             "properties": {
+              "route": {
+               "bsonType": "object",
+               "properties": {
+                "score": {
+                 "bsonType": "double"
+                },
+                "SeenAt": {
+                 "bsonType": [
+                  "date",
+                  "string"
+                 ]
+                }
+               },
+               "required": [
+                "score",
+                "SeenAt"
+               ]
+              },
+              "count": {
+               "bsonType": "int"
+              }
+             },
+             "required": [
+              "count"
+             ]
+            }
+           }
+          }
+         },
+         "required": [
+          "options_new"
+         ]
+        }
+       },
+       "required": [
+        "rule"
+       ]
+      }
+     },
+     "required": [
+      "employee_id",
+      "kind",
+      "from",
+      "to",
+      "status"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "interviews",
+   "name": "interviews",
+   "doc_count": 1250,
+   "fields": {
+    "candidate_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "candidates"
+    },
+    "interviewer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "phone",
+      "technical",
+      "culture"
+     ],
+     "w": [
+      100.0,
+      29.6,
+      62.8
+     ]
+    },
+    "feedback": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "score": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 5
+      },
+      "NOTES": {
+       "t": "string",
+       "p": 0.6,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "recommend": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.38
+      }
+     }
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "candidate_id",
+       1
+      ],
+      [
+       "at",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "interviewer",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "candidate_id": {
+       "bsonType": "objectId"
+      },
+      "interviewer": {
+       "bsonType": "string"
+      },
+      "at": {
+       "bsonType": "date"
+      },
+      "kind": {
+       "bsonType": "string",
+       "enum": [
+        "phone",
+        "technical",
+        "culture"
+       ]
+      },
+      "feedback": {
+       "bsonType": "object",
+       "properties": {
+        "score": {
+         "bsonType": "int"
+        },
+        "NOTES": {
+         "bsonType": "string"
+        },
+        "recommend": {
+         "bsonType": "bool"
+        }
+       },
+       "required": [
+        "score",
+        "recommend"
+       ]
+      },
+      "notes": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "candidate_id",
+      "interviewer",
+      "at",
+      "kind"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "search_indexes": [
+    {
+     "name": "interviews_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "interviewer": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "notes": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "kind": {
+         "type": "token"
+        },
+        "at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "performance_reviews",
+   "name": "performance_reviews_new",
+   "doc_count": 1800,
+   "fields": {
+    "employee_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "cycle": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "2025-1",
+      "2025-2",
+      "2026-1"
+     ],
+     "w": [
+      100.0,
+      44.6,
+      56.0
+     ]
+    },
+    "rating": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5
+    },
+    "reviewer": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "goals": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "title": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "progress": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 100,
+        "sk": 1.9
+       },
+       "weight": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 1.0
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "comments": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      26.2,
+      52.3,
+      100.0,
+      30.2
+     ]
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.05,
+     "n": 0.0,
+     "pt": 0.46
+    },
+    "old_rating": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 5,
+     "dec": 0
+    },
+    "legacy_comments": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "employee_id",
+       1
+      ],
+      [
+       "cycle",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "rating",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "beta_flag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "employee_id": {
+       "bsonType": "string"
+      },
+      "cycle": {
+       "bsonType": "string",
+       "enum": [
+        "2025-1",
+        "2025-2",
+        "2026-1"
+       ]
+      },
+      "rating": {
+       "bsonType": "int"
+      },
+      "reviewer": {
+       "bsonType": "string"
+      },
+      "goals": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "title": {
+          "bsonType": "string"
+         },
+         "progress": {
+          "bsonType": "int"
+         },
+         "weight": {
+          "bsonType": "double"
+         }
+        },
+        "required": [
+         "title",
+         "progress",
+         "weight"
+        ]
+       }
+      },
+      "comments": {
+       "bsonType": "string"
+      },
+      "migrated_from": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "beta_flag": {
+       "bsonType": "bool"
+      },
+      "old_rating": {
+       "bsonType": "string"
+      },
+      "legacy_comments": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "employee_id",
+      "cycle",
+      "rating",
+      "reviewer",
+      "goals"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "benefits",
+   "name": "benefits",
+   "doc_count": 500,
+   "fields": {
+    "emp_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "employees",
+     "g": "word"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "health",
+      "dental",
+      "meal",
+      "transport",
+      "gym"
+     ],
+     "w": [
+      41.2,
+      37.5,
+      37.9,
+      100.0,
+      38.2
+     ]
+    },
+    "MonthlyCost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 20.0,
+     "hi": 900.0
+    },
+    "since": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "dependents": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "relation": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "spouse",
+         "child",
+         "parent"
+        ],
+        "w": [
+         100.0,
+         41.4,
+         39.4
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "SinceOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "emp_id",
+       1
+      ],
+      [
+       "kind",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "BEN-"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "positions",
+   "name": "positions",
+   "doc_count": 500,
+   "fields": {
+    "title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "level": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "junior",
+      "mid",
+      "senior",
+      "lead",
+      "director"
+     ],
+     "w": [
+      24.0,
+      100.0,
+      17.4,
+      57.0,
+      42.0
+     ]
+    },
+    "band": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "min": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1500.0,
+       "hi": 8000.0
+      },
+      "max": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 8000.0,
+       "hi": 60000.0
+      }
+     }
+    },
+    "open_headcount": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 12
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      44.6,
+      40.0,
+      35.6
+     ]
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "region": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "route": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "policy": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "source": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "client": {
+               "t": "object",
+               "p": 0.5,
+               "n": 0.0,
+               "f": {
+                "enabled": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.78
+                },
+                "version": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "code",
+                 "prefix": "v"
+                }
+               }
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "level": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "low",
+          "mid",
+          "high"
+         ],
+         "w": [
+          56.9,
+          100.0,
+          41.1
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "title",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "level",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "migrated_from",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "title": {
+       "bsonType": "string"
+      },
+      "level": {
+       "bsonType": "string",
+       "enum": [
+        "junior",
+        "mid",
+        "senior",
+        "lead",
+        "director"
+       ]
+      },
+      "band": {
+       "bsonType": "object",
+       "properties": {
+        "min": {
+         "bsonType": "decimal"
+        },
+        "max": {
+         "bsonType": "decimal"
+        }
+       },
+       "required": [
+        "min",
+        "max"
+       ]
+      },
+      "open_headcount": {
+       "bsonType": "int"
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "migrated_from": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "extra": {
+       "bsonType": "object",
+       "properties": {
+        "region": {
+         "bsonType": "object",
+         "properties": {
+          "route": {
+           "bsonType": "object",
+           "properties": {
+            "policy": {
+             "bsonType": "object",
+             "properties": {
+              "source": {
+               "bsonType": "object",
+               "properties": {
+                "client": {
+                 "bsonType": "object",
+                 "properties": {
+                  "enabled": {
+                   "bsonType": "bool"
+                  },
+                  "version": {
+                   "bsonType": "string"
+                  }
+                 },
+                 "required": [
+                  "enabled",
+                  "version"
+                 ]
+                },
+                "version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "version"
+               ]
+              }
+             },
+             "required": [
+              "source"
+             ]
+            }
+           },
+           "required": [
+            "policy"
+           ]
+          },
+          "level": {
+           "bsonType": "string",
+           "enum": [
+            "low",
+            "mid",
+            "high"
+           ]
+          }
+         },
+         "required": [
+          "level"
+         ]
+        }
+       },
+       "required": [
+        "region"
+       ]
+      }
+     },
+     "required": [
+      "title",
+      "level",
+      "band",
+      "open_headcount"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "candidates",
+   "name": "col_candidates",
+   "doc_count": 400,
+   "fields": {
+    "name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "position": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "stage": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "applied",
+      "screen",
+      "interview",
+      "offer",
+      "hired",
+      "rejected"
+     ],
+     "w": [
+      29.5,
+      62.9,
+      25.3,
+      100.0,
+      41.1,
+      38.1
+     ]
+    },
+    "str_source": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "referral",
+      "site",
+      "agency",
+      "social"
+     ],
+     "w": [
+      28.4,
+      100.0,
+      29.8,
+      42.1
+     ]
+    },
+    "resume_url": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "url"
+    },
+    "score": {
+     "t": "double",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": 0.0,
+     "hi": 10.0
+    },
+    "applied_at": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      65.1,
+      30.6,
+      24.5,
+      100.0
+     ]
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.38
+    },
+    "old_name": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "name"
+    },
+    "old_resume_url": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "url"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "stage",
+       1
+      ],
+      [
+       "str_source",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "position",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "applied_at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

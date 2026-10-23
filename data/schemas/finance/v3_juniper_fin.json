@@ -1,0 +1,1798 @@
+{
+ "schema_id": "v3_juniper_fin",
+ "domain": "finance",
+ "holdout": false,
+ "description": "finance v3 realista pt-BR sem acento, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "pt-BR",
+ "realism_notes": [
+  "payments: campos raros (<10% dos docs): import_batch",
+  "payments: campos legados/duplicados em formato antigo: valor_old, pago_em_v2",
+  "payments: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "budgets: campos raros (<10% dos docs): deleted_at",
+  "budgets: aninhamento profundo origin.source.profile.options.* (4 niveis de objeto)",
+  "positions: campos raros (<10% dos docs): beta_flag, notes",
+  "positions: campos legados/duplicados em formato antigo: legacy_opened_em, old_avg_preco",
+  "positions: aninhamento profundo audit.client.options.profile.* (4 niveis de objeto)",
+  "positions: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "kyc_cases: campos raros (<10% dos docs): deleted_at",
+  "ledger_entries: campos raros (<10% dos docs): override",
+  "ledger_entries: campos legados/duplicados em formato antigo: conta_old",
+  "ledger_entries: aninhamento profundo origin.network.device.rule.flags.* (5 niveis de objeto)",
+  "accounts: campos raros (<10% dos docs): external_ref, review_state",
+  "accounts: campos legados/duplicados em formato antigo: saldo_v2",
+  "customers: campos raros (<10% dos docs): import_batch",
+  "customers: campos legados/duplicados em formato antigo: legacy_risco_pontuacao, legacy_onboarded_em",
+  "_id mistos: int64=1, objectid=2, string=2, uuid=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_suffix=1, name_style=3, name_suffix=1, name_upper=1",
+  "campos heterogeneos (alt) no schema: 4; mapas dinamicos: 2; max_depth=6",
+  "dominio finance: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "payments",
+   "name": "col_pagamentos",
+   "doc_count": 900,
+   "fields": {
+    "conta_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts"
+    },
+    "metodo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "boleto",
+      "pix",
+      "card"
+     ],
+     "w": [
+      47.7,
+      48.8,
+      100.0
+     ]
+    },
+    "valor": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 5000.0,
+     "sk": 2.56
+    },
+    "vencimento": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "pago_em": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.2
+      }
+     ]
+    },
+    "barcode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "valor_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1.0,
+     "hi": 5000.0,
+     "dec": 2
+    },
+    "pago_em_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "barcode",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "conta_id",
+       1
+      ],
+      [
+       "vencimento",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "import_batch",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "vencimento",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PAY-"
+   },
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "budgets",
+   "name": "orcamentos",
+   "doc_count": 1450,
+   "fields": {
+    "dono": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers",
+     "v": 4
+    },
+    "categoria": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "food",
+      "rent",
+      "travel",
+      "health",
+      "fun"
+     ],
+     "w": [
+      36.2,
+      29.2,
+      100.0,
+      42.3,
+      49.3
+     ]
+    },
+    "month": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "limite": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50.0,
+     "hi": 9000.0
+    },
+    "spent": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0,
+     "sk": 2.36
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Source": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Profile": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "Options": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.49
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "dono",
+       1
+      ],
+      [
+       "month",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "categoria",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "dono": {
+       "bsonType": "binData"
+      },
+      "categoria": {
+       "bsonType": "string",
+       "enum": [
+        "food",
+        "rent",
+        "travel",
+        "health",
+        "fun"
+       ]
+      },
+      "month": {
+       "bsonType": "date"
+      },
+      "limite": {
+       "bsonType": "decimal"
+      },
+      "spent": {
+       "bsonType": "decimal"
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "Source": {
+         "bsonType": "object",
+         "properties": {
+          "Profile": {
+           "bsonType": "object",
+           "properties": {
+            "Options": {
+             "bsonType": "object",
+             "properties": {
+              "Enabled": {
+               "bsonType": "bool"
+              }
+             },
+             "required": [
+              "Enabled"
+             ]
+            }
+           },
+           "required": [
+            "Options"
+           ]
+          }
+         }
+        }
+       },
+       "required": [
+        "Source"
+       ]
+      }
+     },
+     "required": [
+      "dono",
+      "categoria",
+      "month",
+      "limite",
+      "spent"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "positions",
+   "name": "posicoes_v2",
+   "doc_count": 200,
+   "fields": {
+    "conta_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "accounts",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "accounts",
+       "as": "string",
+       "aw": 0.11
+      }
+     ]
+    },
+    "ticker": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TK"
+    },
+    "qtd": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 100000,
+     "sk": 1.51
+    },
+    "avg_preco": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1.0,
+     "hi": 900.0,
+     "sk": 2.1
+    },
+    "opened_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.6
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "legacy_opened_em": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "old_avg_preco": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1.0,
+     "hi": 900.0,
+     "dec": 2
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "options": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "profile": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              48.9,
+              100.0,
+              25.9
+             ]
+            }
+           }
+          },
+          "version": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "v"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "conta_id",
+       1
+      ],
+      [
+       "ticker",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ticker",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "POS-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "conta_id": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "ticker": {
+       "bsonType": "string"
+      },
+      "qtd": {
+       "bsonType": "long"
+      },
+      "avg_preco": {
+       "bsonType": "decimal"
+      },
+      "opened_em": {
+       "bsonType": "date"
+      },
+      "etiquetas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "beta_flag": {
+       "bsonType": "bool"
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "legacy_opened_em": {
+       "bsonType": "string"
+      },
+      "old_avg_preco": {
+       "bsonType": "string"
+      },
+      "audit": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "options": {
+           "bsonType": "object",
+           "properties": {
+            "profile": {
+             "bsonType": "object",
+             "properties": {
+              "count": {
+               "bsonType": "int"
+              },
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "count",
+              "level"
+             ]
+            },
+            "version": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "version"
+           ]
+          }
+         },
+         "required": [
+          "options"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "conta_id",
+      "ticker",
+      "qtd",
+      "avg_preco",
+      "opened_em"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "kyc_cases",
+   "name": "casos_kyc",
+   "doc_count": 650,
+   "fields": {
+    "cliente_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers",
+     "alt": [
+      {
+       "t": "uuid",
+       "ref": "customers",
+       "as": "string",
+       "aw": 0.12,
+       "v": 4
+      }
+     ],
+     "v": 4
+    },
+    "opened": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "risco": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "pontuacao": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100
+      },
+      "factors": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        }
+       }
+      },
+      "band": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "low",
+        "medium",
+        "high"
+       ],
+       "w": [
+        100.0,
+        59.7,
+        34.9
+       ]
+      }
+     }
+    },
+    "docs": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "tipo": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "rg",
+         "cnh",
+         "passport",
+         "proof"
+        ],
+        "w": [
+         49.4,
+         100.0,
+         44.5,
+         18.4
+        ]
+       },
+       "situacao": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "ok",
+         "pending",
+         "rejected"
+        ],
+        "w": [
+         100.0,
+         30.0,
+         44.1
+        ]
+       },
+       "ocr": {
+        "t": "object",
+        "p": 0.4,
+        "n": 0.0,
+        "f": {},
+        "map": {
+         "keys": "word",
+         "min": 2,
+         "max": 6,
+         "value": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "analyst": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "name"
+    },
+    "decision": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.1,
+     "g": "enum",
+     "values": [
+      "approved",
+      "rejected",
+      "pending"
+     ],
+     "w": [
+      100.0,
+      30.2,
+      43.7
+     ]
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cliente_id",
+       1
+      ],
+      [
+       "opened",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "risco.band",
+       1
+      ],
+      [
+       "decision",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "risco.factors.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "cliente_id": {
+       "bsonType": [
+        "binData",
+        "string"
+       ]
+      },
+      "opened": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "risco": {
+       "bsonType": "object",
+       "properties": {
+        "pontuacao": {
+         "bsonType": "int"
+        },
+        "factors": {
+         "bsonType": "object",
+         "additionalProperties": {
+          "bsonType": "double"
+         }
+        },
+        "band": {
+         "bsonType": "string",
+         "enum": [
+          "low",
+          "medium",
+          "high"
+         ]
+        }
+       },
+       "required": [
+        "pontuacao",
+        "factors",
+        "band"
+       ]
+      },
+      "docs": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "tipo": {
+          "bsonType": "string",
+          "enum": [
+           "rg",
+           "cnh",
+           "passport",
+           "proof"
+          ]
+         },
+         "situacao": {
+          "bsonType": "string",
+          "enum": [
+           "ok",
+           "pending",
+           "rejected"
+          ]
+         },
+         "ocr": {
+          "bsonType": "object",
+          "additionalProperties": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "tipo",
+         "situacao"
+        ]
+       }
+      },
+      "analyst": {
+       "bsonType": "string"
+      },
+      "decision": {
+       "bsonType": [
+        "string",
+        "null"
+       ],
+       "enum": [
+        "approved",
+        "rejected",
+        "pending",
+        null
+       ]
+      },
+      "deleted_at": {
+       "bsonType": "date"
+      }
+     },
+     "required": [
+      "cliente_id",
+      "opened",
+      "risco",
+      "docs"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "casos_kyc_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "analyst": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "decision": {
+         "type": "token"
+        },
+        "opened": {
+         "type": "date"
+        },
+        "deleted_at": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "ledger_entries",
+   "name": "lancamentos",
+   "doc_count": 1600,
+   "fields": {
+    "journal": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "J"
+    },
+    "conta": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "debit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0,
+     "sk": 2.01
+    },
+    "credit": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0,
+     "sk": 2.12
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "batch": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 99999
+    },
+    "override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "conta_old": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "origin": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "Network": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "Device": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Rule": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Flags": {
+             "t": "object",
+             "p": 0.5,
+             "n": 0.0,
+             "f": {
+              "Name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              },
+              "Count2": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            },
+            "Score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100,
+             "sk": 2.39
+            }
+           }
+          },
+          "SeenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        },
+        "Version": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "v"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "journal",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "conta",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "journal": {
+       "bsonType": "string"
+      },
+      "conta": {
+       "bsonType": "string"
+      },
+      "debit": {
+       "bsonType": "decimal"
+      },
+      "credit": {
+       "bsonType": "decimal"
+      },
+      "em": {
+       "bsonType": "date"
+      },
+      "batch": {
+       "bsonType": "long"
+      },
+      "override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "at"
+       ]
+      },
+      "conta_old": {
+       "bsonType": "string"
+      },
+      "origin": {
+       "bsonType": "object",
+       "properties": {
+        "Network": {
+         "bsonType": "object",
+         "properties": {
+          "Device": {
+           "bsonType": "object",
+           "properties": {
+            "Rule": {
+             "bsonType": "object",
+             "properties": {
+              "Flags": {
+               "bsonType": "object",
+               "properties": {
+                "Name": {
+                 "bsonType": "string"
+                },
+                "Count2": {
+                 "bsonType": "int"
+                }
+               },
+               "required": [
+                "Name",
+                "Count2"
+               ]
+              },
+              "Score": {
+               "bsonType": "double"
+              }
+             },
+             "required": [
+              "Score"
+             ]
+            },
+            "SeenAt": {
+             "bsonType": "date"
+            }
+           },
+           "required": [
+            "Rule",
+            "SeenAt"
+           ]
+          },
+          "Version": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "Device",
+          "Version"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "journal",
+      "conta",
+      "debit",
+      "credit",
+      "em",
+      "batch"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "accounts",
+   "name": "contas",
+   "doc_count": 800,
+   "fields": {
+    "cliente_id": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "customers",
+     "v": 4
+    },
+    "numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AC"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "checking",
+      "savings",
+      "investment"
+     ],
+     "w": [
+      100.0,
+      33.9,
+      48.5
+     ]
+    },
+    "saldo": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": -500.0,
+     "hi": 90000.0,
+     "sk": 2.38
+    },
+    "moeda": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "BRL",
+      "USD",
+      "EUR"
+     ],
+     "w": [
+      100.0,
+      59.0,
+      36.4
+     ]
+    },
+    "opened_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "closed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "limits": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Daily": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100.0,
+       "hi": 9000.0
+      },
+      "overdraft": {
+       "t": "decimal128",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 5000.0
+      }
+     }
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      59.5,
+      43.7
+     ]
+    },
+    "saldo_v2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": -500.0,
+     "hi": 90000.0,
+     "dec": 2
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "numero",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "cliente_id",
+       1
+      ],
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "saldo",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "closed": true
+     }
+    },
+    {
+     "keys": [
+      [
+       "review_state",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "cliente_id": {
+       "bsonType": "binData"
+      },
+      "numero": {
+       "bsonType": "string"
+      },
+      "tipo": {
+       "bsonType": "string",
+       "enum": [
+        "checking",
+        "savings",
+        "investment"
+       ]
+      },
+      "saldo": {
+       "bsonType": "decimal"
+      },
+      "moeda": {
+       "bsonType": "string",
+       "enum": [
+        "BRL",
+        "USD",
+        "EUR"
+       ]
+      },
+      "opened_em": {
+       "bsonType": "date"
+      },
+      "closed": {
+       "bsonType": "bool"
+      },
+      "limits": {
+       "bsonType": "object",
+       "properties": {
+        "Daily": {
+         "bsonType": "decimal"
+        },
+        "overdraft": {
+         "bsonType": "decimal"
+        }
+       },
+       "required": [
+        "Daily",
+        "overdraft"
+       ]
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "review_state": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "saldo_v2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "cliente_id",
+      "numero",
+      "tipo",
+      "saldo",
+      "moeda",
+      "opened_em",
+      "closed"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "customers",
+   "name": "clientes",
+   "doc_count": 650,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "imposto_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "segment": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "retail",
+      "premium",
+      "corporate"
+     ],
+     "w": [
+      52.3,
+      40.0,
+      100.0
+     ]
+    },
+    "onboarded_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "kyc": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "situacao": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "ok",
+        "pending",
+        "review"
+       ],
+       "w": [
+        100.0,
+        46.8,
+        52.7
+       ]
+      },
+      "checked_em": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "docs": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "risco_pontuacao": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 100,
+     "sk": 1.76
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "legacy_risco_pontuacao": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 100,
+     "dec": 0
+    },
+    "LEGACY_ONBOARDED_EM": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "imposto_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "segment",
+       1
+      ],
+      [
+       "risco_pontuacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "import_batch",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "_id": {
+    "t": "uuid"
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "uuid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

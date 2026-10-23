@@ -1,0 +1,3547 @@
+{
+ "schema_id": "v3_aurora_tel",
+ "domain": "telecom",
+ "holdout": false,
+ "description": "telecom v3 realista pt-BR sem acento, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "pt-BR",
+ "realism_notes": [
+  "portability_requests: campos raros (<10% dos docs): import_batch, beta_flag",
+  "portability_requests: campos legados/duplicados em formato antigo: msisdn_v2",
+  "roaming_agreements: campos raros (<10% dos docs): migrated_from",
+  "roaming_agreements: campos legados/duplicados em formato antigo: legacy_signed, old_ativo",
+  "roaming_agreements: aninhamento profundo extra.runtime.flags.region.* (4 niveis de objeto)",
+  "roaming_agreements: heterogeneidade de tipo no mesmo campo: bool_string=1, num_mixed=1",
+  "campaigns: campos raros (<10% dos docs): notes",
+  "campaigns: campos legados/duplicados em formato antigo: old_budget",
+  "campaigns: aninhamento profundo extra.source.zone.options.policy.limits.* (6 niveis de objeto)",
+  "data_usage: campos raros (<10% dos docs): import_batch, external_ref",
+  "data_usage: campos legados/duplicados em formato antigo: throttled_v2, old_roaming",
+  "data_usage: aninhamento profundo trace.options.device.rule.policy.region.* (6 niveis de objeto)",
+  "data_usage: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "cdr: campos raros (<10% dos docs): external_ref",
+  "towers: campos raros (<10% dos docs): deleted_at, notes",
+  "towers: campos legados/duplicados em formato antigo: dono_old, installed_em_old",
+  "towers: aninhamento profundo trace.rule.network.source.profile.flags.* (6 niveis de objeto)",
+  "topups: campos raros (<10% dos docs): import_batch",
+  "topups: campos legados/duplicados em formato antigo: em_old, valor_old",
+  "topups: aninhamento profundo meta.policy.profile.zone.* (4 niveis de objeto)",
+  "topups: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "plans: campos raros (<10% dos docs): notes",
+  "plans: campos legados/duplicados em formato antigo: valid_from_old, old_preco_monthly",
+  "plans: aninhamento profundo info.zone.device.route.network.* (5 niveis de objeto)",
+  "plans: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "subscribers: campos raros (<10% dos docs): override",
+  "subscribers: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "fraud_alerts: campos raros (<10% dos docs): external_ref",
+  "fraud_alerts: campos legados/duplicados em formato antigo: old_raised_em",
+  "fraud_alerts: aninhamento profundo info.stack.system.network.* (4 niveis de objeto)",
+  "_id mistos: objectid=9, string=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=2, coll_suffix=2, name_abbr=3, name_style=9, name_suffix=8, name_underscore=1, name_upper=1",
+  "campos heterogeneos (alt) no schema: 14; mapas dinamicos: 8; max_depth=7",
+  "dominio telecom: CDR/assinantes/faturas com chaves de referencia ObjectId|string e mapas por plano/dia"
+ ],
+ "split_role": "hom",
+ "collections": [
+  {
+   "key": "portability_requests",
+   "name": "portabilidades",
+   "doc_count": 800,
+   "fields": {
+    "msisdn": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "55119"
+    },
+    "donor": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "vivo",
+      "claro",
+      "tim",
+      "oi"
+     ],
+     "w": [
+      27.7,
+      100.0,
+      25.7,
+      46.3
+     ]
+    },
+    "recipient": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "vivo",
+      "claro",
+      "tim",
+      "oi"
+     ],
+     "w": [
+      100.0,
+      22.7,
+      41.7,
+      51.1
+     ]
+    },
+    "estado": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "requested",
+      "scheduled",
+      "done",
+      "rejected"
+     ],
+     "w": [
+      25.9,
+      51.7,
+      100.0,
+      16.8
+     ]
+    },
+    "history": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "em": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "estado_v2": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "by": {
+        "t": "string",
+        "p": 0.4,
+        "n": 0.0,
+        "g": "word"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "requested_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "window": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "from": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "to": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.32
+    },
+    "msisdn_v2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "55119"
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "msisdn",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "estado",
+       1
+      ],
+      [
+       "requested_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "import_batch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "portabilidades_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "msisdn": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "import_batch": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "msisdn_v2": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "donor": {
+         "type": "token"
+        },
+        "recipient": {
+         "type": "token"
+        },
+        "requested_em": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "portabilidades_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "dotProduct"
+       },
+       {
+        "type": "filter",
+        "path": "donor"
+       },
+       {
+        "type": "filter",
+        "path": "requested_em"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "roaming_agreements",
+   "name": "acordos_roaming",
+   "doc_count": 1050,
+   "fields": {
+    "partner": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "pais": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "rates": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "cur",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "voice": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 9.0
+        },
+        "sms": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 2.0
+        },
+        "data_mb": {
+         "t": "decimal128",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 2.0
+        }
+       }
+      }
+     }
+    },
+    "windows": {
+     "t": "array",
+     "p": 0.03,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "ativo": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.87
+    },
+    "signed": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "tiers": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "min_mb": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 1000,
+        "sk": 2.56,
+        "alt": [
+         {
+          "t": "double",
+          "lo": 0,
+          "hi": 1000,
+          "aw": 0.12
+         }
+        ]
+       },
+       "max_mb": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1000,
+        "hi": 99999
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      25.2,
+      100.0,
+      59.7,
+      25.6
+     ]
+    },
+    "legacy_signed": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "old_ativo": {
+     "t": "bool",
+     "p": 0.15,
+     "n": 0.0,
+     "pt": 0.95,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "runtime": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "flags": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Region": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "Count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "sk": 2.26
+            }
+           }
+          },
+          "Name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.78
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "partner",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "pais",
+       1
+      ],
+      [
+       "ativo",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "rates.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "campaigns",
+   "name": "campanhas",
+   "doc_count": 700,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "segment": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "all": {
+         "t": "array",
+         "p": 1.0,
+         "n": 0.0,
+         "item": {
+          "t": "object",
+          "p": 1.0,
+          "n": 0.0,
+          "f": {
+           "field": {
+            "t": "string",
+            "p": 1.0,
+            "n": 0.0,
+            "g": "word"
+           },
+           "op": {
+            "t": "string",
+            "p": 1.0,
+            "n": 0.0,
+            "g": "enum",
+            "values": [
+             "eq",
+             "gt",
+             "in",
+             "lt"
+            ],
+            "w": [
+             25.3,
+             100.0,
+             31.0,
+             63.6
+            ]
+           },
+           "valor": {
+            "t": "string",
+            "p": 1.0,
+            "n": 0.0,
+            "g": "word"
+           }
+          }
+         },
+         "min": 1,
+         "max": 4
+        },
+        "any": {
+         "t": "array",
+         "p": 0.6,
+         "n": 0.0,
+         "item": {
+          "t": "object",
+          "p": 1.0,
+          "n": 0.0,
+          "f": {
+           "field_2": {
+            "t": "string",
+            "p": 1.0,
+            "n": 0.0,
+            "g": "word"
+           },
+           "op": {
+            "t": "string",
+            "p": 1.0,
+            "n": 0.0,
+            "g": "enum",
+            "values": [
+             "eq",
+             "gt",
+             "in",
+             "lt"
+            ],
+            "w": [
+             27.1,
+             100.0,
+             40.7,
+             59.8
+            ]
+           },
+           "valor": {
+            "t": "string",
+            "p": 1.0,
+            "n": 0.0,
+            "g": "word"
+           }
+          }
+         },
+         "min": 1,
+         "max": 4
+        }
+       }
+      }
+     }
+    },
+    "budget": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1000.0,
+     "hi": 900000.0,
+     "sk": 2.13
+    },
+    "channels": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "sms",
+       "push",
+       "email",
+       "call"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "stats": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "day",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "sent": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 9000
+        },
+        "opened": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 4000
+        },
+        "converted": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 500
+        }
+       }
+      }
+     }
+    },
+    "starts": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "ends": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "dono": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "old_budget": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1000.0,
+     "hi": 900000.0,
+     "dec": 2
+    },
+    "extra": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "src2": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "zone": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "options": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "Policy": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "limits": {
+               "t": "object",
+               "p": 0.5,
+               "n": 0.0,
+               "f": {
+                "enabled": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.41
+                }
+               }
+              }
+             }
+            },
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              26.7,
+              41.2
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "starts",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "channels",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "stats.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "segment": {
+       "bsonType": "object",
+       "properties": {
+        "rule": {
+         "bsonType": "object",
+         "properties": {
+          "all": {
+           "bsonType": "array",
+           "items": {
+            "bsonType": "object",
+            "properties": {
+             "field": {
+              "bsonType": "string"
+             },
+             "op": {
+              "bsonType": "string",
+              "enum": [
+               "eq",
+               "gt",
+               "in",
+               "lt"
+              ]
+             },
+             "valor": {
+              "bsonType": "string"
+             }
+            },
+            "required": [
+             "field",
+             "op",
+             "valor"
+            ]
+           }
+          },
+          "any": {
+           "bsonType": "array",
+           "items": {
+            "bsonType": "object",
+            "properties": {
+             "field_2": {
+              "bsonType": "string"
+             },
+             "op": {
+              "bsonType": "string",
+              "enum": [
+               "eq",
+               "gt",
+               "in",
+               "lt"
+              ]
+             },
+             "valor": {
+              "bsonType": "string"
+             }
+            },
+            "required": [
+             "field_2",
+             "op",
+             "valor"
+            ]
+           }
+          }
+         },
+         "required": [
+          "all"
+         ]
+        }
+       },
+       "required": [
+        "rule"
+       ]
+      },
+      "budget": {
+       "bsonType": "decimal"
+      },
+      "channels": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "sms",
+         "push",
+         "email",
+         "call"
+        ]
+       }
+      },
+      "stats": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "object",
+        "properties": {
+         "sent": {
+          "bsonType": "int"
+         },
+         "opened": {
+          "bsonType": "int"
+         },
+         "converted": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "sent",
+         "opened",
+         "converted"
+        ]
+       }
+      },
+      "starts": {
+       "bsonType": "date"
+      },
+      "ends": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "dono": {
+       "bsonType": "string"
+      },
+      "notes": {
+       "bsonType": "string"
+      },
+      "old_budget": {
+       "bsonType": "string"
+      },
+      "extra": {
+       "bsonType": "object",
+       "properties": {
+        "src2": {
+         "bsonType": "object",
+         "properties": {
+          "zone": {
+           "bsonType": "object",
+           "properties": {
+            "options": {
+             "bsonType": "object",
+             "properties": {
+              "Policy": {
+               "bsonType": "object",
+               "properties": {
+                "limits": {
+                 "bsonType": "object",
+                 "properties": {
+                  "enabled": {
+                   "bsonType": "bool"
+                  }
+                 },
+                 "required": [
+                  "enabled"
+                 ]
+                }
+               }
+              },
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "Policy",
+              "level"
+             ]
+            }
+           }
+          }
+         }
+        }
+       },
+       "required": [
+        "src2"
+       ]
+      },
+      "embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "nome",
+      "segment",
+      "budget",
+      "channels",
+      "stats",
+      "starts",
+      "dono"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "campanhas_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "nome": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "dono": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "notes": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "budget": {
+         "type": "number"
+        },
+        "starts": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "campanhas_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 8,
+        "similarity": "euclidean"
+       },
+       {
+        "type": "filter",
+        "path": "budget"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "data_usage",
+   "name": "uso_dados_2025",
+   "doc_count": 2050,
+   "fields": {
+    "subscriber_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "subscribers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "subscribers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "day": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "usage_mb": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "hour",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 500
+      }
+     }
+    },
+    "apps": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int64",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 99999999
+      }
+     }
+    },
+    "roaming": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.09
+    },
+    "throttled": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.23
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "throttled_v2": {
+     "t": "bool",
+     "p": 0.25,
+     "n": 0.0,
+     "pt": 0.27
+    },
+    "old_roaming": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "options": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "device": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "rule": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "policy": {
+             "t": "object",
+             "p": 0.9,
+             "n": 0.0,
+             "f": {
+              "region": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "level": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "enum",
+                 "values": [
+                  "low",
+                  "mid",
+                  "high"
+                 ],
+                 "w": [
+                  63.6,
+                  100.0,
+                  26.4
+                 ]
+                },
+                "name": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "word"
+                }
+               }
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            }
+           }
+          },
+          "count": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 900
+          }
+         }
+        },
+        "count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900,
+         "sk": 1.99,
+         "alt": [
+          {
+           "t": "double",
+           "lo": 0,
+           "hi": 900,
+           "aw": 0.14
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "subscriber_id",
+       1
+      ],
+      [
+       "day",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "roaming",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "subscriber_id": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "day": {
+       "bsonType": "date"
+      },
+      "usage_mb": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "apps": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "long"
+       }
+      },
+      "roaming": {
+       "bsonType": "bool"
+      },
+      "throttled": {
+       "bsonType": "bool"
+      },
+      "import_batch": {
+       "bsonType": "string"
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "throttled_v2": {
+       "bsonType": "bool"
+      },
+      "old_roaming": {
+       "bsonType": "bool"
+      },
+      "trace": {
+       "bsonType": "object",
+       "properties": {
+        "options": {
+         "bsonType": "object",
+         "properties": {
+          "device": {
+           "bsonType": "object",
+           "properties": {
+            "rule": {
+             "bsonType": "object",
+             "properties": {
+              "policy": {
+               "bsonType": "object",
+               "properties": {
+                "region": {
+                 "bsonType": "object",
+                 "properties": {
+                  "level": {
+                   "bsonType": "string",
+                   "enum": [
+                    "low",
+                    "mid",
+                    "high"
+                   ]
+                  },
+                  "name": {
+                   "bsonType": "string"
+                  }
+                 },
+                 "required": [
+                  "level",
+                  "name"
+                 ]
+                },
+                "version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "region",
+                "version"
+               ]
+              }
+             }
+            },
+            "count": {
+             "bsonType": "int"
+            }
+           },
+           "required": [
+            "count"
+           ]
+          },
+          "count": {
+           "bsonType": [
+            "int",
+            "double"
+           ]
+          }
+         },
+         "required": [
+          "device",
+          "count"
+         ]
+        }
+       },
+       "required": [
+        "options"
+       ]
+      }
+     },
+     "required": [
+      "subscriber_id",
+      "day",
+      "usage_mb",
+      "apps",
+      "roaming",
+      "throttled"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "cdr",
+   "name": "registros_chamada",
+   "doc_count": 2450,
+   "fields": {
+    "_subscriber_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "subscribers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "subscribers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "a_numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "5511"
+    },
+    "b_numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "5521"
+    },
+    "inicio": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "duration_s": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 7200,
+     "sk": 2.13
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "voice",
+      "sms",
+      "data",
+      "mms",
+      "roaming"
+     ],
+     "w": [
+      100.0,
+      50.4,
+      38.8,
+      23.5,
+      17.5
+     ]
+    },
+    "rota": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "carrier": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "vivo",
+        "claro",
+        "tim",
+        "oi"
+       ],
+       "w": [
+        100.0,
+        48.7,
+        27.8,
+        43.3
+       ]
+      },
+      "trunk": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "TK"
+      }
+     }
+    },
+    "cell": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "cell_id": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "CL"
+      },
+      "lac": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 9000
+      },
+      "tower": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "local": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "ST"
+        },
+        "sector": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 1,
+         "hi": 6
+        },
+        "loc": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "type": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "Point"
+           ],
+           "w": null
+          },
+          "coordinates": {
+           "t": "array",
+           "p": 1.0,
+           "n": 0.0,
+           "item": {
+            "t": "double",
+            "p": 1.0,
+            "n": 0.0,
+            "lo": -180,
+            "hi": 180
+           },
+           "min": 2,
+           "max": 2
+          }
+         },
+         "geo": {
+          "lat": [
+           -33.0,
+           5.0
+          ],
+          "lng": [
+           -73.0,
+           -35.0
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "charge": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 90.0
+    },
+    "bytes_up": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000000
+    },
+    "bytes_down": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 900000000
+    },
+    "nota": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "local",
+        "national",
+        "intl"
+       ],
+       "w": [
+        44.2,
+        31.3,
+        100.0
+       ]
+      },
+      "tarifa": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "TF"
+      },
+      "discounts": {
+       "t": "array",
+       "p": 0.7,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "codigo": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "DC"
+         },
+         "valor": {
+          "t": "decimal128",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": 0.0,
+          "hi": 20.0,
+          "sk": 2.44
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "rota.carrier",
+       1
+      ],
+      [
+       "inicio",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "_subscriber_id",
+       1
+      ],
+      [
+       "inicio",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "cell.tower.loc",
+       "2dsphere"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "external_ref",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 4,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 1,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "towers",
+   "name": "t_torres",
+   "doc_count": 1200,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "ST"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "localizacao": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "Point"
+       ],
+       "w": null
+      },
+      "coordinates": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -180,
+        "hi": 180
+       },
+       "min": 2,
+       "max": 2
+      }
+     },
+     "geo": {
+      "lat": [
+       -33.0,
+       5.0
+      ],
+      "lng": [
+       -73.0,
+       -35.0
+      ]
+     }
+    },
+    "tech": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "2G",
+       "3G",
+       "4G",
+       "5G"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "sectors": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "sector_id": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 6
+       },
+       "azimuth": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 359,
+        "sk": 2.1
+       },
+       "bands": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 700,
+         "hi": 3700
+        },
+        "min": 0,
+        "max": 4
+       },
+       "situacao": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "up",
+         "down",
+         "maint"
+        ],
+        "w": [
+         100.0,
+         36.5,
+         57.1
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "dono": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "installed_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "power": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "grid": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.87
+      },
+      "battery": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "kwh": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 1.0,
+         "hi": 40.0
+        },
+        "health": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        }
+       }
+      },
+      "generator": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "fuel_l": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 2000
+        }
+       }
+      }
+     }
+    },
+    "capacity_by_band": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 10,
+       "hi": 900
+      }
+     }
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "dono_old": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "word"
+    },
+    "installed_em_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "rule": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "network": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "source": {
+           "t": "object",
+           "p": 0.5,
+           "n": 0.0,
+           "f": {
+            "profileOld": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "flags": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "name": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "word"
+                },
+                "seenAt": {
+                 "t": "date",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": "2025-01-01",
+                 "hi": "2026-09-30"
+                }
+               }
+              },
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                63.6,
+                25.9,
+                100.0
+               ]
+              }
+             }
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.47
+            }
+           }
+          }
+         }
+        },
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100,
+         "sk": 2.12
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "localizacao",
+       "2dsphere"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "tech",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "capacity_by_band.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "TOW-"
+   },
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 1,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "topups",
+   "name": "recargas",
+   "doc_count": 1100,
+   "fields": {
+    "sub_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "subscribers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "subscribers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "valor": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5.0,
+     "hi": 200.0,
+     "sk": 2.12
+    },
+    "channel": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "app",
+      "pix",
+      "store",
+      "atm"
+     ],
+     "w": [
+      100.0,
+      27.1,
+      42.1,
+      43.5
+     ]
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "promo": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "codigo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "PR"
+      },
+      "bonus_pct": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 100,
+       "sk": 1.98,
+       "alt": [
+        {
+         "t": "double",
+         "lo": 0,
+         "hi": 100,
+         "aw": 0.2
+        }
+       ]
+      }
+     }
+    },
+    "recibo": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "nsu": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      },
+      "auth": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "AU"
+      }
+     }
+    },
+    "importBatch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "em_old": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "valor_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 5.0,
+     "hi": 200.0,
+     "dec": 2
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "policy": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "profile": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "zone": {
+           "t": "object",
+           "p": 0.9,
+           "n": 0.0,
+           "f": {
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              30.8,
+              40.8
+             ]
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "version": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "v"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "sub_id",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "channel",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "importBatch",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "plans",
+   "name": "planos_old",
+   "doc_count": 550,
+   "fields": {
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "slug"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "tier": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "prepaid",
+      "postpaid",
+      "control",
+      "enterprise"
+     ],
+     "w": [
+      49.4,
+      20.4,
+      100.0,
+      53.7
+     ]
+    },
+    "preco_monthly": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5.0,
+     "hi": 400.0,
+     "sk": 1.96
+    },
+    "data_gb": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 500,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 1,
+       "hi": 500,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ],
+     "sk": 2.47
+    },
+    "features": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.8
+        },
+        "limit": {
+         "t": "int32",
+         "p": 0.7,
+         "n": 0.0,
+         "lo": 1,
+         "hi": 100
+        },
+        "notes": {
+         "t": "string",
+         "p": 0.03,
+         "n": 0.0,
+         "g": "sentence"
+        }
+       }
+      }
+     }
+    },
+    "throttling": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "after_gb": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 300
+      },
+      "kbps": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 64,
+       "hi": 2048,
+       "sk": 1.82
+      }
+     }
+    },
+    "valid_from": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "valid_to": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "regions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "N",
+       "NE",
+       "CO",
+       "SE",
+       "S"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "promo": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "codigo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "PR"
+      },
+      "desconto_pct": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 5,
+       "hi": 50,
+       "alt": [
+        {
+         "t": "string",
+         "g": "numstr",
+         "lo": 5,
+         "hi": 50,
+         "dec": 0,
+         "aw": 0.09
+        }
+       ]
+      },
+      "stack": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "PR"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "valid_from_old": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "old_preco_monthly": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 5.0,
+     "hi": 400.0,
+     "dec": 2
+    },
+    "info": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "zone": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "dev": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {
+          "route": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "network": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              },
+              "count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            },
+            "seen_at": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.48
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "codigo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tier",
+       1
+      ],
+      [
+       "preco_monthly",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "regions",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "notes",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "subscribers",
+   "name": "tbl_assinantes",
+   "doc_count": 350,
+   "fields": {
+    "msisdn": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "55119"
+    },
+    "imsi": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "full_nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "plano_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "plans",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "plans",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "active",
+      "suspended",
+      "churned",
+      "porting"
+     ],
+     "w": [
+      100.0,
+      45.6,
+      19.1,
+      43.2
+     ]
+    },
+    "activatedEmNew": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "nascimento_data": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "1940-01-01",
+     "hi": "2007-12-31",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "1940-01-01",
+       "hi": "2007-12-31",
+       "fmt": "date",
+       "aw": 0.1
+      }
+     ]
+    },
+    "contact": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "email": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "email"
+      },
+      "telefone_2": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "phone"
+      },
+      "endereco": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "cidade": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "city"
+        },
+        "estado": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "SP",
+          "RJ",
+          "MG",
+          "BA",
+          "RS",
+          "PR"
+         ],
+         "w": [
+          27.4,
+          28.4,
+          43.7,
+          13.6,
+          36.9,
+          100.0
+         ]
+        },
+        "geo": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "type": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "Point"
+           ],
+           "w": null
+          },
+          "coordinates": {
+           "t": "array",
+           "p": 1.0,
+           "n": 0.0,
+           "item": {
+            "t": "double",
+            "p": 1.0,
+            "n": 0.0,
+            "lo": -180,
+            "hi": 180
+           },
+           "min": 2,
+           "max": 2
+          }
+         },
+         "geo": {
+          "lat": [
+           -33.0,
+           5.0
+          ],
+          "lng": [
+           -73.0,
+           -35.0
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "billing": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "cycle_day": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 28
+      },
+      "metodo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "card",
+        "boleto",
+        "debit"
+       ],
+       "w": [
+        43.5,
+        100.0,
+        45.8
+       ]
+      },
+      "autopay": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.53
+      },
+      "imposto": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "imposto_id": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "TX"
+        },
+        "REGIME": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "simples",
+          "presumido"
+         ],
+         "w": [
+          100.0,
+          61.9
+         ]
+        },
+        "fiscal": {
+         "t": "object",
+         "p": 0.4,
+         "n": 0.0,
+         "f": {
+          "ie": {
+           "t": "string",
+           "p": 0.95,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "IE"
+          },
+          "im": {
+           "t": "string",
+           "p": 0.8,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "IM"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "sim": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "iccid": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      },
+      "tipo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "physical",
+        "esim"
+       ],
+       "w": [
+        100.0,
+        43.2
+       ]
+      },
+      "vendor_old": {
+       "t": "object",
+       "p": 0.5,
+       "n": 0.0,
+       "f": {
+        "Nome": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "Batch": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Lot": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "code",
+           "prefix": "LT"
+          },
+          "MfgData": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "etiquetas": {
+     "t": "array",
+     "p": 0.6,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "consents": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "bool",
+       "p": 1.0,
+       "n": 0.0,
+       "pt": 0.19
+      }
+     }
+    },
+    "override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "msisdn",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "plano_id",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "nascimento_data",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "full_nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    },
+    {
+     "keys": [
+      [
+       "imsi",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "contact.endereco.geo",
+       "2dsphere"
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "consents.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 4,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 1,
+    "geo_fields": 1,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "fraud_alerts",
+   "name": "alertas_fraude",
+   "doc_count": 1550,
+   "fields": {
+    "SubscriberId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "subscribers",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "subscribers",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "pontuacao": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 1.0
+    },
+    "signals": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "metric",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.0,
+       "hi": 1.0
+      }
+     }
+    },
+    "model": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "nome": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "version": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "v"
+      },
+      "features": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.0,
+         "hi": 1.0
+        },
+        "min": 2,
+        "max": 4
+       },
+       "min": 1,
+       "max": 3
+      }
+     }
+    },
+    "raised_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "situacao_legacy": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "confirmed",
+      "dismissed"
+     ],
+     "w": [
+      100.0,
+      29.7,
+      45.9
+     ]
+    },
+    "reviewer": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "name"
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "OldRaisedEm": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "info": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "stack": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "system": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 0.9,
+           "n": 0.0,
+           "f": {
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              26.5,
+              61.1,
+              100.0
+             ]
+            },
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100,
+             "sk": 2.29
+            }
+           }
+          },
+          "seen_at": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "SubscriberId",
+       1
+      ],
+      [
+       "raised_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "situacao_legacy",
+       1
+      ],
+      [
+       "pontuacao",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

@@ -38,6 +38,7 @@ import numpy as np  # noqa: E402
 import yaml  # noqa: E402
 
 import blind_guard  # noqa: E402
+import hom_guard  # noqa: E402
 import build_teacher_corpus as btc  # noqa: E402  (chunk_replay_doc, render_replay_chunk, make_rows, _TokCounter)
 import render_contract as rc  # noqa: E402
 from _distill_common import BlindChecker, iter_pool  # noqa: E402
@@ -421,6 +422,7 @@ def load_accepted(path: Path, limit: int | None, iso: Isolation, train_ids: set[
                 break
             r = json.loads(line)
             stats["read"] += 1
+            hom_guard.assert_no_hom([r], f"aceito do professor {path}")   # abort: hom nunca vira corpus do aluno
             why = iso.violations(r)
             base_id = r.get("parent_id") or r["id"]
             if base_id not in train_ids:

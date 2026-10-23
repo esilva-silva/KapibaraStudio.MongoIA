@@ -1,4 +1,4 @@
-"""split_role por schema (train|eval) - Fase 03.
+"""split_role por schema (train|eval|hom) - Fase 03 (+ lote v3).
 
 Regra (documentada em configs/dataset.yaml, bloco `schema_split`):
   * dominios holdout (education, legal) => "eval" sempre;
@@ -7,10 +7,18 @@ Regra (documentada em configs/dataset.yaml, bloco `schema_split`):
   * cobertura de estilo: cada (name_style, language) presente em dominios elegiveis com >= 2 schemas deve
     aparecer nos dois lados; se faltar, troca-se o schema de menor hash com outro do mesmo dominio.
 
+  * v3 (schema_id com prefixo `v3_`, seed 20261022; ADITIVO - nao altera o papel de nenhum schema antigo):
+      - dominios HOM (telecom, adtech) => "hom" (homologacao) sempre;
+      - dominios holdout (education, legal) => "eval";
+      - demais: ordem global por sha256(f"{seed}:{schema_id}"); os primeiros round(0.15 * n) viram "eval" (todo dominio
+        mantem >= 1 "train"), o resto "train".
+    "hom" = papel de HOMOLOGACAO: NUNCA entra em train/val/test/bench dos conjuntos antigos; so no conjunto de homologacao.
+    Geradores que nao conhecem `hom` devem recusar/ignorar o schema (ver `is_trainable`, `is_hom`).
+
 Interface para os geradores:
     from split_roles import role_for
     role_for("atlas_saas" | "saas/atlas_saas" | "data/schemas/saas/atlas_saas.json" | "saas/atlas_saas::tpl")
-    -> "train" | "eval" | None (desconhecido)
+    -> "train" | "eval" | "hom" | None (desconhecido)
 O papel e lido do JSON do schema (campo `split_role`), com fallback em data/fixtures/manifest.json.
 CLI: python scripts/data/split_roles.py [--json] [--check]
 """
@@ -29,14 +37,56 @@ SEED = 20261008
 EVAL_FRACTION = 0.25
 MIN_SCHEMAS_FOR_EVAL = 6
 HOLDOUT_DOMAINS = ("education", "legal")
+ROLES = ("train", "eval", "hom")
+V3_PREFIX = "v3_"
+V3_SEED = 20261022
+V3_EVAL_FRACTION = 0.15
+HOM_DOMAINS = ("telecom", "adtech")
 
 
 def _h(seed: int, schema_id: str) -> str:
     return hashlib.sha256(f"{seed}:{schema_id}".encode()).hexdigest()
 
 
+def assign_roles_v3(schemas: list[dict], seed: int = V3_SEED, eval_fraction: float = V3_EVAL_FRACTION) -> dict[str, str]:
+    """Papeis do lote v3 (train|eval|hom). schemas: dicts com schema_id, domain, holdout."""
+    roles: dict[str, str] = {}
+    cand = []
+    for s in schemas:
+        if s["domain"] in HOM_DOMAINS:
+            roles[s["schema_id"]] = "hom"
+        elif s.get("holdout") or s["domain"] in HOLDOUT_DOMAINS:
+            roles[s["schema_id"]] = "eval"
+        else:
+            cand.append(s)
+    k = int(round(eval_fraction * len(cand)))
+    total = defaultdict(int)
+    for s in cand:
+        total[s["domain"]] += 1
+    n_eval: dict[str, int] = defaultdict(int)
+    left = k
+    for s in sorted(cand, key=lambda s: _h(seed, s["schema_id"])):
+        d = s["domain"]
+        if left > 0 and n_eval[d] + 1 < total[d]:  # todo dominio mantem >= 1 train
+            roles[s["schema_id"]] = "eval"
+            n_eval[d] += 1
+            left -= 1
+        else:
+            roles[s["schema_id"]] = "train"
+    return roles
+
+
 def assign_roles(schemas: list[dict], seed: int = SEED, eval_fraction: float = EVAL_FRACTION) -> dict[str, str]:
-    """schemas: dicts com schema_id, domain, holdout, name_style, language. Retorna {schema_id: role}."""
+    """schemas: dicts com schema_id, domain, holdout, name_style, language. Retorna {schema_id: role}.
+
+    Schemas `v3_*` seguem `assign_roles_v3`; os demais, a regra v2 (inalterada)."""
+    v3 = [s for s in schemas if str(s["schema_id"]).startswith(V3_PREFIX)]
+    if v3:
+        schemas = [s for s in schemas if not str(s["schema_id"]).startswith(V3_PREFIX)]
+        roles_v3 = assign_roles_v3(v3)
+        roles = assign_roles(schemas, seed, eval_fraction) if schemas else {}
+        roles.update(roles_v3)
+        return roles
     roles: dict[str, str] = {}
     by_dom: dict[str, list[dict]] = defaultdict(list)
     for s in schemas:
@@ -117,8 +167,18 @@ def _sid(x) -> str:
 
 
 def role_for(schema_id_or_path) -> str | None:
-    """"train" | "eval" | None (schema desconhecido / sem papel)."""
+    """"train" | "eval" | "hom" | None (schema desconhecido / sem papel)."""
     return _load().get(_sid(schema_id_or_path))
+
+
+def is_hom(schema_id_or_path) -> bool:
+    return role_for(schema_id_or_path) == "hom"
+
+
+def is_trainable(schema_id_or_path) -> bool:
+    """True so para papel "train" (e None = comportamento v1 legado); "hom" e "eval" -> False."""
+    r = role_for(schema_id_or_path)
+    return r is None or r == "train"
 
 
 def main(argv=None) -> int:
@@ -137,18 +197,19 @@ def main(argv=None) -> int:
     if a.json:
         print(json.dumps({k: dict(v) for k, v in cnt.items()}, indent=1, sort_keys=True))
     else:
-        print(f"{'dominio':22s} {'train':>5s} {'eval':>5s}  holdout")
+        print(f"{'dominio':22s} {'train':>5s} {'eval':>5s} {'hom':>5s}  holdout")
         for dom in sorted(cnt):
             c = cnt[dom]
             ho = "sim" if any(d["holdout"] for d in rows if d["domain"] == dom) else ""
-            print(f"{dom:22s} {c['train']:5d} {c['eval']:5d}  {ho}" + (f"  SEM PAPEL={c['None']}" if c["None"] else ""))
-        t = sum(c["train"] for c in cnt.values()); e = sum(c["eval"] for c in cnt.values())
-        print(f"{'TOTAL':22s} {t:5d} {e:5d}")
+            print(f"{dom:22s} {c['train']:5d} {c['eval']:5d} {c['hom']:5d}  {ho}" + (f"  SEM PAPEL={c['None']}" if c["None"] else ""))
+        t = sum(c["train"] for c in cnt.values()); e = sum(c["eval"] for c in cnt.values()); h = sum(c["hom"] for c in cnt.values())
+        print(f"{'TOTAL':22s} {t:5d} {e:5d} {h:5d}")
         sty: dict[tuple, Counter] = defaultdict(Counter)
         for d in rows:
-            sty[(d.get("name_style"), d.get("language"))][d.get("split_role")] += 1
+            if not d["schema_id"].startswith(V3_PREFIX):
+                sty[(d.get("name_style"), d.get("language"))][d.get("split_role")] += 1
         for k in sorted(sty, key=str):
-            print(f"  estilo {k[0]}/{k[1]}: train={sty[k]['train']} eval={sty[k]['eval']}")
+            print(f"  estilo {k[0]}/{k[1]} (v2): train={sty[k]['train']} eval={sty[k]['eval']}")
     if a.check and any(c["None"] for c in cnt.values()):
         return 1
     return 0

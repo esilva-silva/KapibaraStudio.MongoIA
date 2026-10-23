@@ -26,6 +26,8 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "data"))
+import hom_guard  # noqa: E402
 from _distill_common import (CONFIG_PATH, ROOT, BlindChecker, git_hash, guard_inputs, lite_chat, lite_fim, load_config, rel,  # noqa: E402
                              resolve, sha256_file, unit_hash, write_json)
 
@@ -56,12 +58,18 @@ def scan_shard(args: tuple) -> dict:
     train, eval_docs = [], []
     idx = {"ids": [], "groups": set(), "schemas": set(), "snippets": set(), "prompt_sha": set(), "ps_sha": set()}
     n_train = 0
+    n_hom, hom_ex = 0, []
     dist = {k: Counter() for k in DIST_KEYS}
     with open(path, encoding="utf-8") as handle:
         for line in handle:
             if not line.strip():
                 continue
             rec = json.loads(line)
+            if hom_guard.record_is_hom(rec):
+                n_hom += 1
+                if len(hom_ex) < 5:
+                    hom_ex.append(f"{rec.get('id')} ({rec.get('schema_id')})")
+                continue
             if rec.get("type", "fim") != "fim":
                 continue
             if rec.get("split") == keep_split:
@@ -80,7 +88,7 @@ def scan_shard(args: tuple) -> dict:
                 if rec.get("prompt_sha256"):
                     idx["prompt_sha"].add(rec["prompt_sha256"])
                 idx["ps_sha"].add(ps_sha(rec["prefix"], rec["suffix"]))
-    return {"train": train, "eval_docs": eval_docs, "idx": idx, "n_train": n_train, "dist": dist}
+    return {"train": train, "eval_docs": eval_docs, "idx": idx, "n_train": n_train, "dist": dist, "n_hom": n_hom, "hom_ex": hom_ex}
 
 
 def _scan_block(block):
@@ -131,6 +139,8 @@ class Isolation:
     def violations(self, rec: dict) -> list[str]:
         """Motivos pelos quais o registro NAO pode ser prompt de treino (lista vazia = isolado)."""
         why = []
+        if hom_guard.record_is_hom(rec):
+            why.append("hom_schema")
         if rec.get("split") != "train":
             why.append("split_not_train")
         if rec.get("holdout") or rec.get("domain") in self.holdout:
@@ -303,6 +313,9 @@ def main(argv=None) -> int:
     for res in par.ordered_map(_scan_block, [[(str(f), threshold, salt, pc["keep_split"])] for f in files], workers):
         results.append(res)
         print(f"  shard {len(results)}/{len(files)} varrido ({time.time() - t0:.0f}s)", flush=True)
+    if any(r["n_hom"] for r in results):
+        raise SystemExit(f"[hom-guard] ERRO: {sum(r['n_hom'] for r in results)} registro(s) de schema `hom` (homologacao) na fonte do pool "
+                         f"{src}: {[e for r in results for e in r['hom_ex']][:5]}. Pool NAO gerado.")
     candidates = sorted(((h, rec["id"], rec) for r in results for h, rec in r["train"]), key=lambda t: (t[0], t[1]))
     n_train_seen = sum(r["n_train"] for r in results)
     eval_docs = [d for r in results for d in r["eval_docs"]]

@@ -57,7 +57,7 @@ na IDE (cache de prefixo, correção do EOS e contrato do agente) bloqueiam os g
 ## 4. O que NÃO está provado (leia antes de decidir)
 
 1. **Tudo foi medido em dado sintético** (templates + fixtures). O 0,5B treinado no gold iguala o professor 7B, o que indica que o conjunto satura por dados, não por tamanho.
-   Sem o **cego humano** não sabemos quanto generaliza para consultas reais.
+   O **cego humano foi descartado por decisão do usuário (2026-10-22)**: a generalização para consultas reais **continua não medida** (G3.6/G3.7 ficam `unevaluated`; os 40 rascunhos de agente em `data/eval/blind/draft` não são usados).
 2. **G2.2 do professor não está aprovado:** exec-valid ÷ teto = 0,92 (< 0,95). O aceite é uma exceção registrada; o limite de campos foi recalibrado para `context_kind=full` **depois** de ver a análise de erros (decisão registrada antes do retreino, mas é recalibração).
 3. **O teto do validador é 0,6255:** o parser do Console cobre só um subconjunto; parte do que parece erro do modelo é limite do validador.
 4. **Sem schema visível o erro de campo continua em 11–14%**; o treino não resolveu isso. A melhoria real depende de a IDE enviar o schema da coleção.
@@ -72,7 +72,7 @@ na IDE (cache de prefixo, correção do EOS e contrato do agente) bloqueiam os g
 | B1 | **Bug do EOS na IDE** (`OnnxLocalModelRuntime` duplica o último token; concordância IDE×Python 12–13%) | Reprova `python_agreement` em todos os pacotes | IDE (PR) ou contorno no pacote (decisão do usuário) |
 | B2 | **Cache de prefixo por aba** (`docs/prs/pr-4-*.md`) | Sem ele os gates de TTFT em CPU reprovam | IDE (PR) |
 | B3 | **PR 1** (catálogo de conhecimento e paridade byte a byte), **PR 2** (contrato do agente), **PR 3** (execução real de tools) | Paridade `contract diff`; **Fase 04 e o T4 inteiros** | IDE (PRs) |
-| B4 | **Conjunto cego** (400 itens humanos) e revisão de 200 amostras | G3.6/G3.7; única medida fora do sintético | Usuário |
+| B4 | ~~Conjunto cego (400 itens humanos) e revisão de 200 amostras~~ — **descartado por decisão do usuário (2026-10-22)** | G3.6/G3.7 e a única medida fora do sintético ficam sem avaliação | — |
 | B5 | **Token de GPU do KapiLab** | Gates oficiais de GPU | Usuário |
 | B6 | **Vivobook X1-26-100** (NPU, QNN) | T3 inteiro | Usuário (hardware) |
 | B7 | **Q1:** T1/T2 ainda treinam o chat curto? | Escopo do chat (hoje fora) | Usuário |
@@ -103,8 +103,8 @@ na IDE (cache de prefixo, correção do EOS e contrato do agente) bloqueiam os g
 
 ## 9. Próximos passos recomendados (ordem)
 
-1. **Usuário:** escrever ou revisar o cego humano (B4) e avaliar T0/T1 nele; é a medida que decide se o trabalho serve na prática.
+1. ~~Cego humano~~ — descartado pelo usuário em 2026-10-22; sem ele, nenhuma afirmação de qualidade vale além do conjunto sintético. Alternativa a considerar: avaliar em consultas reais do próprio usuário (sem selar) ou na IDE em uso.
 2. **IDE:** abrir os PRs de EOS e do cache de prefixo (B1/B2), e o PR 1 (paridade); sem eles os gates de CPU e a Fase 08 não avançam.
 3. **Decidir** as seis questões de §6 e congelar `gates.yaml`.
-4. **Depois do cego e do PR 1:** reavaliar a decisão T0 × T1 e, se o desempenho real for menor que o sintético, voltar ao corpus (schemas visíveis, mais variedade) antes de gastar GPU.
+4. **Depois do PR 1 e de qualquer medida em uso real:** reavaliar a decisão T0 × T1 e, se o desempenho real for menor que o sintético, voltar ao corpus (schemas visíveis, mais variedade) antes de gastar GPU.
 5. **Só então** iniciar a Fase 04 (T4 agente), que depende dos PRs 2 e 3.

@@ -23,6 +23,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hom_guard as _hom_guard  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = ROOT / "configs" / "dataset.yaml"
 
@@ -182,6 +185,7 @@ class Schema:
         self.holdout = bool(raw.get("holdout", False))
         sr = raw.get("split_role")  # leitura defensiva; ausente/invalido => None (comportamento v1)
         self.split_role = sr if sr in SPLIT_ROLES else None
+        self.raw_role = sr  # papel cru do JSON (inclui "hom"; ver hom_guard)
         self.name_style = str(raw.get("name_style") or "camel")
         self.seed = raw.get("seed")
         self.description = raw.get("description", "")
@@ -199,12 +203,16 @@ class Schema:
         return f"kapi_fx_{self.domain.replace('-', '_')}_{self.schema_id}"[:60].lower()
 
 
-def load_schemas(schemas_dir: Path) -> list[Schema]:
+def load_schemas(schemas_dir: Path, include_hom: bool = False) -> list[Schema]:
+    """Carrega schemas. Schemas de papel `hom` (homologacao) sao IGNORADOS por padrao (nunca entram em train/val/test/bench);
+    `include_hom=True` so para scripts de homologacao (que gravam em outro diretorio, split `homolog`)."""
     out = []
     for p in sorted(Path(schemas_dir).glob("*/*.json")):
         try:
             raw = json.loads(p.read_text(encoding="utf-8"))
             sch = Schema(raw, p)
+            if not include_hom and _hom_guard.is_hom_schema(sch.schema_id, sch.domain, sch.raw_role):
+                continue
             if sch.colls:
                 out.append(sch)
         except Exception as e:  # leitura defensiva: um schema quebrado nao derruba o resto
@@ -2275,7 +2283,7 @@ def gen_one(index: int, schemas: list[Schema], cfg: dict, seen: set) -> dict | N
             "template_id": tid,
             "group_id": group_id,
             "split_key": split_key(group_id),
-            "split": assign_split(group_id, sch.domain, tid, cfg, holdout, sch.split_role),
+            "split": "homolog" if _hom_guard.is_hom_schema(sch.schema_id, sch.domain, sch.raw_role) else assign_split(group_id, sch.domain, tid, cfg, holdout, sch.split_role),
             "holdout": holdout,
             "text": text,
             "spans": spans,
@@ -2324,6 +2332,8 @@ def main(argv=None):
     ap.add_argument("--ver", help="subpasta em data/generated/")
     ap.add_argument("--schemas-dir")
     ap.add_argument("--out")
+    ap.add_argument("--include-hom", action="store_true",
+                    help="SO para scripts de homologacao (grave em outro diretorio, split `homolog`); nunca em jobs de treino")
     ap.add_argument("--seeded-only", action="store_true",
                     help="so schemas presentes em data/fixtures/manifest.json (bancos kapi_fx_* semeados)")
     a = ap.parse_args(argv)
@@ -2331,7 +2341,8 @@ def main(argv=None):
     if a.seed is not None:
         cfg["seed"] = a.seed
     ver = a.ver or cfg.get("version", "v0")
-    schemas = load_schemas(Path(a.schemas_dir) if a.schemas_dir else ROOT / cfg.get("schemas_dir", "data/schemas"))
+    schemas = load_schemas(Path(a.schemas_dir) if a.schemas_dir else ROOT / cfg.get("schemas_dir", "data/schemas"),
+                           include_hom=a.include_hom)
     if a.seeded_only:
         mf = json.loads((ROOT / "data" / "fixtures" / "manifest.json").read_text(encoding="utf-8"))
         seeded = {(e.get("domain"), e.get("schema_id")) for e in mf.get("entries", [])}

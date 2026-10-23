@@ -37,6 +37,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "data"))
 import blind_guard  # noqa: E402
+import hom_guard  # noqa: E402
 import gen_editor_context as gec  # noqa: E402  (make_context(..., force_kind=...): contexto forcado do corpus v2d)
 import render_contract as rc  # noqa: E402
 import replay_cuts  # noqa: E402
@@ -243,6 +244,9 @@ def _scan_shard(path: str) -> dict:
         for line in handle:
             rec = json.loads(line)
             split = rec["split"]
+            if hom_guard.record_is_hom(rec):
+                out.setdefault("hom", []).append(f"{rec.get('id')} ({rec.get('schema_id')}, {split})")
+                continue
             out["counts"][f"{split}:{rec['type']}"] += 1
             out["groups"][split].add(rec.get("group_id") or rec.get("group"))
             out["schemas"][split].add(rec.get("schema_id"))
@@ -514,6 +518,9 @@ def main() -> int:
             schemas[k].update(v)
         counts.update(s["counts"])
         violations += s["violations"]
+        if s.get("hom"):
+            raise SystemExit(f"[hom-guard] ERRO: {len(s['hom'])} registro(s) de schema `hom` em {s['path']}: {s['hom'][:5]}. "
+                             f"Corpus do professor NAO gerado.")
         val_rows += s.get("val", [])
         for r in s["val"] if "val" in s else []:
             shard_of[r[0]] = s["path"]

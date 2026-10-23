@@ -39,6 +39,7 @@ import blind_guard as bg  # noqa: E402
 import chat_validate as cv  # noqa: E402
 from jsonl_shards import ShardWriter, iter_jsonl, resolve_inputs  # noqa: E402
 import decontaminate as dc  # noqa: E402
+import hom_guard  # noqa: E402
 import render_contract as rc  # noqa: E402
 import validate_snippets as vs  # noqa: E402
 from gen_snippets import CONFIG_PATH, ROOT, analyze_plan, load_config, load_schemas  # noqa: E402
@@ -356,13 +357,14 @@ def _st(status, reason=None):
 
 # =========================================================================== registros
 class Entry:
-    __slots__ = ("id", "type", "split", "kind", "domain", "holdout", "group_id", "doc", "val", "failed", "lite", "extra")
+    __slots__ = ("id", "type", "split", "kind", "domain", "holdout", "group_id", "doc", "val", "failed", "lite", "extra", "schema_id")
 
     def __init__(self, r: dict, typ: str):
         self.id, self.type, self.split = r["id"], typ, r.get("split")
         self.kind = r.get("kind") if typ == "chat" else (r.get("cut_kind") or r.get("kind"))
         self.domain, self.holdout, self.group_id = r.get("domain"), bool(r.get("holdout")), r.get("group_id") or r.get("group")
         self.doc = r.get("snippet_id") if typ == "fim" else r["id"]
+        self.schema_id = r.get("schema_id")
         self.val: dict = {}
         self.failed: tuple | None = None
         self.lite: dict = {}
@@ -790,6 +792,10 @@ def compute_gates(kept: list[Entry], lite: dict, cfg: dict, snips: dict, final_l
     g["G2.7"] = {"eval_ids_in_train": len(ids["train"] & (ids["val"] | ids["test"] | ids["bench"])), "split_intersections": inter,
                  "holdout_in_train_or_val": len(hold_bad), "train_records_with_holdout_flag": len(train_bad),
                  "pass": len(ids["train"] & (ids["val"] | ids["test"] | ids["bench"])) == 0 and not hold_bad and not train_bad}
+    hom_e = [e for e in entries_all if hom_guard.is_hom_schema(e.schema_id, e.domain)]
+    g["G2.7-hom"] = {"hom_schemas_in_splits": len({e.schema_id for e in hom_e}), "hom_groups_in_splits": len({e.group_id for e in hom_e}),
+                     "records": len(hom_e), "homolog_records_used": int(decon.get("homolog_records", 0)),
+                     "pass": not hom_e}
     chat_w = sum(1 for e in kept if e.type == "chat" and cv.has_executable_write(lite[e.id].get("output", "")))
     fim_w = sum(1 for e in kept if e.type == "fim" and status(e, "exec") == "skipped"
                 and str(e.val["exec"]["reason"]).startswith(("escrita", "skipped_write")))
@@ -943,6 +949,9 @@ def render_report(path: Path, ver: str, info: dict):
     A(f"- **Cobertura**: dominios no train {len(cv_['domains_train'])}; operadores distintos no train {len(cv_['operators_train_docs'])}; "
       f"operadores raros (<20 docs): {cv_['operators_rare_lt20'] or 'nenhum'}. cut_kind (train, alvo +-2pp): "
       + ", ".join(f"{k} {v['actual']*100:.1f}% (alvo {v['target']*100:.0f}%)" for k, v in g3['cut_kind'].items()) + ".")
+    gh = g["G2.7-hom"]
+    A(f"- **G2.7-hom**: schemas hom no train/val/test/bench = {gh['hom_schemas_in_splits']}; grupos hom = {gh['hom_groups_in_splits']}; "
+      f"conjunto data/homolog/v1 usado na decontaminacao: {gh['homolog_records_used']} registros -> {'PASSA' if gh['pass'] else 'FALHA'}.")
     g27 = g["G2.7"]
     A(f"- **G2.7 (consulta ao manifesto)**: ids de val/test/bench no train = {g27['eval_ids_in_train']}; holdout em train/val = "
       f"{g27['holdout_in_train_or_val']} -> {'PASSA' if g27['pass'] else 'FALHA'}.")
@@ -1142,6 +1151,8 @@ def run_pipeline(args) -> dict:
                 for i, r in enumerate(iter_jsonl(files)):
                     if limit and i >= limit:
                         break
+                    if hom_guard.record_is_hom(r):      # G2.7-hom: schema hom nunca entra no pipeline de treino
+                        hom_guard.assert_no_hom([r], f"entrada {typ} do validate_pipeline")
                     n_in[typ] += 1
                     yield (typ, r)
 
@@ -1171,6 +1182,8 @@ def run_pipeline(args) -> dict:
         # ---- etapa 9
         surv = [e for e in entries if not e.failed]
         evals = [(e.split, lite[e.id]) for e in surv if e.split in EVAL]
+        hom_ev = dc.load_homolog()          # decontaminacao do treino contra data/homolog/v1 (quando existir; mesma regra oficial)
+        evals += hom_ev
         legacy = [Path(p) for p in (args.legacy if args.legacy is not None else
                   [str(ROOT / "bakeoff" / "data" / "v1_benchmark.jsonl"), str(ROOT / "bakeoff" / "data" / "v1_validation.jsonl")])]
         legacy = [p for p in legacy if p.exists()]
@@ -1178,6 +1191,7 @@ def run_pipeline(args) -> dict:
             evals += [("legacy-v1", r) for r in read_jsonl(p)]
         train = [lite[e.id] for e in surv if e.split == "train"]
         res = dc.run(train, evals, seed=seed, min_content=min_content, analysis_k=analysis_ks)
+        res["homolog_records"] = len(hom_ev)
         for e in surv:
             if e.split == "train" and e.id in res["removed"]:
                 fail(e, "decontam", "coincide com avaliacao: " + ",".join(res["removed"][e.id]))

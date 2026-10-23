@@ -1,0 +1,5185 @@
+{
+ "schema_id": "v3_fjord_mfg",
+ "domain": "manufacturing",
+ "holdout": false,
+ "description": "manufacturing v3 realista EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "boms: campos raros (<10% dos docs): migrated_from",
+  "boms: aninhamento profundo origin.zone.limits.tenant.network.system.* (6 niveis de objeto)",
+  "boms: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "production_lines: campos raros (<10% dos docs): notes, external_ref",
+  "production_lines: campos legados/duplicados em formato antigo: old_takt_s, old_capacity_per_h",
+  "production_lines: aninhamento profundo meta.tenant.device.system.flags.* (5 niveis de objeto)",
+  "operators: campos raros (<10% dos docs): external_ref, migrated_from",
+  "operators: campos legados/duplicados em formato antigo: active_v2",
+  "shipments: campos raros (<10% dos docs): notes, review_state",
+  "shipments: campos legados/duplicados em formato antigo: old_carrier",
+  "shipments: aninhamento profundo info.region.device.runtime.stack.limits.* (6 niveis de objeto)",
+  "shipments: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "batches: campos raros (<10% dos docs): beta_flag, notes",
+  "machines: campos raros (<10% dos docs): beta_flag, notes",
+  "machines: aninhamento profundo info.system.network.region.* (4 niveis de objeto)",
+  "machines: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "plants: campos raros (<10% dos docs): migrated_from",
+  "plants: campos legados/duplicados em formato antigo: lines_count_old",
+  "work_orders: campos raros (<10% dos docs): external_ref",
+  "work_orders: campos legados/duplicados em formato antigo: qty_planned_v2",
+  "work_orders: aninhamento profundo meta.device.region.runtime.source.* (5 niveis de objeto)",
+  "work_orders: heterogeneidade de tipo no mesmo campo: date_string=1, num_mixed=3",
+  "parts: campos raros (<10% dos docs): override, beta_flag",
+  "parts: campos legados/duplicados em formato antigo: cost_old, legacy_lead_days",
+  "parts: aninhamento profundo ext.network.stack.region.* (4 niveis de objeto)",
+  "inspections: campos raros (<10% dos docs): migrated_from, deleted_at",
+  "inspections: campos legados/duplicados em formato antigo: inspector_old",
+  "inspections: aninhamento profundo extra.region.stack.options.source.* (5 niveis de objeto)",
+  "defects: campos raros (<10% dos docs): deleted_at, migrated_from",
+  "defects: campos legados/duplicados em formato antigo: cost_old",
+  "defects: aninhamento profundo trace.runtime.rule.system.* (4 niveis de objeto)",
+  "maintenance_orders: campos raros (<10% dos docs): migrated_from, deleted_at",
+  "maintenance_orders: aninhamento profundo origin.profile.client.device.rule.policy.* (6 niveis de objeto)",
+  "maintenance_orders: heterogeneidade de tipo no mesmo campo: date_string=2",
+  "downtime: campos raros (<10% dos docs): override",
+  "downtime: colecao time-series (timeField=_At, metaField=Line)",
+  "tools: campos raros (<10% dos docs): deleted_at",
+  "tools: campos legados/duplicados em formato antigo: location_v2",
+  "tools: aninhamento profundo audit.profile.flags.policy.zone.* (5 niveis de objeto)",
+  "tools: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "_id mistos: int64=1, objectid=11, string=2 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_hyphen=1, coll_prefix=2, coll_suffix=2, name_ID=1, name_abbr=12, name_hung=5, name_style=11, name_suffix=4, name_underscore=5, name_upper=2",
+  "campos heterogeneos (alt) no schema: 14; mapas dinamicos: 7; max_depth=7",
+  "dominio manufacturing: BOM aninhado, ordens de producao, leituras de maquina e paradas (time-series)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "boms",
+   "name": "tbl_boms",
+   "doc_count": 550,
+   "fields": {
+    "Parent": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts",
+     "alt": [
+      {
+       "t": "int64",
+       "ref": "parts",
+       "as": "string",
+       "aw": 0.16,
+       "lo": 0,
+       "hi": 1
+      }
+     ],
+     "lo": 0,
+     "hi": 1
+    },
+    "Revision": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "Components": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Part": {
+        "t": "int64",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "parts",
+        "lo": 0,
+        "hi": 1
+       },
+       "Qty": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.1,
+        "hi": 40.0
+       },
+       "Uom": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "un",
+         "kg",
+         "m",
+         "l"
+        ],
+        "w": [
+         100.0,
+         55.0,
+         47.8,
+         27.7
+        ]
+       },
+       "Alt": {
+        "t": "array",
+        "p": 0.5,
+        "n": 0.0,
+        "item": {
+         "t": "int64",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "parts",
+         "lo": 0,
+         "hi": 1
+        },
+        "min": 0,
+        "max": 4
+       },
+       "Children": {
+        "t": "array",
+        "p": 0.3,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Part": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts",
+           "lo": 0,
+           "hi": 1
+          },
+          "Qty": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.1,
+           "hi": 10.0
+          },
+          "ScrapPct": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.0,
+           "hi": 0.1
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Effective": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Obsolete": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.07
+    },
+    "Approved": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      24.7,
+      16.7,
+      100.0,
+      44.6
+     ]
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "Zone": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "Limits": {
+         "t": "object",
+         "p": 0.8,
+         "n": 0.0,
+         "f": {
+          "Tenant": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "Network": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "System": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "Enabled": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.56
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "Enabled": {
+           "t": "bool",
+           "p": 1.0,
+           "n": 0.0,
+           "pt": 0.8
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Parent",
+       1
+      ],
+      [
+       "Revision",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Components.Part",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Obsolete",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Effective",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Parent": {
+       "bsonType": [
+        "long",
+        "string"
+       ]
+      },
+      "Revision": {
+       "bsonType": "string"
+      },
+      "Components": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Part": {
+          "bsonType": "long"
+         },
+         "Qty": {
+          "bsonType": "double"
+         },
+         "Uom": {
+          "bsonType": "string",
+          "enum": [
+           "un",
+           "kg",
+           "m",
+           "l"
+          ]
+         },
+         "Alt": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "long"
+          }
+         },
+         "Children": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "object",
+           "properties": {
+            "Part": {
+             "bsonType": "long"
+            },
+            "Qty": {
+             "bsonType": "double"
+            },
+            "ScrapPct": {
+             "bsonType": "double"
+            }
+           },
+           "required": [
+            "Part",
+            "Qty",
+            "ScrapPct"
+           ]
+          }
+         }
+        },
+        "required": [
+         "Part",
+         "Qty",
+         "Uom"
+        ]
+       }
+      },
+      "Effective": {
+       "bsonType": "date"
+      },
+      "Obsolete": {
+       "bsonType": "bool"
+      },
+      "Approved": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "By",
+        "At"
+       ]
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "Origin": {
+       "bsonType": "object",
+       "properties": {
+        "Zone": {
+         "bsonType": "object",
+         "properties": {
+          "Limits": {
+           "bsonType": "object",
+           "properties": {
+            "Tenant": {
+             "bsonType": "object",
+             "properties": {
+              "Network": {
+               "bsonType": "object",
+               "properties": {
+                "System": {
+                 "bsonType": "object",
+                 "properties": {
+                  "Enabled": {
+                   "bsonType": "bool"
+                  }
+                 },
+                 "required": [
+                  "Enabled"
+                 ]
+                }
+               },
+               "required": [
+                "System"
+               ]
+              }
+             },
+             "required": [
+              "Network"
+             ]
+            },
+            "Enabled": {
+             "bsonType": "bool"
+            }
+           },
+           "required": [
+            "Enabled"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "Parent",
+      "Revision",
+      "Components",
+      "Effective",
+      "Obsolete",
+      "Approved"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "production_lines",
+   "name": "production-lines",
+   "doc_count": 1500,
+   "fields": {
+    "PlantId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "plants",
+     "g": "word"
+    },
+    "SCode": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LN"
+    },
+    "ProdFamily": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "engines",
+      "gearboxes",
+      "pcb",
+      "plastics",
+      "cables"
+     ],
+     "w": [
+      41.2,
+      42.4,
+      33.5,
+      100.0,
+      27.1
+     ]
+    },
+    "TaktS": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5.0,
+     "hi": 600.0
+    },
+    "Stations": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Seq": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 40
+       },
+       "nameLegacy": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "MachId": {
+        "t": "objectid",
+        "p": 0.8,
+        "n": 0.0,
+        "ref": "machines"
+       },
+       "CycleS": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1.0,
+        "hi": 300.0,
+        "sk": 2.31
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "CapacityPerH": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 9000
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "running",
+      "idle",
+      "maint",
+      "changeover"
+     ],
+     "w": [
+      100.0,
+      35.4,
+      45.9,
+      31.9
+     ]
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "OldTaktS": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 5.0,
+     "hi": 600.0,
+     "dec": 2
+    },
+    "StrOldCapacityPerH": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10,
+     "hi": 9000,
+     "dec": 0
+    },
+    "Meta": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "tenant": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "dev": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "system": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "flags_v2": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "seen_at": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              },
+              "name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              },
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.65
+              }
+             }
+            }
+           }
+          },
+          "seenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        },
+        "seen_at": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PlantId",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "SCode",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Stations.MachId",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "operators",
+   "name": "Operators",
+   "doc_count": 700,
+   "fields": {
+    "Badge": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "OP"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "PlantId": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "plants",
+     "g": "word"
+    },
+    "Skills": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 5
+      }
+     }
+    },
+    "Certs": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "ValidUntil": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Shift": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "A",
+      "B",
+      "C"
+     ],
+     "w": [
+      55.1,
+      47.7,
+      100.0
+     ]
+    },
+    "Active": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.82
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "SMigratedFrom": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      53.7,
+      39.5,
+      36.3
+     ]
+    },
+    "ActiveV2": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.95
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Badge",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "PlantId",
+       1
+      ],
+      [
+       "Shift",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Skills.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Badge": {
+       "bsonType": "string"
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "PlantId": {
+       "bsonType": "string"
+      },
+      "Skills": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "Certs": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Name": {
+          "bsonType": "string"
+         },
+         "ValidUntil": {
+          "bsonType": "date"
+         }
+        },
+        "required": [
+         "Name",
+         "ValidUntil"
+        ]
+       }
+      },
+      "Shift": {
+       "bsonType": "string",
+       "enum": [
+        "A",
+        "B",
+        "C"
+       ]
+      },
+      "Active": {
+       "bsonType": "bool"
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "SMigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "ActiveV2": {
+       "bsonType": "bool"
+      }
+     },
+     "required": [
+      "Badge",
+      "Name",
+      "PlantId",
+      "Skills",
+      "Certs",
+      "Shift",
+      "Active"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "operators_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Badge": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "Name": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "PlantId": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Shift": {
+         "type": "token"
+        },
+        "SMigratedFrom": {
+         "type": "token"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "shipments",
+   "name": "Shipments",
+   "doc_count": 650,
+   "fields": {
+    "WoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "work_orders"
+    },
+    "Cust": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "_ShippedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Pallets": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Sscc": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SS"
+       },
+       "Items": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Part": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts",
+           "alt": [
+            {
+             "t": "int64",
+             "ref": "parts",
+             "as": "string",
+             "aw": 0.07,
+             "lo": 0,
+             "hi": 1
+            }
+           ],
+           "lo": 0,
+           "hi": 1
+          },
+          "Qty": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 1,
+           "hi": 900,
+           "sk": 2.39
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "SCarrier": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Docs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "url"
+      }
+     }
+    },
+    "st": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "packed",
+      "shipped",
+      "delivered"
+     ],
+     "w": [
+      31.1,
+      49.4,
+      100.0
+     ]
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      28.6,
+      100.0,
+      42.5
+     ]
+    },
+    "OldCarrier": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Info": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Region": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Dev": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "runtime": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "stackV2": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "limits": {
+               "t": "object",
+               "p": 0.9,
+               "n": 0.0,
+               "f": {
+                "count": {
+                 "t": "int32",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 900,
+                 "sk": 2.03
+                },
+                "score": {
+                 "t": "double",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 100
+                },
+                "enabled": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.78
+                }
+               }
+              }
+             }
+            },
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100,
+             "sk": 2.4
+            }
+           }
+          }
+         }
+        },
+        "Count": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 900
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "WoId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Cust",
+       1
+      ],
+      [
+       "_ShippedAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Cust",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Docs.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "WoId": {
+       "bsonType": "objectId"
+      },
+      "Cust": {
+       "bsonType": "string"
+      },
+      "_ShippedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Pallets": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Sscc": {
+          "bsonType": "string"
+         },
+         "Items": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "object",
+           "properties": {
+            "Part": {
+             "bsonType": [
+              "long",
+              "string"
+             ]
+            },
+            "Qty": {
+             "bsonType": "int"
+            }
+           },
+           "required": [
+            "Part",
+            "Qty"
+           ]
+          }
+         }
+        },
+        "required": [
+         "Sscc",
+         "Items"
+        ]
+       }
+      },
+      "SCarrier": {
+       "bsonType": "string"
+      },
+      "Docs": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "string"
+       }
+      },
+      "st": {
+       "bsonType": "string",
+       "enum": [
+        "packed",
+        "shipped",
+        "delivered"
+       ]
+      },
+      "Notes": {
+       "bsonType": "string"
+      },
+      "ReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      },
+      "OldCarrier": {
+       "bsonType": "string"
+      },
+      "Info": {
+       "bsonType": "object",
+       "properties": {
+        "Region": {
+         "bsonType": "object",
+         "properties": {
+          "Dev": {
+           "bsonType": "object",
+           "properties": {
+            "runtime": {
+             "bsonType": "object",
+             "properties": {
+              "stackV2": {
+               "bsonType": "object",
+               "properties": {
+                "limits": {
+                 "bsonType": "object",
+                 "properties": {
+                  "count": {
+                   "bsonType": "int"
+                  },
+                  "score": {
+                   "bsonType": "double"
+                  },
+                  "enabled": {
+                   "bsonType": "bool"
+                  }
+                 },
+                 "required": [
+                  "count",
+                  "score",
+                  "enabled"
+                 ]
+                }
+               }
+              },
+              "score": {
+               "bsonType": "double"
+              }
+             },
+             "required": [
+              "stackV2",
+              "score"
+             ]
+            }
+           },
+           "required": [
+            "runtime"
+           ]
+          },
+          "Count": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "Count"
+         ]
+        }
+       },
+       "required": [
+        "Region"
+       ]
+      }
+     },
+     "required": [
+      "WoId",
+      "Cust",
+      "_ShippedAt",
+      "Pallets",
+      "SCarrier",
+      "Docs",
+      "st"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "batches",
+   "name": "Batches",
+   "doc_count": 700,
+   "fields": {
+    "LotNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "LT"
+    },
+    "PartId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts",
+     "lo": 0,
+     "hi": 1
+    },
+    "Qty": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90000
+    },
+    "Produced": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Expires": {
+     "t": "date",
+     "p": 0.7,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Qc": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Status": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "released",
+        "hold",
+        "rejected"
+       ],
+       "w": [
+        31.0,
+        52.5,
+        100.0
+       ]
+      },
+      "Tests": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "value": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0.0,
+           "hi": 100.0
+          },
+          "spec": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      },
+      "ReleasedBy": {
+       "t": "string",
+       "p": 0.8,
+       "n": 0.0,
+       "g": "name"
+      }
+     }
+    },
+    "Genealogy": {
+     "t": "array",
+     "p": 0.03,
+     "n": 0.0,
+     "item": {
+      "t": "array",
+      "p": 1.0,
+      "n": 0.0,
+      "item": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "LT"
+      },
+      "min": 2,
+      "max": 4
+     },
+     "min": 1,
+     "max": 3
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.55
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "LotNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "PartId",
+       1
+      ],
+      [
+       "Produced",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Qc.Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "PartId",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "BetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "BAT-"
+   },
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 1,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "machines",
+   "name": "t_machines",
+   "doc_count": 1150,
+   "fields": {
+    "AssetTag": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MC"
+    },
+    "LineID": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "production_lines",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "production_lines",
+       "as": "string",
+       "aw": 0.11
+      }
+     ]
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "cnc",
+      "press",
+      "robot",
+      "oven",
+      "injector",
+      "agv"
+     ],
+     "w": [
+      100.0,
+      49.1,
+      28.0,
+      19.8,
+      12.0,
+      50.9
+     ]
+    },
+    "Vendor": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Model": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "MD"
+    },
+    "Commissioned": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Spec": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "PowerKw": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1.0,
+       "hi": 900.0,
+       "sk": 2.21
+      },
+      "Axes": {
+       "t": "int32",
+       "p": 0.08,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 9
+      },
+      "Tolerances": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {},
+       "map": {
+        "keys": "word",
+        "min": 2,
+        "max": 6,
+        "value": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0.001,
+         "hi": 1.0
+        }
+       }
+      },
+      "Controller": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Vendor": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "Fw": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "FW"
+        },
+        "Params": {
+         "t": "object",
+         "p": 0.95,
+         "n": 0.0,
+         "f": {},
+         "map": {
+          "keys": "word",
+          "min": 2,
+          "max": 6,
+          "value": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "running",
+      "idle",
+      "down",
+      "maint"
+     ],
+     "w": [
+      53.7,
+      26.6,
+      100.0,
+      38.0
+     ]
+    },
+    "Oee": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Availability": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.3,
+       "hi": 1.0
+      },
+      "Performance": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.3,
+       "hi": 1.0
+      },
+      "Quality": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.5,
+       "hi": 1.0
+      }
+     }
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.36
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Info": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "System": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Network": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "Region": {
+           "t": "object",
+           "p": 0.3,
+           "n": 0.0,
+           "f": {
+            "version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            },
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "AssetTag",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "LineID",
+       1
+      ],
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Status",
+       1
+      ],
+      [
+       "Oee.Availability",
+       1
+      ]
+     ]
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Spec.Tolerances.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "plants",
+   "name": "Plants",
+   "doc_count": 400,
+   "fields": {
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PL"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Location": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "Point"
+       ],
+       "w": null
+      },
+      "coordinates": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": -180,
+        "hi": 180
+       },
+       "min": 2,
+       "max": 2
+      }
+     },
+     "geo": {
+      "lat": [
+       -33.0,
+       5.0
+      ],
+      "lng": [
+       -73.0,
+       -35.0
+      ]
+     }
+    },
+    "Country": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "country"
+    },
+    "LinesCount": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 40
+    },
+    "Certifications": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "ISO9001",
+       "ISO14001",
+       "IATF16949",
+       "ISO45001"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Shifts": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Start": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "end": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "code",
+         "prefix": "H"
+        },
+        "Crew": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 5,
+         "hi": 200
+        }
+       }
+      }
+     }
+    },
+    "Commissioned": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Energy": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "GridKw": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 500,
+       "hi": 90000
+      },
+      "Solar": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "Kwp": {
+         "t": "int32",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 5000,
+         "sk": 1.42
+        }
+       }
+      }
+     }
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      20.3,
+      29.4,
+      48.3,
+      100.0
+     ]
+    },
+    "LinesCountOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 1,
+     "hi": 40,
+     "dec": 0
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Code",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Country",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Location",
+       "2dsphere"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    },
+    {
+     "keys": [
+      [
+       "Commissioned",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Shifts.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "PLA-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Code": {
+       "bsonType": "string"
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "Location": {
+       "bsonType": "object",
+       "properties": {
+        "type": {
+         "enum": [
+          "Point"
+         ]
+        },
+        "coordinates": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "double"
+         }
+        }
+       }
+      },
+      "Country": {
+       "bsonType": "string"
+      },
+      "LinesCount": {
+       "bsonType": "int"
+      },
+      "Certifications": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "ISO9001",
+         "ISO14001",
+         "IATF16949",
+         "ISO45001"
+        ]
+       }
+      },
+      "Shifts": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "object",
+        "properties": {
+         "Start": {
+          "bsonType": "string"
+         },
+         "end": {
+          "bsonType": "string"
+         },
+         "Crew": {
+          "bsonType": "int"
+         }
+        },
+        "required": [
+         "Start",
+         "end",
+         "Crew"
+        ]
+       }
+      },
+      "Commissioned": {
+       "bsonType": "date"
+      },
+      "Energy": {
+       "bsonType": "object",
+       "properties": {
+        "GridKw": {
+         "bsonType": "int"
+        },
+        "Solar": {
+         "bsonType": "object",
+         "properties": {
+          "Kwp": {
+           "bsonType": "int"
+          }
+         },
+         "required": [
+          "Kwp"
+         ]
+        }
+       },
+       "required": [
+        "GridKw"
+       ]
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "LinesCountOld": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "Code",
+      "Name",
+      "Location",
+      "Country",
+      "LinesCount",
+      "Certifications",
+      "Shifts",
+      "Commissioned"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 1,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "work_orders",
+   "name": "WorkOrders",
+   "doc_count": 1450,
+   "fields": {
+    "WoNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "WO"
+    },
+    "ProdId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts",
+     "lo": 0,
+     "hi": 1
+    },
+    "LineId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "production_lines"
+    },
+    "QtyPlanned": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10,
+     "hi": 9000
+    },
+    "qtyDone": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 9000
+    },
+    "_Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "planned",
+      "released",
+      "running",
+      "done",
+      "cancelled"
+     ],
+     "w": [
+      33.1,
+      100.0,
+      65.0,
+      26.9,
+      19.9
+     ]
+    },
+    "Planned": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Start": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "alt": [
+        {
+         "t": "string",
+         "g": "isodate",
+         "lo": "2025-01-01",
+         "hi": "2026-09-30",
+         "fmt": "iso",
+         "aw": 0.08
+        }
+       ]
+      },
+      "End": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Actual": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "Start": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "End": {
+       "t": "date",
+       "p": 0.9,
+       "n": 0.1,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Routing": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Op": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 10,
+        "hi": 90
+       },
+       "Station": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "StdMin": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.5,
+        "hi": 120.0,
+        "alt": [
+         {
+          "t": "int32",
+          "lo": 0,
+          "hi": 121,
+          "aw": 0.18
+         }
+        ]
+       },
+       "Tools": {
+        "t": "array",
+        "p": 0.95,
+        "n": 0.0,
+        "item": {
+         "t": "objectid",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "tools"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Lot": {
+     "t": "string",
+     "p": 0.8,
+     "n": 0.0,
+     "ref": "batches",
+     "g": "word"
+    },
+    "Priority": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 5,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 1,
+       "hi": 5,
+       "dec": 0,
+       "aw": 0.07
+      }
+     ]
+    },
+    "CustomerRef": {
+     "t": "int32",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": 100000,
+     "hi": 999999,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 100000,
+       "hi": 999999,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ]
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "QtyPlannedV2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 10,
+     "hi": 9000,
+     "dec": 0
+    },
+    "Meta": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Device": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Region": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "Runtime": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Source": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900,
+               "alt": [
+                {
+                 "t": "double",
+                 "lo": 0,
+                 "hi": 900,
+                 "aw": 0.05
+                }
+               ]
+              },
+              "Name": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "word"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "WoNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "LineId",
+       1
+      ],
+      [
+       "_Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Planned.Start",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Priority",
+       1
+      ],
+      [
+       "_Status",
+       1
+      ]
+     ]
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 5,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "parts",
+   "name": "Parts",
+   "doc_count": 1400,
+   "fields": {
+    "PartNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PN"
+    },
+    "Descr": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "raw",
+      "component",
+      "assembly",
+      "finished"
+     ],
+     "w": [
+      44.4,
+      100.0,
+      19.3,
+      50.6
+     ]
+    },
+    "Uom": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "un",
+      "kg",
+      "m",
+      "l"
+     ],
+     "w": [
+      100.0,
+      39.7,
+      37.0,
+      41.1
+     ]
+    },
+    "Cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.1,
+     "hi": 9000.0
+    },
+    "Params": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      }
+     }
+    },
+    "Hazmat": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "Class": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "UnNo": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "UN"
+      }
+     }
+    },
+    "LeadDays": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0,
+     "hi": 120,
+     "sk": 1.47
+    },
+    "Drawings": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Rev": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "R"
+       },
+       "Url": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "url"
+       },
+       "Format": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "pdf",
+         "dwg",
+         "step"
+        ],
+        "w": [
+         24.3,
+         100.0,
+         62.6
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "_Override": {
+     "t": "object",
+     "p": 0.05,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "Reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "BetaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.49
+    },
+    "CostOld": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.1,
+     "hi": 9000.0,
+     "dec": 2
+    },
+    "LegacyLeadDays": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0,
+     "hi": 120,
+     "dec": 0
+    },
+    "Ext": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "Network": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Stack": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "Region": {
+           "t": "object",
+           "p": 0.95,
+           "n": 0.0,
+           "f": {
+            "Level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              35.4,
+              65.4
+             ]
+            },
+            "SeenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            },
+            "Score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100,
+             "sk": 2.46
+            }
+           }
+          },
+          "SeenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        },
+        "SeenAt": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "PartNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ],
+      [
+       "Cost",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "BetaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "Descr",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Params.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "PartNo": {
+       "bsonType": "string"
+      },
+      "Descr": {
+       "bsonType": "string"
+      },
+      "Kind": {
+       "bsonType": "string",
+       "enum": [
+        "raw",
+        "component",
+        "assembly",
+        "finished"
+       ]
+      },
+      "Uom": {
+       "bsonType": "string",
+       "enum": [
+        "un",
+        "kg",
+        "m",
+        "l"
+       ]
+      },
+      "Cost": {
+       "bsonType": "decimal"
+      },
+      "Params": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "string"
+       }
+      },
+      "Hazmat": {
+       "bsonType": "object",
+       "properties": {
+        "Class": {
+         "bsonType": "string"
+        },
+        "UnNo": {
+         "bsonType": "string"
+        }
+       },
+       "required": [
+        "Class",
+        "UnNo"
+       ]
+      },
+      "LeadDays": {
+       "bsonType": "int"
+      },
+      "Drawings": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Rev": {
+          "bsonType": "string"
+         },
+         "Url": {
+          "bsonType": "string"
+         },
+         "Format": {
+          "bsonType": "string",
+          "enum": [
+           "pdf",
+           "dwg",
+           "step"
+          ]
+         }
+        },
+        "required": [
+         "Rev",
+         "Url",
+         "Format"
+        ]
+       }
+      },
+      "_Override": {
+       "bsonType": "object",
+       "properties": {
+        "By": {
+         "bsonType": "string"
+        },
+        "Reason": {
+         "bsonType": "string"
+        },
+        "At": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "By",
+        "Reason",
+        "At"
+       ]
+      },
+      "BetaFlag": {
+       "bsonType": "bool"
+      },
+      "CostOld": {
+       "bsonType": "string"
+      },
+      "LegacyLeadDays": {
+       "bsonType": "string"
+      },
+      "Ext": {
+       "bsonType": "object",
+       "properties": {
+        "Network": {
+         "bsonType": "object",
+         "properties": {
+          "Stack": {
+           "bsonType": "object",
+           "properties": {
+            "Region": {
+             "bsonType": "object",
+             "properties": {
+              "Level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              },
+              "SeenAt": {
+               "bsonType": "date"
+              },
+              "Score": {
+               "bsonType": "double"
+              }
+             },
+             "required": [
+              "Level",
+              "SeenAt",
+              "Score"
+             ]
+            },
+            "SeenAt": {
+             "bsonType": "date"
+            }
+           },
+           "required": [
+            "SeenAt"
+           ]
+          },
+          "SeenAt": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "SeenAt"
+         ]
+        }
+       },
+       "required": [
+        "Network"
+       ]
+      }
+     },
+     "required": [
+      "PartNo",
+      "Descr",
+      "Kind",
+      "Uom",
+      "Cost",
+      "Params",
+      "LeadDays"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "inspections",
+   "name": "Inspections_new",
+   "doc_count": 1350,
+   "fields": {
+    "WoId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "work_orders"
+    },
+    "PartId": {
+     "t": "int64",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "parts",
+     "lo": 0,
+     "hi": 1
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "Inspector": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "incoming",
+      "inprocess",
+      "final",
+      "audit"
+     ],
+     "w": [
+      43.7,
+      100.0,
+      42.0,
+      17.2
+     ]
+    },
+    "Measurements": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Dim": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Nominal": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 500.0
+       },
+       "actual": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.0,
+        "hi": 500.0,
+        "sk": 1.92
+       },
+       "Tol": {
+        "t": "double",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0.001,
+        "hi": 2.0
+       },
+       "Pass": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.95
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Result": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pass",
+      "fail",
+      "rework"
+     ],
+     "w": [
+      100.0,
+      28.4,
+      49.8
+     ]
+    },
+    "Sample": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Size": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 1,
+       "hi": 200
+      },
+      "Aql": {
+       "t": "double",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0.065,
+       "hi": 4.0
+      }
+     }
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      49.0,
+      100.0,
+      20.3,
+      30.4
+     ]
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "InspectorOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Extra": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Region": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "stack": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Options": {
+           "t": "object",
+           "p": 0.6,
+           "n": 0.0,
+           "f": {
+            "Source": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              },
+              "Level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                100.0,
+                44.0,
+                37.6
+               ]
+              }
+             }
+            },
+            "SeenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          },
+          "Score": {
+           "t": "double",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 0,
+           "hi": 100
+          }
+         }
+        },
+        "Level": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "enum",
+         "values": [
+          "low",
+          "mid",
+          "high"
+         ],
+         "w": [
+          32.7,
+          50.8,
+          100.0
+         ]
+        }
+       }
+      }
+     }
+    },
+    "Embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "WoId",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Result",
+       1
+      ],
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Measurements.Pass",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "DeletedAt",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "WoId": {
+       "bsonType": "objectId"
+      },
+      "PartId": {
+       "bsonType": "long"
+      },
+      "At": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Inspector": {
+       "bsonType": "string"
+      },
+      "Kind": {
+       "bsonType": "string",
+       "enum": [
+        "incoming",
+        "inprocess",
+        "final",
+        "audit"
+       ]
+      },
+      "Measurements": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Dim": {
+          "bsonType": "string"
+         },
+         "Nominal": {
+          "bsonType": "double"
+         },
+         "actual": {
+          "bsonType": "double"
+         },
+         "Tol": {
+          "bsonType": "double"
+         },
+         "Pass": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "Dim",
+         "Nominal",
+         "actual",
+         "Tol",
+         "Pass"
+        ]
+       }
+      },
+      "Result": {
+       "bsonType": "string",
+       "enum": [
+        "pass",
+        "fail",
+        "rework"
+       ]
+      },
+      "Sample": {
+       "bsonType": "object",
+       "properties": {
+        "Size": {
+         "bsonType": "int"
+        },
+        "Aql": {
+         "bsonType": "double"
+        }
+       },
+       "required": [
+        "Size",
+        "Aql"
+       ]
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "InspectorOld": {
+       "bsonType": "string"
+      },
+      "Extra": {
+       "bsonType": "object",
+       "properties": {
+        "Region": {
+         "bsonType": "object",
+         "properties": {
+          "stack": {
+           "bsonType": "object",
+           "properties": {
+            "Options": {
+             "bsonType": "object",
+             "properties": {
+              "Source": {
+               "bsonType": "object",
+               "properties": {
+                "Count": {
+                 "bsonType": "int"
+                },
+                "Level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                }
+               },
+               "required": [
+                "Count",
+                "Level"
+               ]
+              },
+              "SeenAt": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "Source",
+              "SeenAt"
+             ]
+            },
+            "Score": {
+             "bsonType": "double"
+            }
+           },
+           "required": [
+            "Score"
+           ]
+          },
+          "Level": {
+           "bsonType": "string",
+           "enum": [
+            "low",
+            "mid",
+            "high"
+           ]
+          }
+         },
+         "required": [
+          "stack",
+          "Level"
+         ]
+        }
+       },
+       "required": [
+        "Region"
+       ]
+      },
+      "Embedding": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "double"
+       }
+      }
+     },
+     "required": [
+      "WoId",
+      "PartId",
+      "At",
+      "Inspector",
+      "Kind",
+      "Measurements",
+      "Result",
+      "Sample"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "inspections_new_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "Inspector": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "InspectorOld": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "Kind": {
+         "type": "token"
+        },
+        "Result": {
+         "type": "token"
+        },
+        "PartId": {
+         "type": "number"
+        },
+        "At": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    },
+    {
+     "name": "inspections_new_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "Embedding",
+        "numDimensions": 8,
+        "similarity": "cosine"
+       },
+       {
+        "type": "filter",
+        "path": "Kind"
+       },
+       {
+        "type": "filter",
+        "path": "PartId"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "defects",
+   "name": "Defects",
+   "doc_count": 800,
+   "fields": {
+    "InspectionId2": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "inspections"
+    },
+    "Code": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "DF"
+    },
+    "Severity": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "minor",
+      "major",
+      "critical"
+     ],
+     "w": [
+      37.2,
+      100.0,
+      44.1
+     ]
+    },
+    "Cause": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Category": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "man",
+        "machine",
+        "material",
+        "method"
+       ],
+       "w": [
+        56.1,
+        36.9,
+        31.1,
+        100.0
+       ]
+      },
+      "Detail": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "FiveWhys": {
+       "t": "array",
+       "p": 0.7,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "Qty": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 90,
+     "sk": 1.47
+    },
+    "Cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 9000.0,
+     "sk": 1.9
+    },
+    "Images": {
+     "t": "array",
+     "p": 0.05,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "url"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      22.3,
+      27.1,
+      47.1,
+      100.0
+     ]
+    },
+    "COSTOLD": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 0.0,
+     "hi": 9000.0,
+     "dec": 2
+    },
+    "Trace": {
+     "t": "object",
+     "p": 0.5,
+     "n": 0.0,
+     "f": {
+      "Runtime": {
+       "t": "object",
+       "p": 0.4,
+       "n": 0.0,
+       "f": {
+        "Rule": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "system": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              59.2,
+              100.0,
+              39.8
+             ]
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "InspectionId2",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Severity",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Cause.Category",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "DeletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "InspectionId2": {
+       "bsonType": "objectId"
+      },
+      "Code": {
+       "bsonType": "string"
+      },
+      "Severity": {
+       "bsonType": "string",
+       "enum": [
+        "minor",
+        "major",
+        "critical"
+       ]
+      },
+      "Cause": {
+       "bsonType": "object",
+       "properties": {
+        "Category": {
+         "bsonType": "string",
+         "enum": [
+          "man",
+          "machine",
+          "material",
+          "method"
+         ]
+        },
+        "Detail": {
+         "bsonType": "string"
+        },
+        "FiveWhys": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "string"
+         }
+        }
+       },
+       "required": [
+        "Category"
+       ]
+      },
+      "Qty": {
+       "bsonType": "int"
+      },
+      "Cost": {
+       "bsonType": "decimal"
+      },
+      "Images": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "At": {
+       "bsonType": "date"
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "COSTOLD": {
+       "bsonType": "string"
+      },
+      "Trace": {
+       "bsonType": "object",
+       "properties": {
+        "Runtime": {
+         "bsonType": "object",
+         "properties": {
+          "Rule": {
+           "bsonType": "object",
+           "properties": {
+            "system": {
+             "bsonType": "object",
+             "properties": {
+              "level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "level"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "system",
+            "name"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "InspectionId2",
+      "Code",
+      "Severity",
+      "Qty",
+      "Cost",
+      "At"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "validationLevel": "moderate",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "maintenance_orders",
+   "name": "MaintenanceOrders_v2",
+   "doc_count": 1150,
+   "fields": {
+    "MachineId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "preventive",
+      "corrective",
+      "predictive"
+     ],
+     "w": [
+      30.4,
+      100.0,
+      58.3
+     ]
+    },
+    "DtOpened": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Closed": {
+     "t": "date",
+     "p": 0.4,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.08
+      }
+     ]
+    },
+    "Tasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Step": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 20
+       },
+       "Text": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.76
+       },
+       "Parts": {
+        "t": "array",
+        "p": 0.5,
+        "n": 0.0,
+        "item": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Part": {
+           "t": "int64",
+           "p": 1.0,
+           "n": 0.0,
+           "ref": "parts",
+           "lo": 0,
+           "hi": 1
+          },
+          "Qty": {
+           "t": "int32",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": 1,
+           "hi": 9
+          }
+         }
+        },
+        "min": 1,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Cost": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 10.0,
+     "hi": 40000.0
+    },
+    "Technician": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "DowntimeMin": {
+     "t": "double",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 900.0
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      37.2,
+      25.0,
+      57.1,
+      100.0
+     ]
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.19
+      }
+     ]
+    },
+    "Origin": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Profile": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "Client": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Device": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "rule": {
+             "t": "object",
+             "p": 0.9,
+             "n": 0.0,
+             "f": {
+              "policy": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "name": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "word"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "Level": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "enum",
+           "values": [
+            "low",
+            "mid",
+            "high"
+           ],
+           "w": [
+            100.0,
+            62.7,
+            33.5
+           ]
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "MachineId",
+       1
+      ],
+      [
+       "DtOpened",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ],
+      [
+       "Closed",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "MachineId": {
+       "bsonType": "objectId"
+      },
+      "Kind": {
+       "bsonType": "string",
+       "enum": [
+        "preventive",
+        "corrective",
+        "predictive"
+       ]
+      },
+      "DtOpened": {
+       "bsonType": "date"
+      },
+      "Closed": {
+       "bsonType": [
+        "date",
+        "string",
+        "null"
+       ]
+      },
+      "Tasks": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Step": {
+          "bsonType": "int"
+         },
+         "Text": {
+          "bsonType": "string"
+         },
+         "Done": {
+          "bsonType": "bool"
+         },
+         "Parts": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "object",
+           "properties": {
+            "Part": {
+             "bsonType": "long"
+            },
+            "Qty": {
+             "bsonType": "int"
+            }
+           },
+           "required": [
+            "Part",
+            "Qty"
+           ]
+          }
+         }
+        },
+        "required": [
+         "Step",
+         "Text",
+         "Done"
+        ]
+       }
+      },
+      "Cost": {
+       "bsonType": "decimal"
+      },
+      "Technician": {
+       "bsonType": "string"
+      },
+      "DowntimeMin": {
+       "bsonType": "double"
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "DeletedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "Origin": {
+       "bsonType": "object",
+       "properties": {
+        "Profile": {
+         "bsonType": "object",
+         "properties": {
+          "Client": {
+           "bsonType": "object",
+           "properties": {
+            "Device": {
+             "bsonType": "object",
+             "properties": {
+              "rule": {
+               "bsonType": "object",
+               "properties": {
+                "policy": {
+                 "bsonType": "object",
+                 "properties": {
+                  "name": {
+                   "bsonType": "string"
+                  }
+                 },
+                 "required": [
+                  "name"
+                 ]
+                }
+               },
+               "required": [
+                "policy"
+               ]
+              }
+             }
+            },
+            "Level": {
+             "bsonType": "string",
+             "enum": [
+              "low",
+              "mid",
+              "high"
+             ]
+            }
+           },
+           "required": [
+            "Level"
+           ]
+          }
+         },
+         "required": [
+          "Client"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "MachineId",
+      "Kind",
+      "DtOpened",
+      "Tasks",
+      "Cost",
+      "Technician"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 3,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "downtime",
+   "name": "Downtime",
+   "doc_count": 2700,
+   "fields": {
+    "MachId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "machines"
+    },
+    "_At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "DurMin": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 600.0
+    },
+    "reason": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "breakdown",
+      "changeover",
+      "material",
+      "quality",
+      "planned",
+      "no_operator"
+     ],
+     "w": [
+      25.6,
+      29.9,
+      64.8,
+      100.0,
+      24.7,
+      17.4
+     ]
+    },
+    "Line": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Code": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "LN"
+      },
+      "Plant": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "PL"
+      }
+     }
+    },
+    "Details": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "ErrorCode": {
+       "t": "string",
+       "p": 0.9,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "ER"
+      },
+      "StopCodes": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "code",
+        "prefix": "SC"
+       },
+       "min": 0,
+       "max": 4
+      }
+     }
+    },
+    "_Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "By": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "REASON": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "At": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "MachId",
+       1
+      ],
+      [
+       "_At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "reason",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "timeseries": {
+     "timeField": "_At",
+     "metaField": "Line",
+     "granularity": "hours"
+    }
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "timeseries"
+   }
+  },
+  {
+   "key": "tools",
+   "name": "Tools",
+   "doc_count": 350,
+   "fields": {
+    "ToolNo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TL"
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "drill",
+      "mill",
+      "insert",
+      "gauge",
+      "fixture"
+     ],
+     "w": [
+      19.8,
+      59.2,
+      29.2,
+      25.6,
+      100.0
+     ]
+    },
+    "Life": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "MaxCycles": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 100,
+       "hi": 90000
+      },
+      "Used": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 90000,
+       "sk": 1.88
+      }
+     }
+    },
+    "Calibration": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "Last": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "Due": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      },
+      "History": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "At": {
+          "t": "date",
+          "p": 1.0,
+          "n": 0.0,
+          "lo": "2025-01-01",
+          "hi": "2026-09-30"
+         },
+         "By": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "name"
+         },
+         "Result": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "ok",
+           "adjusted",
+           "failed"
+          ],
+          "w": [
+           47.4,
+           100.0,
+           36.7
+          ]
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "Loc": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "LocV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Audit": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "profile": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "flags": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "policy": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "zone": {
+             "t": "object",
+             "p": 0.7,
+             "n": 0.0,
+             "f": {
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            },
+            "count": {
+             "t": "int32",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 900,
+             "alt": [
+              {
+               "t": "double",
+               "lo": 0,
+               "hi": 900,
+               "aw": 0.06
+              }
+             ]
+            }
+           }
+          }
+         }
+        },
+        "seen_at": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ToolNo",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Calibration.Due",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "DeletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ToolNo": {
+       "bsonType": "string"
+      },
+      "Kind": {
+       "bsonType": "string",
+       "enum": [
+        "drill",
+        "mill",
+        "insert",
+        "gauge",
+        "fixture"
+       ]
+      },
+      "Life": {
+       "bsonType": "object",
+       "properties": {
+        "MaxCycles": {
+         "bsonType": "int"
+        },
+        "Used": {
+         "bsonType": "int"
+        }
+       },
+       "required": [
+        "MaxCycles",
+        "Used"
+       ]
+      },
+      "Calibration": {
+       "bsonType": "object",
+       "properties": {
+        "Last": {
+         "bsonType": "date"
+        },
+        "Due": {
+         "bsonType": "date"
+        },
+        "History": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "At": {
+            "bsonType": "date"
+           },
+           "By": {
+            "bsonType": "string"
+           },
+           "Result": {
+            "bsonType": "string",
+            "enum": [
+             "ok",
+             "adjusted",
+             "failed"
+            ]
+           }
+          },
+          "required": [
+           "At",
+           "By",
+           "Result"
+          ]
+         }
+        }
+       },
+       "required": [
+        "Last",
+        "Due",
+        "History"
+       ]
+      },
+      "Loc": {
+       "bsonType": "string"
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "LocV2": {
+       "bsonType": "string"
+      },
+      "Audit": {
+       "bsonType": "object",
+       "properties": {
+        "profile": {
+         "bsonType": "object",
+         "properties": {
+          "flags": {
+           "bsonType": "object",
+           "properties": {
+            "policy": {
+             "bsonType": "object",
+             "properties": {
+              "zone": {
+               "bsonType": "object",
+               "properties": {
+                "version": {
+                 "bsonType": "string"
+                }
+               },
+               "required": [
+                "version"
+               ]
+              },
+              "count": {
+               "bsonType": [
+                "int",
+                "double"
+               ]
+              }
+             },
+             "required": [
+              "count"
+             ]
+            }
+           },
+           "required": [
+            "policy"
+           ]
+          },
+          "seen_at": {
+           "bsonType": "date"
+          }
+         },
+         "required": [
+          "flags",
+          "seen_at"
+         ]
+        }
+       },
+       "required": [
+        "profile"
+       ]
+      }
+     },
+     "required": [
+      "ToolNo",
+      "Kind",
+      "Life",
+      "Loc"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

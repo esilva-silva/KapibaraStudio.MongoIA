@@ -1,0 +1,2209 @@
+{
+ "schema_id": "v3_sable_leg",
+ "domain": "legal",
+ "holdout": true,
+ "description": "legal v3 realista pt-BR sem acento, snake",
+ "name_style": "snake",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "pt-BR",
+ "realism_notes": [
+  "billing: campos raros (<10% dos docs): import_batch",
+  "billing: aninhamento profundo meta.client.profile.route.device.limits.* (6 niveis de objeto)",
+  "clients: campos raros (<10% dos docs): external_ref, beta_flag",
+  "clients: campos legados/duplicados em formato antigo: since_v2",
+  "docket_entries: campos raros (<10% dos docs): import_batch",
+  "docket_entries: campos legados/duplicados em formato antigo: text_v2",
+  "docket_entries: aninhamento profundo info.device.system.policy.limits.* (5 niveis de objeto)",
+  "hearings: campos raros (<10% dos docs): external_ref",
+  "hearings: campos legados/duplicados em formato antigo: old_room",
+  "lawyers: campos raros (<10% dos docs): notes",
+  "lawyers: campos legados/duplicados em formato antigo: old_taxa_hour",
+  "lawyers: aninhamento profundo ext.region.policy.system.* (4 niveis de objeto)",
+  "lawyers: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "cases: campos raros (<10% dos docs): import_batch, override",
+  "cases: campos legados/duplicados em formato antigo: legacy_filed_em, valor_old",
+  "cases: aninhamento profundo meta.flags.limits.profile.* (4 niveis de objeto)",
+  "cases: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "documents: campos raros (<10% dos docs): override",
+  "documents: aninhamento profundo trace.runtime.device.zone.network.client.* (6 niveis de objeto)",
+  "filings: campos raros (<10% dos docs): external_ref",
+  "filings: campos legados/duplicados em formato antigo: legacy_tipo",
+  "filings: aninhamento profundo audit.profile.runtime.network.rule.* (5 niveis de objeto)",
+  "courts: campos raros (<10% dos docs): beta_flag, migrated_from",
+  "time_records: campos raros (<10% dos docs): deleted_at, review_state",
+  "time_records: campos legados/duplicados em formato antigo: legacy_billed, legacy_day",
+  "_id mistos: int64=1, objectid=8, string=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante snake; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): name_hung=4, name_style=9, name_suffix=3, name_underscore=2, name_upper=2",
+  "campos heterogeneos (alt) no schema: 6; mapas dinamicos: 1; max_depth=7",
+  "dominio legal: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "eval",
+ "collections": [
+  {
+   "key": "billing",
+   "name": "cobrancas",
+   "doc_count": 500,
+   "fields": {
+    "cliente_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clients"
+    },
+    "processo_id": {
+     "t": "objectid",
+     "p": 0.9,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "hours": {
+     "t": "double",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 90.0,
+     "sk": 1.8
+    },
+    "taxa": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 2000.0,
+     "sk": 1.53
+    },
+    "total": {
+     "t": "decimal128",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 50.0,
+     "hi": 180000.0
+    },
+    "dt_issued_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "pago": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.89
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "client": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "profile": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "route": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "device": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "limits": {
+               "t": "object",
+               "p": 1.0,
+               "n": 0.0,
+               "f": {
+                "ENABLED": {
+                 "t": "bool",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "pt": 0.4
+                },
+                "level": {
+                 "t": "string",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "g": "enum",
+                 "values": [
+                  "low",
+                  "mid",
+                  "high"
+                 ],
+                 "w": [
+                  58.0,
+                  100.0,
+                  43.7
+                 ]
+                }
+               }
+              },
+              "level": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "enum",
+               "values": [
+                "low",
+                "mid",
+                "high"
+               ],
+               "w": [
+                35.3,
+                100.0,
+                57.0
+               ]
+              }
+             }
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "name": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "cliente_id",
+       1
+      ],
+      [
+       "dt_issued_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "dt_issued_em",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "pago": true
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "cliente_id": {
+       "bsonType": "objectId"
+      },
+      "processo_id": {
+       "bsonType": "objectId"
+      },
+      "hours": {
+       "bsonType": "double"
+      },
+      "taxa": {
+       "bsonType": "decimal"
+      },
+      "total": {
+       "bsonType": "decimal"
+      },
+      "dt_issued_em": {
+       "bsonType": "date"
+      },
+      "pago": {
+       "bsonType": "bool"
+      },
+      "import_batch": {
+       "bsonType": "string"
+      },
+      "meta": {
+       "bsonType": "object",
+       "properties": {
+        "client": {
+         "bsonType": "object",
+         "properties": {
+          "profile": {
+           "bsonType": "object",
+           "properties": {
+            "route": {
+             "bsonType": "object",
+             "properties": {
+              "device": {
+               "bsonType": "object",
+               "properties": {
+                "limits": {
+                 "bsonType": "object",
+                 "properties": {
+                  "ENABLED": {
+                   "bsonType": "bool"
+                  },
+                  "level": {
+                   "bsonType": "string",
+                   "enum": [
+                    "low",
+                    "mid",
+                    "high"
+                   ]
+                  }
+                 },
+                 "required": [
+                  "ENABLED",
+                  "level"
+                 ]
+                },
+                "level": {
+                 "bsonType": "string",
+                 "enum": [
+                  "low",
+                  "mid",
+                  "high"
+                 ]
+                }
+               },
+               "required": [
+                "limits",
+                "level"
+               ]
+              }
+             },
+             "required": [
+              "device"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "name"
+           ]
+          },
+          "name": {
+           "bsonType": "string"
+          }
+         },
+         "required": [
+          "name"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "cliente_id",
+      "hours",
+      "taxa",
+      "total",
+      "dt_issued_em",
+      "pago"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "clients",
+   "name": "clientes",
+   "doc_count": 1400,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "imposto_id": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TX"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "person",
+      "company"
+     ],
+     "w": [
+      100.0,
+      59.9
+     ]
+    },
+    "email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "since": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "endereco": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "cidade": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "city"
+      },
+      "estado": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "word"
+      },
+      "pais": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "country"
+      }
+     }
+    },
+    "externalRef": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "betaFlag": {
+     "t": "bool",
+     "p": 0.08,
+     "n": 0.0,
+     "pt": 0.48
+    },
+    "since_v2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "imposto_id",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "betaFlag",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "docket_entries",
+   "name": "andamentos",
+   "doc_count": 350,
+   "fields": {
+    "processo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "cases",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "codigo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "AN"
+    },
+    "text_2": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "parties_notified": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "name"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "attachments": {
+     "t": "array",
+     "p": 0.03,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "slug"
+       },
+       "pages": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 200,
+        "alt": [
+         {
+          "t": "string",
+          "g": "numstr",
+          "lo": 1,
+          "hi": 200,
+          "dec": 0,
+          "aw": 0.08
+         }
+        ]
+       },
+       "HASH": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "hex"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "import_batch": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "text_v2": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "_info": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "device": {
+       "t": "object",
+       "p": 0.6,
+       "n": 0.0,
+       "f": {
+        "system": {
+         "t": "object",
+         "p": 0.6,
+         "n": 0.0,
+         "f": {
+          "policy": {
+           "t": "object",
+           "p": 0.8,
+           "n": 0.0,
+           "f": {
+            "limits": {
+             "t": "object",
+             "p": 0.6,
+             "n": 0.0,
+             "f": {
+              "score": {
+               "t": "double",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 100,
+               "sk": 1.59
+              },
+              "version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              },
+              "seenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "processo_id",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "int64",
+    "base": 100000
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "processo_id": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "em": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "codigo": {
+       "bsonType": "string"
+      },
+      "text_2": {
+       "bsonType": "string"
+      },
+      "parties_notified": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "attachments": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "nome": {
+          "bsonType": "string"
+         },
+         "pages": {
+          "bsonType": [
+           "int",
+           "string"
+          ]
+         },
+         "HASH": {
+          "bsonType": "string"
+         }
+        },
+        "required": [
+         "nome",
+         "pages",
+         "HASH"
+        ]
+       }
+      },
+      "import_batch": {
+       "bsonType": "string"
+      },
+      "text_v2": {
+       "bsonType": "string"
+      },
+      "_info": {
+       "bsonType": "object",
+       "properties": {
+        "device": {
+         "bsonType": "object",
+         "properties": {
+          "system": {
+           "bsonType": "object",
+           "properties": {
+            "policy": {
+             "bsonType": "object",
+             "properties": {
+              "limits": {
+               "bsonType": "object",
+               "properties": {
+                "score": {
+                 "bsonType": "double"
+                },
+                "version": {
+                 "bsonType": "string"
+                },
+                "seenAt": {
+                 "bsonType": "date"
+                }
+               },
+               "required": [
+                "score",
+                "version",
+                "seenAt"
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "required": [
+      "processo_id",
+      "em",
+      "codigo",
+      "text_2",
+      "parties_notified"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "int64",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "hearings",
+   "name": "audiencias",
+   "doc_count": 1250,
+   "fields": {
+    "processo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2026-01-01",
+     "hi": "2027-03-31"
+    },
+    "room": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "judge": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "observacoes": {
+     "t": "string",
+     "p": 0.9,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "outcome": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.1,
+     "g": "enum",
+     "values": [
+      "held",
+      "postponed",
+      "settled"
+     ],
+     "w": [
+      44.7,
+      47.8,
+      100.0
+     ]
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "old_room": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "processo_id",
+       1
+      ],
+      [
+       "em",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "judge",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "em",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "audiencias_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "room": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "judge": {
+         "type": "string",
+         "analyzer": "lucene.standard"
+        },
+        "observacoes": {
+         "type": "string",
+         "analyzer": "lucene.portuguese"
+        },
+        "outcome": {
+         "type": "token"
+        },
+        "em": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "lawyers",
+   "name": "advogados",
+   "doc_count": 550,
+   "fields": {
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "bar": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "OAB"
+    },
+    "firm": {
+     "t": "string",
+     "p": 0.6,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Ativo": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.81
+    },
+    "areas": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "enum",
+      "values": [
+       "civil",
+       "criminal",
+       "labor",
+       "tax",
+       "ip"
+      ],
+      "w": null
+     },
+     "min": 0,
+     "max": 4
+    },
+    "taxa_hour": {
+     "t": "decimal128",
+     "p": 0.8,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 2000.0,
+     "alt": [
+      {
+       "t": "double",
+       "lo": 100.0,
+       "hi": 2000.0,
+       "aw": 0.06
+      }
+     ]
+    },
+    "notes_2": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "old_taxa_hour": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 100.0,
+     "hi": 2000.0,
+     "dec": 2
+    },
+    "ext": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {
+      "region": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "policy": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "system": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "name": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "word"
+            },
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "score": {
+         "t": "double",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": 0,
+         "hi": 100,
+         "sk": 1.8
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "bar",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Ativo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "areas",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "nome",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "nome": {
+       "bsonType": "string"
+      },
+      "bar": {
+       "bsonType": "string"
+      },
+      "firm": {
+       "bsonType": "string"
+      },
+      "Ativo": {
+       "bsonType": "bool"
+      },
+      "areas": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string",
+        "enum": [
+         "civil",
+         "criminal",
+         "labor",
+         "tax",
+         "ip"
+        ]
+       }
+      },
+      "taxa_hour": {
+       "bsonType": [
+        "decimal",
+        "double"
+       ]
+      },
+      "notes_2": {
+       "bsonType": "string"
+      },
+      "old_taxa_hour": {
+       "bsonType": "string"
+      },
+      "ext": {
+       "bsonType": "object",
+       "properties": {
+        "region": {
+         "bsonType": "object",
+         "properties": {
+          "policy": {
+           "bsonType": "object",
+           "properties": {
+            "system": {
+             "bsonType": "object",
+             "properties": {
+              "name": {
+               "bsonType": "string"
+              },
+              "seenAt": {
+               "bsonType": "date"
+              }
+             },
+             "required": [
+              "name",
+              "seenAt"
+             ]
+            },
+            "name": {
+             "bsonType": "string"
+            }
+           },
+           "required": [
+            "system",
+            "name"
+           ]
+          },
+          "score": {
+           "bsonType": "double"
+          }
+         },
+         "required": [
+          "policy",
+          "score"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "nome",
+      "bar",
+      "Ativo",
+      "areas"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "cases",
+   "name": "processos",
+   "doc_count": 600,
+   "fields": {
+    "numero": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "CNJ"
+    },
+    "vara": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "TJSP",
+      "TRF3",
+      "STJ",
+      "TRT2"
+     ],
+     "w": [
+      64.5,
+      21.0,
+      40.6,
+      100.0
+     ]
+    },
+    "subject": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "cliente_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "clients"
+    },
+    "filed_em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2018-01-01",
+     "hi": "2026-09-01",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2018-01-01",
+       "hi": "2026-09-01",
+       "fmt": "date",
+       "aw": 0.06
+      }
+     ]
+    },
+    "situacao": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "open",
+      "stayed",
+      "closed"
+     ],
+     "w": [
+      100.0,
+      63.4,
+      36.3
+     ]
+    },
+    "valor": {
+     "t": "decimal128",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": 100.0,
+     "hi": 5000000.0
+    },
+    "parties": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "nome": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "name"
+       },
+       "papel": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "plaintiff",
+         "defendant",
+         "witness"
+        ],
+        "w": [
+         49.7,
+         44.4,
+         100.0
+        ]
+       },
+       "counsel": {
+        "t": "object",
+        "p": 0.6,
+        "n": 0.0,
+        "f": {
+         "nome": {
+          "t": "string",
+          "p": 0.9,
+          "n": 0.0,
+          "g": "name"
+         },
+         "bar": {
+          "t": "string",
+          "p": 0.5,
+          "n": 0.0,
+          "g": "code",
+          "prefix": "OAB"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "lead_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "lawyers"
+    },
+    "str_import_batch": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "IMP-"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "legacy_filed_em": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2018-01-01",
+     "hi": "2026-09-01",
+     "fmt": "iso"
+    },
+    "valor_old": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "numstr",
+     "lo": 100.0,
+     "hi": 5000000.0,
+     "dec": 2
+    },
+    "meta": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "flags": {
+       "t": "object",
+       "p": 0.95,
+       "n": 0.0,
+       "f": {
+        "limits": {
+         "t": "object",
+         "p": 0.3,
+         "n": 0.0,
+         "f": {
+          "profile": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "score": {
+             "t": "double",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": 0,
+             "hi": 100
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.41
+            },
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "numero",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "vara",
+       1
+      ],
+      [
+       "situacao",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "parties.nome",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "cliente_id",
+       1
+      ],
+      [
+       "filed_em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "lead_id",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "str_import_batch",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "subject",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "documents",
+   "name": "documentos",
+   "doc_count": 1200,
+   "fields": {
+    "fk_processo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "petition",
+      "motion",
+      "ruling",
+      "evidence"
+     ],
+     "w": [
+      40.2,
+      41.0,
+      50.2,
+      100.0
+     ]
+    },
+    "pages": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 400,
+     "sk": 1.48
+    },
+    "hash": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "dt_filed": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "confidential": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 3
+    },
+    "override": {
+     "t": "object",
+     "p": 0.03,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "trace": {
+     "t": "object",
+     "p": 0.7,
+     "n": 0.0,
+     "f": {
+      "runtime": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "device": {
+         "t": "object",
+         "p": 0.5,
+         "n": 0.0,
+         "f": {
+          "Zone": {
+           "t": "object",
+           "p": 0.9,
+           "n": 0.0,
+           "f": {
+            "network": {
+             "t": "object",
+             "p": 0.95,
+             "n": 0.0,
+             "f": {
+              "client": {
+               "t": "object",
+               "p": 0.8,
+               "n": 0.0,
+               "f": {
+                "count": {
+                 "t": "int32",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 900
+                },
+                "score": {
+                 "t": "double",
+                 "p": 1.0,
+                 "n": 0.0,
+                 "lo": 0,
+                 "hi": 100,
+                 "sk": 2.43
+                }
+               }
+              }
+             }
+            },
+            "seenAt": {
+             "t": "date",
+             "p": 1.0,
+             "n": 0.0,
+             "lo": "2025-01-01",
+             "hi": "2026-09-30"
+            }
+           }
+          },
+          "name": {
+           "t": "string",
+           "p": 1.0,
+           "n": 0.0,
+           "g": "word"
+          }
+         }
+        },
+        "seen_at": {
+         "t": "date",
+         "p": 1.0,
+         "n": 0.0,
+         "lo": "2025-01-01",
+         "hi": "2026-09-30"
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "fk_processo_id",
+       1
+      ],
+      [
+       "tipo",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "hash",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "tipo",
+       1
+      ]
+     ],
+     "partialFilterExpression": {
+      "confidential": true
+     }
+    },
+    {
+     "keys": [
+      [
+       "dt_filed",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "max_depth": 7,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "filings",
+   "name": "peticoes",
+   "doc_count": 750,
+   "fields": {
+    "processo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "advogado_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "lawyers"
+    },
+    "protocol": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PT"
+    },
+    "em": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "tipo": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "word"
+    },
+    "deadline": {
+     "t": "date",
+     "p": 0.3,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "external_ref": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "legacy_tipo": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "word"
+    },
+    "audit": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "profile": {
+       "t": "object",
+       "p": 0.7,
+       "n": 0.0,
+       "f": {
+        "runtime": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "network": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Rule": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "Version": {
+               "t": "string",
+               "p": 1.0,
+               "n": 0.0,
+               "g": "code",
+               "prefix": "v"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "protocol",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "processo_id",
+       1
+      ],
+      [
+       "em",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "advogado_id",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "external_ref",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "courts",
+   "name": "tribunais",
+   "doc_count": 500,
+   "fields": {
+    "acronym": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "TR"
+    },
+    "nome": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "jurisdiction": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "state",
+      "federal",
+      "labor"
+     ],
+     "w": [
+      41.5,
+      100.0,
+      59.4
+     ]
+    },
+    "cidade": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "city"
+    },
+    "judges": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 5,
+     "hi": 500,
+     "sk": 1.92
+    },
+    "beta_flag": {
+     "t": "bool",
+     "p": 0.03,
+     "n": 0.0,
+     "pt": 0.54
+    },
+    "migrated_from": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      57.0,
+      29.7,
+      25.2,
+      100.0
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "acronym",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "jurisdiction",
+       1
+      ]
+     ]
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "COU-"
+   },
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "time_records",
+   "name": "apontamentos_horas",
+   "doc_count": 2300,
+   "fields": {
+    "advogado_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "lawyers"
+    },
+    "processo_id": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "cases"
+    },
+    "day": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "minutes_x": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 6,
+     "hi": 720,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 6,
+       "hi": 720,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ]
+    },
+    "activity": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 240
+      }
+     }
+    },
+    "_billed": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.59
+    },
+    "deleted_at": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "review_state": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      44.5,
+      100.0,
+      56.5
+     ]
+    },
+    "legacy_billed": {
+     "t": "bool",
+     "p": 0.15,
+     "n": 0.0,
+     "pt": 0.55
+    },
+    "legacy_day": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "advogado_id",
+       1
+      ],
+      [
+       "day",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "processo_id",
+       1
+      ],
+      [
+       "_billed",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "processo_id",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "deleted_at",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "activity.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "apontamentos_horas_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "review_state": {
+         "type": "token"
+        },
+        "day": {
+         "type": "date"
+        },
+        "minutes_x": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}

@@ -1,0 +1,3121 @@
+{
+ "schema_id": "v3_delta_wks",
+ "domain": "workspace",
+ "holdout": false,
+ "description": "workspace v3 realista EN, pascal",
+ "name_style": "pascal",
+ "seed": 20261022,
+ "format_version": 2,
+ "generation": "v3",
+ "language": "en",
+ "realism_notes": [
+  "tasks: campos raros (<10% dos docs): migrated_from",
+  "tasks: heterogeneidade de tipo no mesmo campo: date_string=1, ref_string=1",
+  "activity_log: campos raros (<10% dos docs): deleted_at",
+  "activity_log: campos legados/duplicados em formato antigo: old_at",
+  "activity_log: aninhamento profundo trace.client.limits.tenant.flags.* (5 niveis de objeto)",
+  "activity_log: heterogeneidade de tipo no mesmo campo: date_string=2",
+  "activity_log: colecao capped (max=2500 docs)",
+  "notifications: campos raros (<10% dos docs): external_ref, notes",
+  "notifications: campos legados/duplicados em formato antigo: at_v2, read_old",
+  "notifications: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "notifications: colecao capped (max=2000 docs)",
+  "projects: campos raros (<10% dos docs): notes, external_ref",
+  "projects: aninhamento profundo extra.profile.tenant.client.* (4 niveis de objeto)",
+  "projects: heterogeneidade de tipo no mesmo campo: bool_string=1",
+  "time_entries: campos raros (<10% dos docs): migrated_from, review_state",
+  "time_entries: campos legados/duplicados em formato antigo: billable_v2",
+  "time_entries: heterogeneidade de tipo no mesmo campo: bool_string=1, ref_string=1",
+  "automations: campos raros (<10% dos docs): deleted_at",
+  "automations: heterogeneidade de tipo no mesmo campo: date_string=1",
+  "sprints: campos raros (<10% dos docs): external_ref",
+  "sprints: aninhamento profundo audit.stack.source.client.runtime.* (5 niveis de objeto)",
+  "sprints: heterogeneidade de tipo no mesmo campo: ref_string=1",
+  "calendar_events: campos raros (<10% dos docs): override, external_ref",
+  "calendar_events: campos legados/duplicados em formato antigo: room_old, start_old",
+  "boards: campos raros (<10% dos docs): migrated_from",
+  "boards: campos legados/duplicados em formato antigo: name_v2",
+  "boards: heterogeneidade de tipo no mesmo campo: num_mixed=1",
+  "comments: campos raros (<10% dos docs): external_ref",
+  "comments: campos legados/duplicados em formato antigo: edited_old, legacy_at",
+  "members: campos raros (<10% dos docs): external_ref",
+  "members: aninhamento profundo audit.system.rule.limits.* (4 niveis de objeto)",
+  "documents: campos raros (<10% dos docs): deleted_at, review_state",
+  "_id mistos: objectid=11, string=1 (referencias seguem o tipo do _id alvo)",
+  "nomes de producao bagunçados (estilo dominante pascal; mistura de estilos, abreviacoes, prefixos de tipo, sufixos _v2/_old): coll_prefix=1, coll_suffix=1, name_abbr=4, name_hung=5, name_style=7, name_suffix=10, name_upper=1",
+  "campos heterogeneos (alt) no schema: 15; mapas dinamicos: 3; max_depth=6",
+  "dominio workspace: entidades do dominio com extensoes v3 (uniao de tipos, mapas, aninhamento profundo)"
+ ],
+ "split_role": "train",
+ "collections": [
+  {
+   "key": "tasks",
+   "name": "Tasks",
+   "doc_count": 1000,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "StrTitle": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Assignee": {
+     "t": "objectid",
+     "p": 0.7,
+     "n": 0.1,
+     "ref": "members",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "members",
+       "as": "string",
+       "aw": 0.16
+      }
+     ]
+    },
+    "Prio": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "low",
+      "medium",
+      "high",
+      "urgent"
+     ],
+     "w": [
+      47.2,
+      42.8,
+      100.0,
+      60.8
+     ]
+    },
+    "state": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "todo",
+      "doing",
+      "review",
+      "done"
+     ],
+     "w": [
+      36.3,
+      27.6,
+      56.2,
+      100.0
+     ]
+    },
+    "EstimateH": {
+     "t": "double",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0.5,
+     "hi": 40.0
+    },
+    "Due": {
+     "t": "date",
+     "p": 0.8,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Subtasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "title": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "title"
+       },
+       "done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.36
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "CreatedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "date",
+       "aw": 0.17
+      }
+     ]
+    },
+    "checklist": {
+     "t": "array",
+     "p": 0.7,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Item": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "sentence"
+       },
+       "Done": {
+        "t": "bool",
+        "p": 1.0,
+        "n": 0.0,
+        "pt": 0.45
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      27.2,
+      42.6,
+      34.4
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ],
+      [
+       "state",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Assignee",
+       1
+      ],
+      [
+       "Due",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Prio",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ProjectId": {
+       "bsonType": "objectId"
+      },
+      "StrTitle": {
+       "bsonType": "string"
+      },
+      "Assignee": {
+       "bsonType": [
+        "objectId",
+        "string",
+        "null"
+       ]
+      },
+      "Prio": {
+       "bsonType": "string",
+       "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+       ]
+      },
+      "state": {
+       "bsonType": "string",
+       "enum": [
+        "todo",
+        "doing",
+        "review",
+        "done"
+       ]
+      },
+      "EstimateH": {
+       "bsonType": "double"
+      },
+      "Due": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "Subtasks": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "title": {
+          "bsonType": "string"
+         },
+         "done": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "title",
+         "done"
+        ]
+       }
+      },
+      "CreatedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      },
+      "checklist": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Item": {
+          "bsonType": "string"
+         },
+         "Done": {
+          "bsonType": "bool"
+         }
+        },
+        "required": [
+         "Item",
+         "Done"
+        ]
+       }
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      }
+     },
+     "required": [
+      "ProjectId",
+      "StrTitle",
+      "Prio",
+      "state",
+      "Subtasks",
+      "CreatedAt"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "search_indexes": [
+    {
+     "name": "tasks_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "StrTitle": {
+         "type": "string",
+         "analyzer": "lucene.english"
+        },
+        "Prio": {
+         "type": "token"
+        },
+        "state": {
+         "type": "token"
+        },
+        "EstimateH": {
+         "type": "number"
+        },
+        "Due": {
+         "type": "date"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "activity_log",
+   "name": "tbl_activity_log",
+   "doc_count": 2000,
+   "fields": {
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.11
+      }
+     ]
+    },
+    "MemberId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "members",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "Kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "create",
+      "update",
+      "comment",
+      "move",
+      "delete",
+      "share"
+     ],
+     "w": [
+      15.2,
+      64.6,
+      20.3,
+      24.8,
+      100.0,
+      13.3
+     ]
+    },
+    "Entity": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Type": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "task",
+        "doc",
+        "project"
+       ],
+       "w": [
+        100.0,
+        29.6,
+        54.2
+       ]
+      },
+      "Id": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "hex"
+      },
+      "Path": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "slug"
+        },
+        "min": 2,
+        "max": 4
+       },
+       "min": 1,
+       "max": 3
+      }
+     }
+    },
+    "Diff": {
+     "t": "object",
+     "p": 0.8,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "word",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "From": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        },
+        "To": {
+         "t": "string",
+         "p": 1.0,
+         "n": 0.0,
+         "g": "word"
+        }
+       }
+      }
+     }
+    },
+    "Client": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "app": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "web",
+        "ios",
+        "android"
+       ],
+       "w": [
+        45.4,
+        35.1,
+        100.0
+       ]
+      },
+      "ver": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "code",
+       "prefix": "v"
+      }
+     }
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.05,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.15
+      }
+     ]
+    },
+    "OldAtOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    },
+    "Trace": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "Client": {
+       "t": "object",
+       "p": 0.8,
+       "n": 0.0,
+       "f": {
+        "limits": {
+         "t": "object",
+         "p": 0.9,
+         "n": 0.0,
+         "f": {
+          "tenant": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "flags": {
+             "t": "object",
+             "p": 0.6,
+             "n": 0.0,
+             "f": {
+              "SeenAt": {
+               "t": "date",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": "2025-01-01",
+               "hi": "2026-09-30"
+              }
+             }
+            },
+            "enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.57
+            }
+           }
+          },
+          "seen_at": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "MemberId",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Kind",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "DeletedAt",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Diff.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "capped": true,
+    "size": 32768000,
+    "max": 2500
+   },
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 3,
+    "map_fields": 1,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 1,
+    "id_type": "objectid",
+    "kind": "capped"
+   }
+  },
+  {
+   "key": "notifications",
+   "name": "Notifications",
+   "doc_count": 1500,
+   "fields": {
+    "MemberId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "kind": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "mention",
+      "assign",
+      "due",
+      "comment"
+     ],
+     "w": [
+      100.0,
+      63.0,
+      39.7,
+      21.5
+     ]
+    },
+    "Read": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.43
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Payload": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "Task": {
+       "t": "objectid",
+       "p": 0.95,
+       "n": 0.0,
+       "ref": "tasks",
+       "alt": [
+        {
+         "t": "objectid",
+         "ref": "tasks",
+         "as": "string",
+         "aw": 0.05
+        }
+       ]
+      },
+      "By": {
+       "t": "objectid",
+       "p": 0.5,
+       "n": 0.0,
+       "ref": "members"
+      },
+      "Preview": {
+       "t": "string",
+       "p": 0.5,
+       "n": 0.0,
+       "g": "sentence"
+      }
+     }
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Notes": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "AtV2": {
+     "t": "string",
+     "p": 0.15,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    },
+    "ReadOld": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.7
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "MemberId",
+       1
+      ],
+      [
+       "Read",
+       1
+      ],
+      [
+       "At",
+       -1
+      ]
+     ]
+    }
+   ],
+   "options": {
+    "capped": true,
+    "size": 24576000,
+    "max": 2000
+   },
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "capped"
+   }
+  },
+  {
+   "key": "projects",
+   "name": "Projects",
+   "doc_count": 1450,
+   "fields": {
+    "Key": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "PRJ"
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Owner": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "Status": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "planned",
+      "active",
+      "paused",
+      "done"
+     ],
+     "w": [
+      100.0,
+      33.4,
+      56.2,
+      25.7
+     ]
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "End": {
+     "t": "date",
+     "p": 0.5,
+     "n": 0.1,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Budget": {
+     "t": "decimal128",
+     "p": 0.7,
+     "n": 0.0,
+     "lo": 0.0,
+     "hi": 900000.0
+    },
+    "Labels": {
+     "t": "array",
+     "p": 0.4,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "Settings": {
+     "t": "object",
+     "p": 0.4,
+     "n": 0.0,
+     "f": {
+      "Visibility": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "private",
+        "team",
+        "public"
+       ],
+       "w": [
+        100.0,
+        62.7,
+        24.2
+       ]
+      },
+      "integrationsNew": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Kind": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "Enabled": {
+          "t": "bool",
+          "p": 1.0,
+          "n": 0.0,
+          "pt": 0.46,
+          "alt": [
+           {
+            "t": "string",
+            "g": "enum",
+            "values": [
+             "Y",
+             "N",
+             "true",
+             "false",
+             "1",
+             "0"
+            ],
+            "aw": 0.06
+           }
+          ]
+         },
+         "Config": {
+          "t": "object",
+          "p": 1.0,
+          "n": 0.0,
+          "f": {
+           "Url": {
+            "t": "string",
+            "p": 0.5,
+            "n": 0.0,
+            "g": "url"
+           },
+           "Token": {
+            "t": "string",
+            "p": 0.3,
+            "n": 0.0,
+            "g": "hex"
+           }
+          }
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "NotesX": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Extra": {
+     "t": "object",
+     "p": 0.6,
+     "n": 0.0,
+     "f": {
+      "Profile": {
+       "t": "object",
+       "p": 0.9,
+       "n": 0.0,
+       "f": {
+        "tenant": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "Client": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "Enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.79
+            },
+            "Version": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "code",
+             "prefix": "v"
+            },
+            "Level": {
+             "t": "string",
+             "p": 1.0,
+             "n": 0.0,
+             "g": "enum",
+             "values": [
+              "low",
+              "mid",
+              "high"
+             ],
+             "w": [
+              100.0,
+              27.8,
+              58.2
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Key",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Owner",
+       1
+      ],
+      [
+       "Status",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Labels",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Owner",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    },
+    {
+     "keys": [
+      [
+       "Start",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Key": {
+       "bsonType": "string"
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "Owner": {
+       "bsonType": "objectId"
+      },
+      "Status": {
+       "bsonType": "string",
+       "enum": [
+        "planned",
+        "active",
+        "paused",
+        "done"
+       ]
+      },
+      "Start": {
+       "bsonType": "date"
+      },
+      "End": {
+       "bsonType": [
+        "date",
+        "null"
+       ]
+      },
+      "Budget": {
+       "bsonType": "decimal"
+      },
+      "Labels": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "string"
+       }
+      },
+      "Settings": {
+       "bsonType": "object",
+       "properties": {
+        "Visibility": {
+         "bsonType": "string",
+         "enum": [
+          "private",
+          "team",
+          "public"
+         ]
+        },
+        "integrationsNew": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "Kind": {
+            "bsonType": "string"
+           },
+           "Enabled": {
+            "bsonType": [
+             "bool",
+             "string"
+            ]
+           },
+           "Config": {
+            "bsonType": "object",
+            "properties": {
+             "Url": {
+              "bsonType": "string"
+             },
+             "Token": {
+              "bsonType": "string"
+             }
+            }
+           }
+          },
+          "required": [
+           "Kind",
+           "Enabled",
+           "Config"
+          ]
+         }
+        }
+       },
+       "required": [
+        "Visibility",
+        "integrationsNew"
+       ]
+      },
+      "NotesX": {
+       "bsonType": "string"
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "Extra": {
+       "bsonType": "object",
+       "properties": {
+        "Profile": {
+         "bsonType": "object",
+         "properties": {
+          "tenant": {
+           "bsonType": "object",
+           "properties": {
+            "Client": {
+             "bsonType": "object",
+             "properties": {
+              "Enabled": {
+               "bsonType": "bool"
+              },
+              "Version": {
+               "bsonType": "string"
+              },
+              "Level": {
+               "bsonType": "string",
+               "enum": [
+                "low",
+                "mid",
+                "high"
+               ]
+              }
+             },
+             "required": [
+              "Enabled",
+              "Version",
+              "Level"
+             ]
+            }
+           }
+          }
+         },
+         "required": [
+          "tenant"
+         ]
+        }
+       }
+      }
+     },
+     "required": [
+      "Key",
+      "Name",
+      "Owner",
+      "Status",
+      "Start"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "time_entries",
+   "name": "TimeEntries",
+   "doc_count": 1150,
+   "fields": {
+    "TaskId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tasks"
+    },
+    "MemberId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "members",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-01-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.1
+      }
+     ]
+    },
+    "NMinutes": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 600,
+     "alt": [
+      {
+       "t": "string",
+       "g": "numstr",
+       "lo": 1,
+       "hi": 600,
+       "dec": 0,
+       "aw": 0.08
+      }
+     ]
+    },
+    "Billable": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.79,
+     "alt": [
+      {
+       "t": "string",
+       "g": "enum",
+       "values": [
+        "Y",
+        "N",
+        "true",
+        "false",
+        "1",
+        "0"
+       ],
+       "aw": 0.06
+      }
+     ]
+    },
+    "Tags": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "string",
+      "p": 1.0,
+      "n": 0.0,
+      "g": "word"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      100.0,
+      29.4,
+      57.5,
+      31.0
+     ]
+    },
+    "ReviewState": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      53.3,
+      100.0,
+      31.1
+     ]
+    },
+    "BillableV2": {
+     "t": "bool",
+     "p": 0.4,
+     "n": 0.0,
+     "pt": 0.53
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TaskId",
+       1
+      ],
+      [
+       "Start",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MemberId",
+       1
+      ],
+      [
+       "Billable",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "timeentries_text",
+     "type": "search",
+     "definition": {
+      "mappings": {
+       "dynamic": false,
+       "fields": {
+        "MigratedFrom": {
+         "type": "token"
+        },
+        "ReviewState": {
+         "type": "token"
+        },
+        "Start": {
+         "type": "date"
+        },
+        "NMinutes": {
+         "type": "number"
+        }
+       }
+      }
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 1,
+   "v3": {
+    "alt_fields": 4,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "automations",
+   "name": "Automations",
+   "doc_count": 350,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "projects",
+       "as": "string",
+       "aw": 0.12
+      }
+     ]
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Trigger": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {
+      "TypeOld": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "status",
+        "due",
+        "assign"
+       ],
+       "w": [
+        100.0,
+        41.4,
+        26.4
+       ]
+      },
+      "Conditions": {
+       "t": "array",
+       "p": 1.0,
+       "n": 0.0,
+       "item": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {
+         "Field": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         },
+         "Op": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "enum",
+          "values": [
+           "eq",
+           "in"
+          ],
+          "w": [
+           100.0,
+           51.0
+          ]
+         },
+         "Value": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       },
+       "min": 1,
+       "max": 4
+      }
+     }
+    },
+    "Actions": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Type": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "set",
+         "notify",
+         "create"
+        ],
+        "w": [
+         55.2,
+         100.0,
+         25.0
+        ]
+       },
+       "ParamsLegacy": {
+        "t": "object",
+        "p": 1.0,
+        "n": 0.0,
+        "f": {},
+        "map": {
+         "keys": "word",
+         "min": 2,
+         "max": 6,
+         "value": {
+          "t": "string",
+          "p": 1.0,
+          "n": 0.0,
+          "g": "word"
+         }
+        }
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Runs": {
+     "t": "object",
+     "p": 1.0,
+     "n": 0.0,
+     "f": {},
+     "map": {
+      "keys": "day",
+      "min": 2,
+      "max": 6,
+      "value": {
+       "t": "int32",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": 0,
+       "hi": 90
+      }
+     }
+    },
+    "Enabled": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.89
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.08,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30",
+     "alt": [
+      {
+       "t": "string",
+       "g": "isodate",
+       "lo": "2025-06-01",
+       "hi": "2026-09-30",
+       "fmt": "iso",
+       "aw": 0.2
+      }
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ],
+      [
+       "Enabled",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Name",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    }
+   ],
+   "extra_indexes": [
+    {
+     "keys": [
+      [
+       "Runs.$**",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ProjectId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "Trigger": {
+       "bsonType": "object",
+       "properties": {
+        "TypeOld": {
+         "bsonType": "string",
+         "enum": [
+          "status",
+          "due",
+          "assign"
+         ]
+        },
+        "Conditions": {
+         "bsonType": "array",
+         "items": {
+          "bsonType": "object",
+          "properties": {
+           "Field": {
+            "bsonType": "string"
+           },
+           "Op": {
+            "bsonType": "string",
+            "enum": [
+             "eq",
+             "in"
+            ]
+           },
+           "Value": {
+            "bsonType": "string"
+           }
+          },
+          "required": [
+           "Field",
+           "Op",
+           "Value"
+          ]
+         }
+        }
+       },
+       "required": [
+        "TypeOld",
+        "Conditions"
+       ]
+      },
+      "Actions": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Type": {
+          "bsonType": "string",
+          "enum": [
+           "set",
+           "notify",
+           "create"
+          ]
+         },
+         "ParamsLegacy": {
+          "bsonType": "object",
+          "additionalProperties": {
+           "bsonType": "string"
+          }
+         }
+        },
+        "required": [
+         "Type",
+         "ParamsLegacy"
+        ]
+       }
+      },
+      "Runs": {
+       "bsonType": "object",
+       "additionalProperties": {
+        "bsonType": "int"
+       }
+      },
+      "Enabled": {
+       "bsonType": "bool"
+      },
+      "DeletedAt": {
+       "bsonType": [
+        "date",
+        "string"
+       ]
+      }
+     },
+     "required": [
+      "ProjectId",
+      "Name",
+      "Trigger",
+      "Actions",
+      "Runs",
+      "Enabled"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 3,
+   "v3": {
+    "alt_fields": 2,
+    "map_fields": 2,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "sprints",
+   "name": "Sprints",
+   "doc_count": 1400,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects",
+     "alt": [
+      {
+       "t": "objectid",
+       "ref": "projects",
+       "as": "string",
+       "aw": 0.07
+      }
+     ]
+    },
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "SP"
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "End": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "GoalV2": {
+     "t": "string",
+     "p": 0.95,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Velocity": {
+     "t": "int32",
+     "p": 0.9,
+     "n": 0.0,
+     "lo": 5,
+     "hi": 80,
+     "sk": 2.53
+    },
+    "Tasks": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "tasks"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.05,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Audit": {
+     "t": "object",
+     "p": 0.9,
+     "n": 0.0,
+     "f": {
+      "stack": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "src": {
+         "t": "object",
+         "p": 1.0,
+         "n": 0.0,
+         "f": {
+          "client": {
+           "t": "object",
+           "p": 0.4,
+           "n": 0.0,
+           "f": {
+            "runtime": {
+             "t": "object",
+             "p": 1.0,
+             "n": 0.0,
+             "f": {
+              "enabled": {
+               "t": "bool",
+               "p": 1.0,
+               "n": 0.0,
+               "pt": 0.8
+              },
+              "count": {
+               "t": "int32",
+               "p": 1.0,
+               "n": 0.0,
+               "lo": 0,
+               "hi": 900
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ],
+      [
+       "Start",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "_id": {
+    "t": "string",
+    "prefix": "SPR-"
+   },
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ProjectId": {
+       "bsonType": [
+        "objectId",
+        "string"
+       ]
+      },
+      "Name": {
+       "bsonType": "string"
+      },
+      "Start": {
+       "bsonType": "date"
+      },
+      "End": {
+       "bsonType": "date"
+      },
+      "GoalV2": {
+       "bsonType": "string"
+      },
+      "Velocity": {
+       "bsonType": "int"
+      },
+      "Tasks": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "ExternalRef": {
+       "bsonType": "string"
+      },
+      "Audit": {
+       "bsonType": "object",
+       "properties": {
+        "stack": {
+         "bsonType": "object",
+         "properties": {
+          "src": {
+           "bsonType": "object",
+           "properties": {
+            "client": {
+             "bsonType": "object",
+             "properties": {
+              "runtime": {
+               "bsonType": "object",
+               "properties": {
+                "enabled": {
+                 "bsonType": "bool"
+                },
+                "count": {
+                 "bsonType": "int"
+                }
+               },
+               "required": [
+                "enabled",
+                "count"
+               ]
+              }
+             },
+             "required": [
+              "runtime"
+             ]
+            }
+           }
+          }
+         },
+         "required": [
+          "src"
+         ]
+        }
+       },
+       "required": [
+        "stack"
+       ]
+      }
+     },
+     "required": [
+      "ProjectId",
+      "Name",
+      "Start",
+      "End",
+      "Tasks"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 6,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "string",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "calendar_events",
+   "name": "CalendarEvents",
+   "doc_count": 1350,
+   "fields": {
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Organizer": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "Start": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "End": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Attendees": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Member": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "members"
+       },
+       "St": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "yes",
+         "no",
+         "maybe"
+        ],
+        "w": [
+         51.3,
+         100.0,
+         57.9
+        ]
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Recurrence": {
+     "t": "object",
+     "p": 0.3,
+     "n": 0.0,
+     "f": {
+      "Freq": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "enum",
+       "values": [
+        "daily",
+        "weekly",
+        "monthly"
+       ],
+       "w": [
+        57.9,
+        27.7,
+        100.0
+       ]
+      },
+      "Until": {
+       "t": "date",
+       "p": 0.6,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "Room": {
+     "t": "string",
+     "p": 0.3,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "Override": {
+     "t": "object",
+     "p": 0.08,
+     "n": 0.0,
+     "f": {
+      "by": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "name"
+      },
+      "reason": {
+       "t": "string",
+       "p": 1.0,
+       "n": 0.0,
+       "g": "sentence"
+      },
+      "at": {
+       "t": "date",
+       "p": 1.0,
+       "n": 0.0,
+       "lo": "2025-01-01",
+       "hi": "2026-09-30"
+      }
+     }
+    },
+    "ExternalRefX": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "SRoomOld": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "code",
+     "prefix": "R"
+    },
+    "StartOld": {
+     "t": "string",
+     "p": 0.4,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "iso"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Organizer",
+       1
+      ],
+      [
+       "Start",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Attendees.Member",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Organizer",
+       "hashed"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Title",
+       1
+      ]
+     ],
+     "collation": {
+      "locale": "en",
+      "strength": 2
+     }
+    },
+    {
+     "keys": [
+      [
+       "End",
+       1
+      ]
+     ],
+     "expireAfterSeconds": 315360000
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Title": {
+       "bsonType": "string"
+      },
+      "Organizer": {
+       "bsonType": "objectId"
+      },
+      "Start": {
+       "bsonType": "date"
+      },
+      "End": {
+       "bsonType": "date"
+      },
+      "Attendees": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Member": {
+          "bsonType": "objectId"
+         },
+         "St": {
+          "bsonType": "string",
+          "enum": [
+           "yes",
+           "no",
+           "maybe"
+          ]
+         }
+        },
+        "required": [
+         "Member",
+         "St"
+        ]
+       }
+      },
+      "Recurrence": {
+       "bsonType": "object",
+       "properties": {
+        "Freq": {
+         "bsonType": "string",
+         "enum": [
+          "daily",
+          "weekly",
+          "monthly"
+         ]
+        },
+        "Until": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "Freq"
+       ]
+      },
+      "Room": {
+       "bsonType": "string"
+      },
+      "Override": {
+       "bsonType": "object",
+       "properties": {
+        "by": {
+         "bsonType": "string"
+        },
+        "reason": {
+         "bsonType": "string"
+        },
+        "at": {
+         "bsonType": "date"
+        }
+       },
+       "required": [
+        "by",
+        "reason",
+        "at"
+       ]
+      },
+      "ExternalRefX": {
+       "bsonType": "string"
+      },
+      "SRoomOld": {
+       "bsonType": "string"
+      },
+      "StartOld": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "Title",
+      "Organizer",
+      "Start",
+      "End",
+      "Attendees"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "boards",
+   "name": "Boards",
+   "doc_count": 1200,
+   "fields": {
+    "ProjectId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "projects"
+    },
+    "StrName": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "Columns": {
+     "t": "array",
+     "p": 1.0,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Name": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "word"
+       },
+       "Limit": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 0,
+        "hi": 20,
+        "alt": [
+         {
+          "t": "double",
+          "lo": 0,
+          "hi": 20,
+          "aw": 0.06
+         }
+        ]
+       },
+       "Cards": {
+        "t": "array",
+        "p": 1.0,
+        "n": 0.0,
+        "item": {
+         "t": "objectid",
+         "p": 1.0,
+         "n": 0.0,
+         "ref": "tasks"
+        },
+        "min": 0,
+        "max": 4
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "MigratedFrom": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "v1",
+      "mysql",
+      "csv",
+      "erp"
+     ],
+     "w": [
+      63.7,
+      45.5,
+      36.9,
+      100.0
+     ]
+    },
+    "NameV2": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "title"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "ProjectId",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "MigratedFrom",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "ProjectId": {
+       "bsonType": "objectId"
+      },
+      "StrName": {
+       "bsonType": "string"
+      },
+      "Columns": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "Name": {
+          "bsonType": "string"
+         },
+         "Limit": {
+          "bsonType": [
+           "int",
+           "double"
+          ]
+         },
+         "Cards": {
+          "bsonType": "array",
+          "items": {
+           "bsonType": "objectId"
+          }
+         }
+        },
+        "required": [
+         "Name",
+         "Limit",
+         "Cards"
+        ]
+       }
+      },
+      "MigratedFrom": {
+       "bsonType": "string",
+       "enum": [
+        "v1",
+        "mysql",
+        "csv",
+        "erp"
+       ]
+      },
+      "NameV2": {
+       "bsonType": "string"
+      }
+     },
+     "required": [
+      "ProjectId",
+      "StrName",
+      "Columns"
+     ]
+    }
+   },
+   "validationAction": "error",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 1,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "comments",
+   "name": "Comments_2025",
+   "doc_count": 850,
+   "fields": {
+    "TaskId": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "tasks"
+    },
+    "Author": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "Text": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "At": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "reactions": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "Emoji": {
+        "t": "string",
+        "p": 1.0,
+        "n": 0.0,
+        "g": "enum",
+        "values": [
+         "+1",
+         "heart",
+         "eyes"
+        ],
+        "w": [
+         100.0,
+         32.1,
+         41.8
+        ]
+       },
+       "By": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "members"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "Edited": {
+     "t": "bool",
+     "p": 1.0,
+     "n": 0.0,
+     "pt": 0.22
+    },
+    "ExternalRef": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "EditedOld": {
+     "t": "bool",
+     "p": 0.25,
+     "n": 0.0,
+     "pt": 0.05
+    },
+    "LEGACYAT": {
+     "t": "string",
+     "p": 0.25,
+     "n": 0.0,
+     "g": "isodate",
+     "lo": "2025-01-01",
+     "hi": "2026-09-30",
+     "fmt": "date"
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "TaskId",
+       1
+      ],
+      [
+       "At",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRef",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "members",
+   "name": "Members",
+   "doc_count": 1150,
+   "fields": {
+    "Name": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "name"
+    },
+    "Email": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "email"
+    },
+    "Role": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "admin",
+      "editor",
+      "viewer",
+      "guest"
+     ],
+     "w": [
+      29.5,
+      24.2,
+      51.7,
+      100.0
+     ]
+    },
+    "JoinedAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "Avatar": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "url"
+    },
+    "Timezone": {
+     "t": "string",
+     "p": 0.7,
+     "n": 0.0,
+     "g": "word"
+    },
+    "Uuid": {
+     "t": "uuid",
+     "p": 1.0,
+     "n": 0.0,
+     "v": 4
+    },
+    "ExternalRefX": {
+     "t": "string",
+     "p": 0.08,
+     "n": 0.0,
+     "g": "hex"
+    },
+    "Audit": {
+     "t": "object",
+     "p": 0.95,
+     "n": 0.0,
+     "f": {
+      "System": {
+       "t": "object",
+       "p": 1.0,
+       "n": 0.0,
+       "f": {
+        "Rule": {
+         "t": "object",
+         "p": 0.7,
+         "n": 0.0,
+         "f": {
+          "Limits": {
+           "t": "object",
+           "p": 1.0,
+           "n": 0.0,
+           "f": {
+            "Enabled": {
+             "t": "bool",
+             "p": 1.0,
+             "n": 0.0,
+             "pt": 0.47
+            }
+           }
+          },
+          "SeenAt": {
+           "t": "date",
+           "p": 1.0,
+           "n": 0.0,
+           "lo": "2025-01-01",
+           "hi": "2026-09-30"
+          }
+         }
+        },
+        "enabled": {
+         "t": "bool",
+         "p": 1.0,
+         "n": 0.0,
+         "pt": 0.41
+        }
+       }
+      }
+     }
+    },
+    "Embedding": {
+     "t": "array",
+     "p": 0.5,
+     "n": 0.0,
+     "item": {
+      "t": "double",
+      "p": 1.0,
+      "n": 0.0,
+      "lo": -1,
+      "hi": 1
+     },
+     "min": 8,
+     "max": 8
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "Email",
+       1
+      ]
+     ],
+     "unique": true
+    },
+    {
+     "keys": [
+      [
+       "Role",
+       1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "ExternalRefX",
+       1
+      ]
+     ],
+     "sparse": true
+    }
+   ],
+   "search_indexes": [
+    {
+     "name": "members_vec",
+     "type": "vectorSearch",
+     "definition": {
+      "fields": [
+       {
+        "type": "vector",
+        "path": "Embedding",
+        "numDimensions": 8,
+        "similarity": "euclidean"
+       },
+       {
+        "type": "filter",
+        "path": "Role"
+       },
+       {
+        "type": "filter",
+        "path": "JoinedAt"
+       }
+      ]
+     },
+     "static_only": true
+    }
+   ],
+   "max_depth": 5,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 1,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  },
+  {
+   "key": "documents",
+   "name": "Documents",
+   "doc_count": 1350,
+   "fields": {
+    "Title": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "title"
+    },
+    "AuthorX": {
+     "t": "objectid",
+     "p": 1.0,
+     "n": 0.0,
+     "ref": "members"
+    },
+    "Content": {
+     "t": "string",
+     "p": 1.0,
+     "n": 0.0,
+     "g": "sentence"
+    },
+    "Version": {
+     "t": "int32",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": 1,
+     "hi": 60
+    },
+    "SharedWith": {
+     "t": "array",
+     "p": 0.3,
+     "n": 0.0,
+     "item": {
+      "t": "objectid",
+      "p": 1.0,
+      "n": 0.0,
+      "ref": "members"
+     },
+     "min": 0,
+     "max": 4
+    },
+    "UpdAt": {
+     "t": "date",
+     "p": 1.0,
+     "n": 0.0,
+     "lo": "2025-01-01",
+     "hi": "2026-09-30"
+    },
+    "History": {
+     "t": "array",
+     "p": 0.8,
+     "n": 0.0,
+     "item": {
+      "t": "object",
+      "p": 1.0,
+      "n": 0.0,
+      "f": {
+       "V": {
+        "t": "int32",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": 1,
+        "hi": 60
+       },
+       "At2": {
+        "t": "date",
+        "p": 1.0,
+        "n": 0.0,
+        "lo": "2025-01-01",
+        "hi": "2026-09-30"
+       },
+       "By": {
+        "t": "objectid",
+        "p": 1.0,
+        "n": 0.0,
+        "ref": "members"
+       }
+      }
+     },
+     "min": 1,
+     "max": 4
+    },
+    "DeletedAt": {
+     "t": "date",
+     "p": 0.03,
+     "n": 0.0,
+     "lo": "2025-06-01",
+     "hi": "2026-09-30"
+    },
+    "SReviewState": {
+     "t": "string",
+     "p": 0.03,
+     "n": 0.0,
+     "g": "enum",
+     "values": [
+      "pending",
+      "ok",
+      "hold"
+     ],
+     "w": [
+      100.0,
+      64.2,
+      36.6
+     ]
+    }
+   },
+   "indexes": [
+    {
+     "keys": [
+      [
+       "AuthorX",
+       1
+      ],
+      [
+       "UpdAt",
+       -1
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "Title",
+       "text"
+      ]
+     ]
+    },
+    {
+     "keys": [
+      [
+       "SharedWith",
+       1
+      ]
+     ]
+    }
+   ],
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "properties": {
+      "Title": {
+       "bsonType": "string"
+      },
+      "AuthorX": {
+       "bsonType": "objectId"
+      },
+      "Content": {
+       "bsonType": "string"
+      },
+      "Version": {
+       "bsonType": "int"
+      },
+      "SharedWith": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "objectId"
+       }
+      },
+      "UpdAt": {
+       "bsonType": "date"
+      },
+      "History": {
+       "bsonType": "array",
+       "items": {
+        "bsonType": "object",
+        "properties": {
+         "V": {
+          "bsonType": "int"
+         },
+         "At2": {
+          "bsonType": "date"
+         },
+         "By": {
+          "bsonType": "objectId"
+         }
+        },
+        "required": [
+         "V",
+         "At2",
+         "By"
+        ]
+       }
+      },
+      "DeletedAt": {
+       "bsonType": "date"
+      },
+      "SReviewState": {
+       "bsonType": "string",
+       "enum": [
+        "pending",
+        "ok",
+        "hold"
+       ]
+      }
+     },
+     "required": [
+      "Title",
+      "AuthorX",
+      "Content",
+      "Version",
+      "UpdAt"
+     ]
+    }
+   },
+   "validationAction": "warn",
+   "max_depth": 2,
+   "v3": {
+    "alt_fields": 0,
+    "map_fields": 0,
+    "geo_fields": 0,
+    "rare_fields": 2,
+    "array_of_arrays": 0,
+    "id_type": "objectid",
+    "kind": "collection"
+   }
+  }
+ ]
+}
