@@ -113,3 +113,25 @@ def test_homolog_guard_blocks_reads_and_hash_reuse(tmp_path, monkeypatch):
     os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
     p.write_text(json.dumps({**item, "middle": "y: 2"}) + "\n", encoding="utf-8")
     assert not ht.verify(hdir / "v1")
+
+
+def _write_items(path, items):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(json.dumps(i) for i in items) + "\n", encoding="utf-8")
+
+
+def test_seal_accepts_llm_and_grammar_authors_but_never_human(tmp_path, monkeypatch):
+    base = {"prefix": "db.a.find({ ", "suffix": " })", "middle": "x: 1", "split": "hom", "split_role": "hom",
+            "cut_kind": "key", "context_kind": "full", "domain": "saas", "schema_id": "saas/s_hom"}
+    hdir = tmp_path / "homolog"
+    monkeypatch.setenv("KAPI_HOMOLOG_DIR", str(hdir))
+    import homolog_tool as ht
+    monkeypatch.setattr(ht, "VERSIONED_MANIFEST", tmp_path / "pub.json")
+    ok = [{**base, "id": "i1", "author": "llm"}, {**base, "id": "i2", "author": "grammar"}]
+    _write_items(hdir / "v1" / "items" / "items.jsonl", ok)
+    assert ht.seal(hdir / "v1", quiet=True)["n_items"] == 2
+    for bad in ({"author": "human"}, {"author": "llm", "split": "train"}, {"author": "grammar", "split_role": "train"}):
+        d2 = tmp_path / ("bad" + "_".join(sorted(bad.values())))
+        _write_items(d2 / "v1" / "items" / "items.jsonl", [{**base, "id": "b1", "author": "llm"}, {**base, "id": "b2", **bad}])
+        with pytest.raises(SystemExit):
+            ht.seal(d2 / "v1", quiet=True)

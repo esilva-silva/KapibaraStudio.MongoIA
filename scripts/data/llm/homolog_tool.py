@@ -54,8 +54,11 @@ def seal(d: Path, quiet=False) -> dict:
         raise SystemExit("sem itens")
     ih, ph, groups = {}, [], Counter()
     for it in items:
-        if it.get("author") != "llm" or it.get("split") != "hom" or it.get("split_role") != "hom":
-            raise SystemExit(f"item fora do contrato (author=llm, split=hom): {it.get('id')}")
+        # build_homolog marca consultas do LLM como author=llm e cortes dos geradores de gramatica como author=grammar;
+        # nenhum dos dois e humano (o conjunto nunca se apresenta como revisado por pessoas)
+        if it.get("author") not in ("llm", "grammar") or it.get("split") != "hom" or it.get("split_role") != "hom":
+            raise SystemExit(f"item fora do contrato (author in llm|grammar, split=hom, split_role=hom): {it.get('id')} "
+                             f"author={it.get('author')} split={it.get('split')} split_role={it.get('split_role')}")
         if it["id"] in ih:
             raise SystemExit(f"id repetido: {it['id']}")
         ih[it["id"]] = hg.item_sha256(it)
