@@ -29,7 +29,7 @@ VERSIONED_MANIFEST = ROOT / "reports" / "datasets" / "homolog-v1-manifest.json"
 
 
 def _dir(a) -> Path:
-    return Path(a.dir) if a.dir else hg.homolog_dir() / "v1"
+    return Path(a.dir) if a.dir else hg.set_dir()
 
 
 def _items(d: Path):

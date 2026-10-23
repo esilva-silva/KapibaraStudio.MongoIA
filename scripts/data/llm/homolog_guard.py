@@ -150,8 +150,18 @@ def prompt_sha256(text: str) -> str:
     return hashlib.sha256(normalize_text(text).encode("utf-8")).hexdigest()
 
 
+def set_dir(hdir=None) -> Path:
+    """Diretorio do conjunto selado (contem items/items.jsonl e sealed/manifest.json). configs/llm_gen.yaml::homolog_dir aponta para
+    data/homolog/v1 e o build_homolog grava em `<homolog_dir>/v1`; aceita as duas formas (e $KAPI_HOMOLOG_DIR dos testes)."""
+    base = homolog_dir(hdir)
+    for cand in (base / "v1" / "v1", base / "v1", base):
+        if (cand / "sealed" / "manifest.json").exists() or (cand / "items" / "items.jsonl").exists():
+            return cand
+    return base / "v1"
+
+
 def manifest(hdir=None) -> dict:
-    mf = homolog_dir(hdir) / "v1" / "sealed" / "manifest.json"
+    mf = set_dir(hdir) / "sealed" / "manifest.json"
     try:
         with _orig.get("open", builtins.open)(mf, encoding="utf-8") as f:     # leitura do manifesto e permitida (so hashes)
             return json.load(f)
