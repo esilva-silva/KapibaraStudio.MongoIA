@@ -417,3 +417,46 @@ jobs:
     max_restarts: 2
     watchdog_minutes: 40
     estimate_hours: {hours: 0.8}
+  # ---------------------------------------------------------------------------------------------------------------------------------
+  # J19/J18 (consultas por LLM local independente, docs reports/datasets/llm-gen-pilot.md): ENFILEIRADOS, NAO INICIADOS (decisao do usuario pendente).
+  # Usam o llama-server Vulkan com o Qwen3-14B Q4_K_M (BaseRepos/Qwen3-14B-GGUF), dispositivo escolhido por NOME (RX 7800 XT) + guarda de velocidade
+  # (<300 t/s aborta) + confirmacao por contadores do Windows; validacao por EXECUCAO DO TEXTO no MongoDB (WSL: manter `wsl -d Ubuntu -e sleep infinity`)
+  # atras de proxy somente-leitura. Retomaveis por rodada (pipeline_state.json); heartbeat a cada chamada. Python do venv do projeto (pymongo/yaml), nao o ROCm.
+  # J19 antes de J18: o treino e decontaminado contra o conjunto de homologacao ja selado.
+  - id: J19-llm-gen-homolog
+    title: "Homologacao LLM v1: consultas Qwen3-14B em schemas `hom` + validacao por execucao + >= 5.000 cortes FIM selados (author: llm)"
+    status: ready
+    command: ["env/.venv/Scripts/python.exe", "scripts/data/llm/run_pipeline.py", "--role", "hom", "--accepted", "2000", "--grammar", "6000", "--n", "6000",
+              "--out", "data/homolog/_work/v1", "--round-size", "1600", "--resume"]
+    depends_on: []
+    requires_files:
+      - configs/llm_gen.yaml
+      - data/fixtures/manifest.json
+      - BaseRepos/Qwen3-14B-GGUF/Qwen3-14B-Q4_K_M.gguf
+      - cache/llama.cpp/b11693/bin/llama-server.exe
+    watch_files:
+      - data/homolog/_work/v1/heartbeat.json
+    done_marker: reports/datasets/homolog-v1-manifest.json
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    estimate_hours: {hours: 1.5, basis: "~2.900 consultas/h medidas no piloto (8 slots, 8 por chamada); 2.000 aceitas / 72% = 2.800 brutas = 1 h + lote de gramatica/selagem", conservative_hours: 2.5}
+  - id: J18-llm-gen-train
+    title: "Treino LLM: 60k consultas aceitas Qwen3-14B (schemas `train`) + validacao por execucao do texto + cortes FIM com contexto (source llm-qwen3-14b)"
+    status: ready
+    command: ["env/.venv/Scripts/python.exe", "scripts/data/llm/run_pipeline.py", "--role", "train", "--accepted", "60000", "--out", "data/generated/v3/train",
+              "--round-size", "4000", "--resume"]
+    depends_on: [J19-llm-gen-homolog]
+    requires_files:
+      - configs/llm_gen.yaml
+      - data/fixtures/manifest.json
+      - BaseRepos/Qwen3-14B-GGUF/Qwen3-14B-Q4_K_M.gguf
+      - cache/llama.cpp/b11693/bin/llama-server.exe
+      - reports/datasets/homolog-v1-manifest.json
+    watch_files:
+      - data/generated/v3/train/heartbeat.json
+    done_marker: data/generated/v3/train/fim_ctx.manifest.json
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    estimate_hours: {hours: 27, basis: "60k aceitas / 75% = 80k brutas; 2.900 consultas/h (piloto, 8 slots); validacao em paralelo na CPU (~5 h, nao e gargalo); ~320k cortes FIM", conservative_hours: 39, conservative_basis: "2.200 consultas/h e 70% de aceitacao", cut_option: "--accepted 30000 (-13 h)"}

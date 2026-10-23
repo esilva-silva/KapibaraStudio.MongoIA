@@ -1,0 +1,60 @@
+# llm_gen.yaml - geracao de consultas por LLM local independente (Qwen3-14B GGUF) + validacao por execucao do TEXTO real.
+# Lido por scripts/data/llm/*.py. Nada aqui altera data/schemas, data/fixtures nem os geradores de gramatica.
+version: v3
+seed: 20261022
+out_dir: data/generated/v3
+homolog_dir: data/homolog/v1
+source_tag: llm-qwen3-14b
+
+# papeis de schema aceitos: `train` alimenta o treino; `hom` SO o conjunto de homologacao (nunca misturar); `eval` (val/test/bench
+# do corpus v2c) NAO e usado aqui.
+roles: {train: [train], hom: [hom]}
+
+server:
+  exe: cache/llama.cpp/b11693/bin/llama-server.exe
+  gguf: BaseRepos/Qwen3-14B-GGUF/Qwen3-14B-Q4_K_M.gguf
+  port: 8793
+  slots: 8
+  ctx_per_slot: 5120           # ~4k de contexto util + folga para a saida (8 consultas por chamada)
+  device_match: "RX 7800 XT"     # selecao por NOME (nunca por indice VulkanN)
+  min_prompt_tps: 300            # guarda de velocidade: abaixo disso aborta (provavel iGPU)
+  extra: ["-ctk", "q8_0", "-ctv", "q8_0"]
+  log: logs/llm_gen/llama-server.log
+
+sampling: {temperature: 0.8, top_p: 0.95, top_k: 40, min_p: 0.05, max_tokens: 2800, presence_penalty: 0.3}
+queries_per_call: 8              # consultas por chamada (amortiza o prefill do schema); o piloto usa o mesmo valor do volume
+group_calls: 6                  # chamadas consecutivas com o MESMO prefixo de prompt (schema+amostras+regras) -> reaproveita KV (cache_prompt)
+want_intent: false              # true pede uma frase de intencao por consulta (+~17% de tokens de saida); desligado no volume
+constrained_json: true           # response_format json_schema (garante escapes validos)
+max_prompt_docs: 3
+doc_truncate_chars: 360
+max_related: 3
+
+# mistura de estilos pedida ao modelo (por consulta)
+short_incomplete_fraction: 0.15  # consultas CURTAS/incompletas como as de um usuario digitando (ainda executaveis)
+
+execution:
+  wsl_distro: Ubuntu
+  mongo_host: 127.0.0.1:27017
+  max_time_ms: 3000
+  result_cap: 101
+  per_query_timeout_s: 20
+  batch_size: 40
+  workers: 3
+  empty_max_fraction: 0.25       # vazio mantido ate 25% (por lote de aceitas)
+  blocked_commands_extra: []
+
+# FIM a partir das consultas validadas
+fim:
+  per_query_cuts: 6
+  cut_targets: {key: 0.17, value: 0.14, operator: 0.13, stage: 0.11, member: 0.09, partial: 0.10, rest: 0.10, multiline: 0.12, stmt_start: 0.04}
+  context_ratios: {none: 0.12, irrelevant: 0.13}
+  min_no_schema_visible: 0.25    # >= 25% none/irrelevant com alvo conservador (field_need != 2)
+  max_tokens: 96
+  decontam: {ngram_min_content: 2}
+
+homolog:
+  min_cuts: 5000
+  min_per_group: 50
+  main_cut_kinds: [key, value, operator, stage, member, partial, rest, multiline, stmt_start]
+  context_ratios: {full: 0.62, irrelevant: 0.19, none: 0.19}
