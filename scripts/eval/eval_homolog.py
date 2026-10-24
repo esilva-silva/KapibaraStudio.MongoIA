@@ -61,11 +61,17 @@ MODELS = [
     ("base_1.5b", "Qwen2.5-Coder-1.5B base", "Repos/KapiCoder-Mongo-Small/reports/eval/base-qwen2.5-coder-1.5b/summary.json"),
     ("t1_distill", "T1 Small distilado", "Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1/summary.json"),
     ("teacher_v2d", "Professor v2d (7B NF4+LoRA)", "Repos/KapiTeacher-Mongo-7B/reports/eval/sft_v2d-final/summary.json"),
+    # retreino com o corpus v3 (J22/J23): so entram no relatorio quando passados em --names (o relatorio v1 nao muda sozinho)
+    ("t0_v3", "T0 Nano v3 (corpus v3)", "Repos/KapiCoder-Mongo-Nano/reports/eval/sft_v3/summary.json"),
+    ("t1_v3", "T1 Small v3 (corpus v3)", "Repos/KapiCoder-Mongo-Small/reports/eval/sft_v3/summary.json"),
 ]
+V3_NAMES = ("t0_v3", "t1_v3")
 PAIRS = [  # (A, B): delta = B - A
     ("t0_gold", "t0_distill"), ("base_0.5b", "t0_distill"), ("base_0.5b", "t0_gold"),
     ("t0_distill", "t1_distill"), ("t0_gold", "t1_distill"), ("base_1.5b", "t1_distill"),
     ("teacher_v2d", "t1_distill"), ("teacher_v2d", "t0_distill"), ("teacher_v2d", "t0_gold"),
+    ("t0_distill", "t0_v3"), ("base_0.5b", "t0_v3"), ("t0_gold", "t0_v3"),
+    ("t1_distill", "t1_v3"), ("base_1.5b", "t1_v3"), ("teacher_v2d", "t1_v3"), ("t0_v3", "t1_v3"),
 ]
 
 
@@ -661,7 +667,8 @@ TABLES_BEGIN, TABLES_END = "<!-- TABLES:BEGIN (gerado por scripts/eval/eval_homo
 
 def phase_report(a) -> int:
     hg.enforce()
-    names = a.names or [n for n, _, _ in MODELS if exists(run_dir(n) / "exec.jsonl") and exists(run_dir(n) / "predictions.jsonl")]
+    names = a.names or [n for n, _, _ in MODELS if n not in V3_NAMES and exists(run_dir(n) / "exec.jsonl") and exists(run_dir(n) / "predictions.jsonl")]
+    out_name = getattr(a, "out_name", None) or "homolog-v1-eval"
     if not exists(run_dir(REFERENCE) / "exec.jsonl"):
         raise SystemExit("falta o teto: rode `score --name _reference`")
     labels = {n: l for n, l, _ in MODELS}
@@ -689,7 +696,7 @@ def phase_report(a) -> int:
                "ceiling_exec_valid": "mesma validacao sobre prefix+middle+suffix", "exec_over_ceiling": "exec_valid / ceiling_exec_valid (razao de medias)",
                "nonexistent_fields_rate": "itens cujo plano capturado cita campo/colecao fora do schema, sobre todos os itens",
                "json_dialect": "dialect json executa como db.getCollection(c).aggregate(EJSON.parse(texto))"}}
-    write_json(REPORT_DIR / "homolog-v1-eval.json", agg)
+    write_json(REPORT_DIR / f"{out_name}.json", agg)
     L = ["### T1. Homologacao v1 (n=%d), geral" % len(common), ""] + table_overall(res, labels)
     L += ["", "Celulas dos grupos abaixo: FIM acc / exec ÷ teto / campos inexistentes (em %).", ""]
     for g, order in (("context_kind", CTX_ORDER), ("author", None), ("domain", None), ("cut_kind", None)):
@@ -762,6 +769,7 @@ def main(argv=None) -> int:
     p.add_argument("--workers", type=int)
     p = sub.add_parser("report")
     p.add_argument("--names", nargs="*")
+    p.add_argument("--out-name", default="homolog-v1-eval", help="arquivo de saida em reports/datasets (padrao: o relatorio v1; o retreino v3 usa outro nome)")
     a = ap.parse_args(argv)
     return {"gen": phase_gen, "score": phase_score, "report": phase_report, "run": phase_run}[a.cmd](a)
 

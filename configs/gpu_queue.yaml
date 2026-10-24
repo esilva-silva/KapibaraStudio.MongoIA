@@ -460,3 +460,78 @@ jobs:
     watchdog_minutes: 20
     window: any
     estimate_hours: {hours: 27, basis: "60k aceitas / 75% = 80k brutas; 2.900 consultas/h (piloto, 8 slots); validacao em paralelo na CPU (~5 h, nao e gargalo); ~320k cortes FIM", conservative_hours: 39, conservative_basis: "2.200 consultas/h e 70% de aceitacao", cut_option: "--accepted 30000 (-13 h)"}
+  # ---------------------------------------------------------------------------------------------------------------------------------
+  # RETREINO v3 (corpus v3 = destilado atual + cortes do LLM (gold) + gramatica dos schemas v3 train (gold) + replay 12%; ataca "campo inventado em schema novo",
+  # homologacao v1: T0 15,35% / T1 9,19% em `full`, bases ~7%). PREPARADO, NAO INICIADO. Sempre do ZERO a partir do Qwen base (run `sft_v3`); hiperparametros iguais ao
+  # sft_distill_v1. Corpus: data/student/v3/{t0,t1} (scripts/student/build_student_corpus_v3.py via scripts/data/llm/run_guarded.py; reports/student/corpus_v3_report.md).
+  # Ordem: J20 (T0 treino ~4,3-4,5 h) -> J22 (avaliacao T0 + DECISAO: so um veredito GO cria reports/student/v3_gate_t0.go) -> J21 (T1 treino ~15-16 h, 1,5 epoca) -> J23.
+  # Sem GO no T0 o J21 fica `blocked` (requires_files) e NAO se gasta GPU no T1: regra e criterios em Repos/KapiCoder-Mongo-{Nano,Small}/README_job.md §v3.
+  # Para forcar o T1 mesmo sem GO (decisao do usuario): criar reports/student/v3_gate_t0.go manualmente e `.\scripts\gpu_queue.ps1 -Start -Only J21-T1-v3`.
+  # Pre-requisito das avaliacoes: MongoDB no WSL (`wsl -d Ubuntu -u root -e systemctl start mongod` e `wsl -d Ubuntu -e sleep infinity` aberto) e Node no PATH.
+  - id: J20-T0-v3
+    title: "KapiCoder-Mongo-Nano SFT full FT, corpus v3 (238.453 ex., 65.0 M tok/epoca, 2 epocas = 4.704 passos)"
+    status: ready
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Nano/configs/sft_v3.yaml", "--resume", "auto"]
+    depends_on: []
+    requires_files:
+      - data/student/v3/t0/manifest.json
+      - Repos/KapiCoder-Mongo-Nano/configs/sft_v3.yaml
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/sft_v3/metrics.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/sft_v3/heartbeat.json
+    done_marker: Repos/KapiCoder-Mongo-Nano/merged/sft_v3/model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 15
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 8484, conservative_tok_s: 6300, tokens: 129999692, steps: 4704, train_hours: 4.3, with_evals_hours: 4.7, conservative_train_hours: 5.7, conservative_hours: 6.1, budget_hours: 8, smoke: "reports/student/smoke_v3_metrics.json (20 passos + retomada, 11,6 GB de pico, RX 7800 XT confirmada)"}
+  - id: J22-T0-v3-eval
+    title: "Avaliacao do T0 v3: val v2c (mesmos 2.000 ids) + Generic-JS + homologacao v1 + comparacao pareada (atual x v3 x base) + DECISAO (GO libera o J21)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/student/eval_v3.py", "--tier", "t0"]
+    depends_on: [J20-T0-v3]
+    requires_files:
+      - Repos/KapiCoder-Mongo-Nano/merged/sft_v3/model.safetensors
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_distill_v1/summary.json
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/base-qwen2.5-coder-0.5b/summary.json
+    watch_files:
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_v3/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Nano/reports/eval/sft_v3-generic-js/predictions.jsonl
+    done_marker: reports/student/v3_decision_t0.json
+    max_restarts: 2
+    watchdog_minutes: 60
+    estimate_hours: {hours: 1.5, basis: "val v2c 0,5 h + Generic-JS + homologacao 6.030 itens (gen + execucao do texto) ~0,7 h + relatorios", conservative_hours: 2.5}
+  - id: J21-T1-v3
+    title: "KapiCoder-Mongo-Small SFT LoRA r=64, corpus v3 (309.571 ex., 86.0 M tok/epoca, 1,5 epoca = 4.617 passos)"
+    status: waiting
+    command: ["{python}", "-I", "scripts/student/train_student.py", "--config", "Repos/KapiCoder-Mongo-Small/configs/sft_v3.yaml", "--total-steps", "4617", "--resume", "auto"]
+    depends_on: [J22-T0-v3-eval]
+    requires_files:
+      - data/student/v3/t1/manifest.json
+      - Repos/KapiCoder-Mongo-Small/configs/sft_v3.yaml
+      - reports/student/v3_gate_t0.go
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/sft_v3/metrics.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/sft_v3/heartbeat.json
+    done_marker: Repos/KapiCoder-Mongo-Small/merged/sft_v3/model.safetensors
+    max_restarts: 3
+    watchdog_minutes: 20
+    window: any
+    pause_exit_codes: [75]
+    estimate_hours: {measured_tok_s: 2388, conservative_tok_s: 2000, tokens: 129000027, steps: 4617, train_hours: 15.0, with_evals_hours: 15.6, conservative_train_hours: 17.9, conservative_hours: 18.5, budget_hours: 20, cut_option: "--total-steps 3078 (1 epoca): -5 h", smoke: "reports/student/smoke_v3_metrics.json (20 passos + retomada, 9,2 GB de pico, RX 7800 XT confirmada)"}
+  - id: J23-T1-v3-eval
+    title: "Avaliacao do T1 v3: val v2c + Generic-JS + homologacao v1 + comparacao pareada + DECISAO"
+    status: waiting
+    command: ["{python}", "-I", "scripts/student/eval_v3.py", "--tier", "t1"]
+    depends_on: [J21-T1-v3]
+    requires_files:
+      - Repos/KapiCoder-Mongo-Small/merged/sft_v3/model.safetensors
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1/summary.json
+      - Repos/KapiCoder-Mongo-Small/reports/eval/base-qwen2.5-coder-1.5b/summary.json
+    watch_files:
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_v3/predictions.jsonl
+      - Repos/KapiCoder-Mongo-Small/reports/eval/sft_v3-generic-js/predictions.jsonl
+    done_marker: reports/student/v3_decision_t1.json
+    max_restarts: 2
+    watchdog_minutes: 60
+    estimate_hours: {hours: 2.0, basis: "val v2c 0,7 h + Generic-JS + homologacao 6.030 itens ~1 h + relatorios", conservative_hours: 3.0}

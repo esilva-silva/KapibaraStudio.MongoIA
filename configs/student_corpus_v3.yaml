@@ -1,0 +1,50 @@
+# student_corpus_v3.yaml - corpus v3 dos alunos T0 Nano / T1 Small (autocomplete FIM `editor-context-v1`). Lido por scripts/student/build_student_corpus_v3.py.
+# Motivo (reports/datasets/homolog-v1-eval.md): em schemas NOVOS o aluno inventa campos (contexto `full`: T0 15,35%, T1 9,19%, bases ~7%).
+# Hipotese testavel: (1) o corpus v2c ensina a "adivinhar" nomes (em `full`, os campos do alvo nao estao no prompt em varios cortes); (2) pouca
+# variedade de schemas; (3) pouco exemplo de "copiar do texto visivel" (none/irrelevant conservador). Ataque: mais schemas v3 (LLM + gramatica,
+# rotulo GOLD exato), mais none/irrelevant com alvo conservador e filtro de fidelidade ao schema nos tres componentes.
+#
+# Rotulos: cortes do LLM e da gramatica v3 = GOLD (`middle` validado por execucao do texto real / gerador de gramatica). O corpus destilado
+# atual (teacher_seq) segue com o rotulo do professor. NAO ha destilacao nova: o efeito da destilacao foi pequeno (G2.4/J14 x J10b) e o gold
+# e exato nos dados novos (o professor so poderia piorar o rotulo); registrado por exemplo em `label_source`.
+# G2.7 / G2.7-hom por registro (aborta em qualquer violacao); decontaminacao oficial ngram_min_content: 2 contra val/test/bench v2c, v3-eval e a
+# homologacao selada (leitura so pela API autorizada de homolog_guard, log em access.log.jsonl). Rode SEMPRE via scripts/data/llm/run_guarded.py.
+version: student-corpus-v3/1
+base_config: configs/student_corpus.yaml    # herda: tokenizer, distilled.*, splits_dir, teacher_val_*, mix, completion, replay, micro_tokens, seq_len, shards
+seed: 20261024
+priority_salt: student-v3-priority
+out_root: data/student/v3
+
+sources:
+  accepted: {path: data/distilled/v2c-final/accepted.jsonl, source: accepted-v2c-teacher, label_source: teacher_seq, label_source_raw: gold}
+  llm:      {path: data/generated/v3/train/fim_ctx.jsonl, manifest: data/generated/v3/train/fim_ctx.manifest.json, source: llm-qwen3-14b, label_source: gold}
+  grammar:  {dir: data/validated/v3g, eval_docs: data/generated/v3/grammar/_eval_docs_v3g.jsonl, source: grammar-v3, label_source: gold}
+
+# Composicao dos exemplos de cortes (nao-replay).
+composition:
+  new_share: 0.42                 # LLM + gramatica v3 (faixa pedida: 35-45% dos exemplos de cortes)
+  llm_share_of_new: 0.62          # o resto (0,38) e gramatica v3: cobre atlas_search/json_ejson/indexes/dsl que o LLM nao cobre
+  v3_schema_priority: 0.6         # prioridade (menor = antes) multiplicada em cortes de schemas v3_*: mais schemas novos/dificeis
+  # alvo de context_kind por fonte (agua-enchendo; cap = disponibilidade): objetivo global ~36-38% none+irrelevant (corpus v2c: 29%), so cortes
+  # conservadores. O destilado ja esta perto do teto de oferta (~30%); o LLM e a gramatica tem folga e carregam o aumento.
+  context_kind: {full: 0.62, none: 0.16, irrelevant: 0.22}   # padrao (usado se a fonte nao estiver abaixo)
+  context_kind_by_source:
+    accepted: {full: 0.55, none: 0.20, irrelevant: 0.25}    # alvos ACIMA da oferta: o teto real e a disponibilidade de cortes conservadores
+    llm:      {full: 0.45, none: 0.27, irrelevant: 0.28}    # (a agua-enchendo redistribui o que nao ha em estratos pequenos, e esse resto cairia em `full`)
+    grammar:  {full: 0.45, none: 0.27, irrelevant: 0.28}
+  grammar_category: {aggregation: 0.06, crud: 0.04, operators: 0.20, atlas_search: 0.25, json_ejson: 0.23, dsl: 0.14, indexes: 0.08}   # ponto de partida da gramatica; o rebalanceamento global ajusta
+  # fidelidade ao schema: nomes de campo/colecao do rotulo precisam estar no prompt.
+  # none/irrelevant: field_need(prefixo+sufixo) <= 1 (como a v2d e o gerador LLM); full: se o rotulo usa nome do schema ausente do prompt inteiro
+  # (cabecalho + texto), o exemplo ensina a adivinhar -> mantido so com esta probabilidade (hash determinista).
+  unobservable_full_keep: 0.25
+  # balanco GLOBAL: cut_kind e categoria da selecao seguem as marginais do pool v2c (+-0,5 p.p. quando ha oferta). Fatores multiplicativos por cut_kind/categoria sao
+  # recalculados ate convergir (fontes limitadas por oferta, p.ex. o LLM sem atlas/json, nao respondem; as outras compensam).
+  rebalance_iterations: 8
+  rebalance_tolerance_pp: 0.5
+  ignore_name_tokens: ["_id"]     # `_id` existe em todo schema; nao conta como nome "invisivel"
+
+# Orcamento de GPU por tier: tokens reais por epoca = tokens_per_epoch (inclui o replay); passos = linhas/2 (accum 2, ~32,8k tokens/passo).
+# tok/s medidos em reports/student/smoke_report.md (T0 full FT 8,23 k; T1 LoRA 2,26-2,29 k). `train_epochs` e uma fracao quando o job corta por --total-steps.
+tiers:
+  t1: {name: KapiCoder-Mongo-Small, base: BaseRepos/Qwen2.5-Coder-1.5B, tokens_per_epoch: 86000000, train_epochs: 1.5, tok_s: 2290, tok_s_conservative: 2000}
+  t0: {name: KapiCoder-Mongo-Nano,  base: BaseRepos/Qwen2.5-Coder-0.5B, tokens_per_epoch: 65000000, train_epochs: 2.0, tok_s: 8100, tok_s_conservative: 6300, subset_of: t1}

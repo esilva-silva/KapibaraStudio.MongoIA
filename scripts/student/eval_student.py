@@ -228,7 +228,7 @@ def cmd_measures_for(a: argparse.Namespace) -> int:
         ns.generic_summary = str(gen)
     if a.base_name and (out_root / f"{a.base_name}-generic-js" / "summary.json").exists():
         ns.generic_base_summary = str(out_root / f"{a.base_name}-generic-js" / "summary.json")
-    arm = "gold" if "gold" in a.name else "distill"
+    arm = "v3" if a.name.startswith("sft_v3") else "gold" if "gold" in a.name else "distill"      # sft_v3: corpus v3 (data/student/v3/<tier>)
     cm = ROOT / "data" / "student" / arm / a.tier / "manifest.json"
     if cm.exists():
         ns.corpus_manifest = str(cm)

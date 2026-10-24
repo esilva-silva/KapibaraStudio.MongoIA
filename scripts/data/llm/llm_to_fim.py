@@ -229,8 +229,10 @@ def eval_docs_v2c(validated_dir: Path = ROOT / "data" / "validated" / "v2c", cac
 
 
 def homolog_docs(hdir: Path | None = None) -> list[tuple[str, dict]]:
-    p = (hdir or hg.homolog_dir() / "v1") / "items" / "items.jsonl"
+    p = hg.set_dir(hdir) / "items" / "items.jsonl"   # o selado fica em <homolog>/v1/v1; o caminho antigo devolvia [] em silencio
     if not p.exists():
+        if hg.manifest(hdir).get("prompt_sha256"):
+            raise SystemExit(f"[llm_to_fim] homologacao selada mas {p} ausente: a decontaminacao n-grama nao pode ser pulada")
         return []
     out = []
     with hg.authorized("decontaminacao do treino LLM contra a homologacao (so features/ngrams; nada e copiado)", "llm_to_fim"):

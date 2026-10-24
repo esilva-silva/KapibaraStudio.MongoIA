@@ -65,3 +65,66 @@ vs zero-shot). Adotar o distilado so se todos valerem; senao, rotulo gold com o 
 ## 6. Decisoes pendentes do usuario
 
 LoRA no T1 (full FT nao cabe); corte do T1 para 1,5 epoca (`--total-steps 3422`, nos dois bracos) se o total passar de ~40 h; ligar o J10b (controle T0) antes; confirmar `configs\rounds.yaml`.
+
+## v3. Retreino com o corpus v3 (J21-T1-v3 + J23-T1-v3-eval): PREPARADO, NAO INICIADO
+
+**Por que.** Na homologacao v1 (`reports/datasets/homolog-v1-eval.md`, schemas `hom` nunca vistos) o Small inventa campos que nao existem no schema:
+contexto `full` 9,19% (bases ~7%). O retreino testa se mais schemas novos + mais "copiar o nome do texto visivel" reduzem isso **sem perder FIM acc / exec ÷ teto**.
+Inicio do ZERO a partir do Qwen base (run `sft_v3`; nunca do adapter/modelo anterior); hiperparametros IDENTICOS ao `sft_distill_v1.yaml`
+(so mudam `run.name`/`run.arm`/`data.corpus_dir`/`budget.hours`; teste `scripts/student/tests/test_queue_v3.py`).
+
+**Corpus** (`scripts/student/build_student_corpus_v3.py` + `configs/student_corpus_v3.yaml`; detalhes e funis em `reports/student/corpus_v3_report.md`; gramatica em `reports/datasets/v3-grammar-report.md`):
+`data/student/v3/t1/` - 309,571 exemplos (292,812 cortes + 16,759 replay), **86,000,018 tokens/epoca**, 6,156 linhas, 3,078 passos/epoca.
+Por fonte (proveniencia por exemplo em `source`/`label_source` nos `.meta.jsonl`): destilado atual `accepted-v2c-teacher` 169,831 (rotulo do professor; `fim_raw` gold),
+cortes do LLM Qwen3-14B `llm-qwen3-14b` 76,248 (gold), gramatica dos 61 schemas v3 `train` `grammar-v3` 46,733 (gold), replay JS/TS 16,759 (12.0% dos tokens).
+LLM + gramatica = 42% dos cortes; **none+irrelevant = 34.8%** (v2c: ~29%), sempre conservador (o rotulo so usa nomes visiveis); por fonte (%) {'accepted': {'full': 72.0, 'irrelevant': 14.9, 'none': 13.2}, 'grammar': {'full': 52.6, 'irrelevant': 23.9, 'none': 23.4}, 'llm': {'full': 57.7, 'irrelevant': 21.7, 'none': 20.6}}.
+Fidelidade ao schema: cortes `full` cujo rotulo usa campo/colecao ausente do prompt inteiro entram com p=0,25 (~1% restante). **Sem destilacao nova**: rotulo gold nos dados novos (exato; o efeito da
+destilacao foi pequeno), professor so no destilado atual. Balanco: cut_kind/categoria no relatorio do corpus. Decontaminado (ngram_min_content 2) contra val/test/bench v2c, v3-eval **e a homologacao selada**
+(achado: o J18 original nao foi decontaminado n-grama contra a homologacao por caminho errado em `llm_to_fim.homolog_docs`; ~24% do LLM e ~4% do destilado saem aqui).
+
+**Treino.** 1,5 epoca (`--total-steps`, corte do job; o yaml diz 2 epocas) = **4,617 passos**, 129,000,027 tokens reais -> **15.65 h** a 2290 tok/s (17.92 h a 2000 tok/s conservador); com a velocidade do smoke v3
+(2388 tok/s) **15.0 h**. `budget.hours: 20`. Meta da tarefa: <= 18 h (conservador 17.9 h).
+
+**Smoke ja feito** (20 passos + retomada do passo 12, `--no-export`; `reports/student/smoke_v3_metrics.json`): 2388 tok/s reais (mediana 2425), 11.84 s/passo,
+pico de VRAM alocada 9.17 GB (reservada 12.2 GB), 275 s de GPU no total (<= 8 min). GPU confirmada pelos contadores do Windows (`scripts/export/gpu_probe.ps1`): o pid do treino
+ocupou 11,2 GB dedicados e ~96,5% do engine no adaptador da RX 7800 XT (`luid ...12602`); a iGPU ficou em 141 MB e 0%. Pastas `smoke_v3_*` apagadas.
+
+### Antes de iniciar
+1. GPU livre (`tmp\gpu.lock` ausente; nenhum llama-server/benchmark). MongoDB do WSL no ar e `wsl -d Ubuntu -e sleep infinity` aberto; Node no PATH (avaliacoes).
+2. Corpus integro: `& $PY -I scripts\data\llm\run_guarded.py scripts\student\build_student_corpus_v3.py --verify-only --tiers t1` e
+   `& $PY -I scripts\student\train_student.py --config Repos\KapiCoder-Mongo-Small\configs\sft_v3.yaml --dry-run --tok-s 2290 --total-steps 4617` (para regenerar: o mesmo script sem `--verify-only`, ~5 min, CPU, deterministico; SEMPRE via `run_guarded.py`).
+3. **Commitar** `configs\student_corpus_v3.yaml` e `Repos\KapiCoder-Mongo-Small\configs\sft_v3.yaml` antes do primeiro passo (o hash entra no `run_manifest.json`).
+
+### Iniciar
+```powershell
+.\scripts\gpu_queue.ps1 -Status
+.\scripts\gpu_queue.ps1 -Start -Only J21-T1-v3
+.\scripts\gpu_queue.ps1 -Start -Only J23-T1-v3-eval   # avaliacao + decisao (~1,5-2,5 h)
+```
+O J21 so inicia com `reports\student\v3_gate_t0.go` (GO do T0); forcar o T1 sem GO e decisao do usuario (criar o arquivo e `-Start -Only J21-T1-v3`).
+Manual: `& $PY -I scripts\student\train_student.py --config Repos\KapiCoder-Mongo-Small\configs\sft_v3.yaml --total-steps 4617 --resume auto`. Monitorar/pausar/retomar: como nas secoes anteriores (mesmos arquivos, run `sft_v3`).
+
+### Avaliar (`scripts\student\eval_v3.py --tier t1`)
+(a) `eval_student.py run --name sft_v3` no val v2c com a MESMA amostra de 2.000 ids do professor + Generic-JS (500) + medidas/gates; (b) `eval_homolog.py run --name t1_v3` na homologacao v1 (6.030 cortes; execucao do texto real;
+leitura de `data/homolog` so pela API autorizada, com log) e `report --out-name homolog-v3-eval-t1` (base x atual x v3, pareado, IC95 bootstrap, McNemar-Holm); (c) val pareado atual x v3 e base x v3 (`reports\student\v3_val_compare_t1.json`);
+(d) `decide_v3.py` -> `reports\student\v3_decision_t1.json/.md`. "Atual" = `sft_distill_v1`.
+
+### Criterios de decisao (aplicados por `scripts\student\decide_v3.py`)
+- **C1 (meta)**: campos inexistentes em `full` na homologacao **< 9,19%** (modelo atual); ideal **<= base + 1 p.p. (~7-8%)**.
+- **C2 (melhora confirmada)**: delta pareado de `no_nonexistent_field` no grupo `full` com **limite inferior do IC95 > 0**.
+- **C3 (guarda na homologacao)**: perda de FIM acc (normalized_match) e de exec ÷ teto **<= 1,0 p.p.** contra o atual.
+- **C4 (guarda no val/Generic-JS)**: perda no val v2c (2.000 ids) <= 2,0 p.p. em FIM acc e exec ÷ teto; Generic-JS nao cai > 3 p.p. vs zero-shot (G2.5).
+- Veredito: **GO** (C1..C4) | INCONCLUSIVO (C1+C3+C4, sem C2) | SEM_MELHORA (C1 falha) | REJEITADO (C3 ou C4 violados).
+
+### Se nao houver melhora (regra)
+Qualquer veredito diferente de GO = **nao gastar mais GPU neste retreino**: nao rodar o passo seguinte, nao fazer rodadas extras de hiperparametro/dados sem nova decisao do usuario, **manter o `sft_distill_v1` como modelo publicado**,
+registrar o resultado (`reports\student\v3_decision_t1.md`, tabela em `reports\datasets\homolog-v3-eval-t1.md`) e no `docs\resumo-executivo.md` como resultado negativo/inconclusivo. GO: promover `merged\sft_v3`
+(atualizar `model.lock.json` com `scripts\student\write_model_lock.py`) e registrar no resumo executivo.
+
+### Riscos
+- **Hipotese nao garantida**: a causa pode ser capacidade/generalizacao (o relatorio v1 mostra que `full` nao reduz o erro: 15,3% em full x 14,7% em none), nao so dados; o teste e barato no T0 (~4,5 h), por isso o T0 vai antes.
+- Menos destilado efetivo (~58% dos cortes) e 12% de replay: a FIM acc no val v2c pode cair ligeiramente (C4 mede).
+- Escopo do filtro de fidelidade: remove ~4-7% dos cortes cujo rotulo cita nomes que o modelo "deveria adivinhar"; pode baixar FIM acc em prompts reais com contexto incompleto.
+- Homologacao e do mesmo LLM/gramatica (nao humana) e cortes `grammar` compartilham templates com o treino; uma unica seed de treino (sem variancia entre treinos).
+- A homologacao v1 dos modelos ATUAIS foi medida com treino sem decontaminacao n-grama contra a homologacao (achado acima): a comparacao atual x v3 pode subestimar a melhora real ou superestimar o atual.
+- Disco: `merged\sft_v3` + checkpoints (T0 full FT ~2 GB fp32 x2; T1 LoRA pequeno). Queda de energia: retoma do ultimo checkpoint (perda <= 30 min).
