@@ -1,7 +1,7 @@
 # MODEL_CARD_REVIEW - KapiCoder-Mongo-Nano (checklist interno, NAO sobe)
 
 Revise **antes de qualquer publicacao**. O card e `README.md` neste diretorio. Tudo abaixo e local: nada foi enviado, nenhum token foi usado.
-Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro (`reports/publish/hf_preview_readiness.md`).
+Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro e **so como preview privado** (homologacao sintetica feita; ver item 7) (`reports/publish/hf_preview_readiness.md`).
 
 ## 1. Decisoes que dependem de voce
 
@@ -12,7 +12,7 @@ Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro (`re
 - [ ] **Dataset card / dataset publico?** Recomendado: **nao** publicar dataset agora (nenhum dataset sera enviado; G3.9 licencas pendente; replay npm nao e redistribuido; sem revisao humana G3.7). O card diz "training set is not published". Se quiser publicar, e outro trabalho (licencas, revisao, anonimizacao).
 - [ ] **Contato / canal de feedback.** O card nao traz e-mail nem issue tracker. Decidir se adiciona (cuidado: nao colocar e-mail pessoal sem querer).
 - [ ] **Contrato `editor-context-v1`.** O card descreve publicamente o formato do cabecalho (campos, limites 4096/1024/2048, comandos do dialeto Console) e traz um construtor de prompt. Confirmar que o texto do contrato pode ser divulgado e sob qual licenca (o card nao restringe alem da Apache-2.0 do modelo). Origem: `data/contracts/editor-context-v1.golden`, `scripts/data/render_contract.py`.
-- [ ] **`model-index`.** Mantido (permitido pelo pedido: so metricas internas, rotuladas sinteticas, `verified: false`). O Hub mostra um widget de "evaluation results"; se achar que da peso demais a numeros sinteticos, remova o bloco `model-index` do front matter (o teste de numeros passa a ignorar so se voce tambem tirar a checagem em `verify_card_numbers.py`).
+- [ ] **`model-index`.** Mantido (metricas internas, rotuladas sinteticas, `verified: false`). Agora tem dois blocos sobre o val sintetico (Mongo e Generic-JS) e um da **homologacao** ("Internal evaluation, synthetic out-of-distribution homologation", 4 metricas); veja a decisao no item 7. O Hub mostra um widget de "evaluation results"; se achar que da peso demais a numeros sinteticos, remova o bloco `model-index` do front matter (o teste de numeros passa a ignorar so se voce tambem tirar a checagem em `verify_card_numbers.py`).
 - [ ] **Nome do produto "Kapibara Studio"** aparece no card (e o consumidor). Confirmar que pode ser citado.
 - [ ] **Citar o professor nao publicado** (`KapiTeacher-Mongo-7B`): o card o descreve como nao publicado. Confirmar.
 - [ ] **REPLAY_ATTRIBUTION.md** (555 pacotes, ~46 KB) sobe junto: ok ou reduzir a um resumo por licenca? (E-mails de autores foram removidos das linhas de copyright.)
@@ -20,9 +20,9 @@ Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro (`re
 
 ## 2. Pendencias do projeto que o card declara (nao sao decisoes, mas precisam estar de acordo com sua leitura)
 
-- Homologacao fora da distribuicao: **TBD** (cego humano descartado em 2026-10-22; nao ha outra medida fora do sintetico).
+- Homologacao fora da distribuicao: **feita em 2026-10-24 (sintetica)** e incorporada ao card (item 7). Continua sem medida com consultas escritas por humanos (cego humano descartado em 2026-10-22); o card diz isso e nao afirma qualidade em consultas reais.
 - Gates oficiais (KapiLab, token de GPU, PRs da IDE) pendentes: `reports/publish/hf_preview_readiness.md`.
-- README.md / README_job.md do workspace ainda dizem "treino ainda nao executado" (**desatualizados**; nao foram alterados por pedido). O `model.lock.json` esta com `updated_utc 2026-10-18` e `scripts_dirty: true` (a reproducao exata depende de arvore com alteracoes locais; o card nao promete reproducao).
+- A linha "Estado" do `README.md` do workspace foi atualizada para o estado real (treino e avaliacoes concluidos, card em preview local, nada publicado). O `README_job.md` e a frase da linha 3 do README ("Em preparacao: treino ainda nao executado") **continuam desatualizados** (fora do escopo desta alteracao). O `model.lock.json` esta com `updated_utc 2026-10-18` e `scripts_dirty: true` (a reproducao exata depende de arvore com alteracoes locais; o card nao promete reproducao).
 
 ## 3. Afirmacao do card <-> fonte (resumo; a lista completa, gerada e conferida por script, esta em `SOURCES.md`)
 
@@ -39,6 +39,7 @@ Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro (`re
 | Professor: FIM acc 0,41; G2.4 reprovado (-0,15 p.p.); papel de filtro | `Repos/KapiTeacher-Mongo-7B/.../summary.json`, `reports/teacher_adoption.json` | sim |
 | Distilado x controle gold: FIM acc -0,85 p.p. (n.s.), exec-valid +1,7 p.p. (Holm p=0,019) | `Repos/KapiCoder-Mongo-Nano/reports/eval/compare/sft_distill_v1_vs_sft_gold_v1.md`, `docs/resumo-executivo.md` | sim |
 | ONNX: tamanhos, paridade, latencia proxy, bug do EOS | `reports/export/onnx_export_t0_t1.md`, `scripts/export/README.md` | sim |
+| Homologacao v1 sintetica fora da distribuicao (tabelas, alerta de campos inexistentes, comparacoes pareadas, limites) | `reports/datasets/homolog-v1-eval.json` / `.md`, `homolog-v1-manifest.json` | sim (`verify_card_numbers.py`, blocos `homolog-*`) |
 | Licenca Apache-2.0, aviso de modificacao, atribuicao Qwen | `LICENSE`, `BaseRepos/Qwen2.5-Coder-*/README.md`, `kapibarastudio-model.json` | parcial (LICENSE confere por sha com o da base) |
 | Atribuicao do replay | `data/replay/v1/LICENSES.md` -> `REPLAY_ATTRIBUTION.md` | sim (`build_replay_attribution.py --check`) |
 | Exemplo executavel | executado localmente em CPU contra `merged/sft_distill_v1` (sem rede); `build_prompt` testado contra os SHA do golden | sim (pytest) |
@@ -51,7 +52,7 @@ Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro (`re
 - **Metodo**: T0 = full fine-tuning; T1 = LoRA r=64 mesclado, **1,5 epoca** (plano de 2 epocas cortado em 3.422 passos). O card descreve o que cada tier fez.
 - **Horas**: T0 3,33 h (o controle gold, +3,4 h, nao e publicado); T1 11,74 h. Sao `elapsed_train_h` do `run_manifest.json` (tempo de treino acumulado, sem avaliacoes).
 - **Hardware**: RX 7800 XT esta no `run_manifest.json` e nos `summary.json`; o card cita tambem `transformers 4.57.6` e PyTorch ROCm.
-- **Distilado x controle**: so existe controle gold no T0; para o T1 o card diz que o efeito da destilacao **nao foi medido**.
+- **Distilado x controle**: so existe controle gold no T0; para o T1 o card diz que o efeito da destilacao **nao foi medido** (na homologacao, o efeito medido no T0 e pequeno: FIM +0,7 p.p. n.s., exec +3,1 p.p.).
 
 ## 5. Antes de publicar (passo a passo, tudo local ate o ultimo)
 
@@ -68,3 +69,26 @@ Estado: **PREVIEW**. Recomendacao: criar o repositorio **privado** primeiro (`re
 - O exemplo do card foi rodado em CPU (`CUDA_VISIBLE_DEVICES=-1`) com os pesos `merged` e imprimiu uma continuacao curta (T0: `total`; T1: `_id`) para o prompt do exemplo. Isso e um teste de funcionamento, nao uma metrica.
 - Ao carregar o tokenizer localmente com transformers 4.57.6 aparece o aviso "incorrect regex pattern ... Mistral"; os arquivos do tokenizer sao byte a byte os da base Qwen e o GenAI nativo tokeniza igual ao HF em 500/500 prompts (`reports/export/onnx_export_t0_t1.md`). Nao investigado alem disso; confira no Hub com a versao atual do transformers.
 - `tokenizer_config.json` e `generation_config.json` vem do `merged/`; nada com caminho local sobe (varredura no staging). `export_info.json` e `train_state.json` sao recusados de proposito.
+
+## 7. Homologacao v1 (fora da distribuicao): checklist card <-> fonte e decisoes
+
+Fonte unica dos numeros: `reports/datasets/homolog-v1-eval.json` (+ `.md`, `homolog-v1-manifest.json`); 6 modelos x 6.030 itens de 28 schemas `hom` (telecom/adtech) nunca vistos em treino; autor Qwen3-14B/gramatica, **nao humano**. Nenhum item de `data/homolog` foi lido para o card. Os blocos `homolog-*` do README sao gerados e conferidos por `verify_card_numbers.py` (falha se divergirem do JSON).
+
+| # | O que o card diz | Fonte (JSON/MD) | Conferido por script |
+|---|---|---|---|
+| 1 | Tabela homologacao x sintetico por modelo (FIM acc, exec/teto, campos inexistentes full/irrelevant/none, base x treinado, lacuna val -> hom) | `models.<m>.overall`, `by_context_kind`, `val_v2c.<m>` | sim (blocos `homolog-table`, `-fields-table`, `-gap-table`) |
+| 2 | ALERTA: em schemas novos o modelo treinado inventa mais nomes de campo que a base (`full`) e o schema visivel nao reduziu a taxa; "nao confie nos nomes de campo sem o schema no contexto; valide antes de executar" | `by_context_kind.<c>.nonexistent_fields_rate` | sim (`homolog-reading`, `homolog-pt`, frase obrigatoria) |
+| 3 | T1 > T0 (+3,9 p.p. FIM, +9,3 p.p. exec, IC95 acima de 0); T1 empata com o professor 7B em FIM (-0,1 [-0,8, +0,6], p_holm=1) | `pairs.t1_distill_vs_t0_distill`, `t1_distill_vs_teacher_v2d` | sim |
+| 4 | Distilado x controle gold (so T0): FIM +0,7 p.p. [+0,1, +1,4], McNemar-Holm p=0,483 (sem evidencia); exec +3,1 p.p. [+2,2, +3,9]; no T1 nao ha controle gold | `pairs.t0_distill_vs_t0_gold` | sim |
+| 5 | `grammar` x `llm`: ganho sobre a base maior em estrutura conhecida (`grammar`); `llm` e o teste de estilo novo | `pairs.*.author.groups`, `by_author` | sim |
+| 6 | Limites: autor da mesma familia Qwen, executar != acertar, teto 93,07% (418 itens com helpers indefinidos), menor corte n=269, IC por grupo nao mostrado, sem correcao entre grupos, greedy unico | `homolog-v1-eval.md` (Limites), `homolog-v1-manifest.json` | sim (trechos) |
+| 7 | `model-index` da homologacao (4 metricas, `verified: false`, dataset rotulado "Internal evaluation, synthetic out-of-distribution homologation") | `models.<m>.overall`, `by_context_kind.full` | sim |
+
+Itens que **dependem de decisao sua**:
+- [ ] **Manter o `model-index` da homologacao?** Esta rotulado como avaliacao interna, sintetica, fora da distribuicao, `verified: false`. O Hub mostra isso como "evaluation results"; se achar que da peso demais a numeros de um conjunto escrito por LLM, remova o terceiro item de `results` (o verificador so exige completude se ele existir).
+- [ ] **Divulgar a tabela do professor 7B (nao publicado) e do controle gold (nao publicado)** nas tabelas de homologacao: sao comparadores internos, medidos nos mesmos 6.030 itens. Se preferir esconder, remova as linhas e ajuste o texto de "Against the siblings".
+- [ ] **Aceitar a lacuna e o alerta no topo do card?** O alerta de campos inexistentes esta na secao de homologacao e nos limites, nao no banner; se quiser no banner, e uma decisao editorial.
+- [ ] **Conjunto de homologacao publico?** O card cita o conjunto (sha `aca0aae5...`) mas nao o publica; nenhum item sai.
+- [ ] **Precisao dos percentuais:** o card usa 2 casas (valor do JSON); o `.md` da fonte arredonda para 1 casa (ex.: 15,35 aparece como 15,3 la).
+
+Sem fonte numerica (sinalizado no card como hipotese/interpretacao, nao afirmado): (a) "a lacuna do treinado pode estar subestimada" e (b) "por que o schema visivel nao reduziu a taxa" sao interpretacao do relatorio, nao medidas; (c) o efeito do teste mais facil da base sobre a taxa de campos inexistentes nao foi quantificado.

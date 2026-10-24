@@ -11,7 +11,11 @@ O que e conferido (tudo contra arquivos do repositorio; nenhuma metrica e digita
   2. `model-index` do front matter == as mesmas medidas, com `verified: false`;
   3. fatos de treino (exemplos, tokens, passos, horas, revisao da base) == `model.lock.json` / `run_manifest.json`;
   4. afirmacoes de prosa: cada par (trecho do card, trecho da fonte) precisa existir literalmente nos dois arquivos;
-  5. frases obrigatorias (rotulo "avaliacao interna sobre dados sinteticos", TBD da homologacao, PREVIEW).
+  5. frases obrigatorias (rotulo "avaliacao interna sobre dados sinteticos", rotulo da homologacao sintetica, PREVIEW);
+  6. homologacao v1 (fora da distribuicao): tabelas e blocos de leitura do card == renderizacao de
+     `reports/datasets/homolog-v1-eval.json` (falha se qualquer numero divergir); `model-index` da homologacao == o mesmo JSON;
+     o JSON bate com `homolog-v1-manifest.json` (sha do conjunto selado, n, 28 schemas) e com as medidas do val v2c do card.
+     Nunca le itens de `data/homolog`: so os agregados publicados em `reports/datasets/`.
 """
 from __future__ import annotations
 
@@ -29,12 +33,16 @@ END = "<!-- END:{} -->"
 
 REQUIRED_EN = "Internal evaluation on synthetic data; no blind human-written set."
 REQUIRED_PT = "avaliação interna sobre dados sintéticos; sem conjunto cego humano"
+REQUIRED_HOM_EN = "Internal evaluation, synthetic out-of-distribution homologation"
+REQUIRED_HOM_PT = "avaliação interna, homologação sintética fora da distribuição"
 REQUIRED_PHRASES = (
     REQUIRED_EN,
     REQUIRED_PT,
+    REQUIRED_HOM_EN,
+    REQUIRED_HOM_PT,
     "PREVIEW / experimental",
     "### Out-of-distribution validation",
-    "**TBD.**",
+    "Do not trust field names unless the schema is in the context",
     "never executes",  # "the model never executes anything"
     "Modification notice",
     "Apache License 2.0",
@@ -170,6 +178,249 @@ TIERS = {
 }
 
 
+# ------------------------------------------------------------------ homologacao v1 (fora da distribuicao)
+HOM_JSON = "reports/datasets/homolog-v1-eval.json"
+HOM_MD = "reports/datasets/homolog-v1-eval.md"
+HOM_MANIFEST = "reports/datasets/homolog-v1-manifest.json"
+TEACHER_LABEL = "7B teacher (`KapiTeacher-Mongo-7B`, not released)"
+
+# tier -> (base, modelo publicado, controle gold ou None) como chaves de `models` no JSON da homologacao
+HOM_KEYS = {"nano": ("base_0.5b", "t0_distill", "t0_gold"), "small": ("base_1.5b", "t1_distill", None)}
+HOM_CTX = ("full", "irrelevant", "none")
+
+HOM_CLAIMS = [
+    ("28 schemas", HOM_MD, "28 schemas `hom`"),
+    ("Qwen3-14B", HOM_MD, "Autor Qwen3-14B / gramatica"),
+    ("`aca0aae5`", HOM_MANIFEST, '"set_sha256": "aca0aae5'),
+    ("telecom and adtech", HOM_MD, "telecom/adtech"),
+    ("418 items", HOM_MD, "418 itens"),
+    ("smallest `cut_kind` has n=269", HOM_MD, "menor `cut_kind` tem n=269"),
+    ("single greedy run", HOM_MD, "Greedy unico"),
+    ("NF4", HOM_MD, "NF4+LoRA"),
+    ("McNemar", HOM_MD, "McNemar exato"),
+    ("95% CI", HOM_MD, "Wilson (FIM) e bootstrap"),
+    ("no write command was forwarded", HOM_MD, "nenhum comando de escrita encaminhado"),
+    ("RX 7800 XT", HOM_MD, "Todas as geracoes na RX 7800 XT"),
+    ("greedy decoding, up to 96 new tokens", HOM_MD, "greedy, 96 tokens, contexto 2048"),
+]
+
+_HOM_CACHE: dict = {}
+
+
+def hom() -> dict:
+    if "d" not in _HOM_CACHE:
+        _HOM_CACHE["d"] = json.loads((ROOT / HOM_JSON).read_text(encoding="utf-8"))
+    return _HOM_CACHE["d"]
+
+
+def hp(x: float) -> str:
+    """fracao -> percentual com 2 casas (exato ao JSON, que guarda 4 casas); sem arredondar para 1 casa."""
+    return f"{x * 100:.2f}"
+
+
+def hci(a) -> str:
+    return f"[{hp(a[0])}, {hp(a[1])}]"
+
+
+def hd(x: float, nd: int = 1) -> str:
+    return f"{x * 100:+.{nd}f}"
+
+
+def hnum(n: int) -> str:
+    return f"{n:,}"
+
+
+def to_pt(text: str) -> str:
+    """'1,234.56' (en) -> '1.234,56' (pt-BR)."""
+    return text.replace(",", "\x00").replace(".", ",").replace("\x00", ".")
+
+
+def hom_rows(tier: "Tier", with_teacher: bool = True) -> list[tuple[str, str]]:
+    base, mdl, gold = HOM_KEYS[tier.key]
+    rows = [(tier.rows[0][0], base), (tier.rows[1][0], mdl)]
+    if gold:
+        rows.append((tier.rows[2][0], gold))
+    if with_teacher:
+        rows.append((TEACHER_LABEL, "teacher_v2d"))
+    return rows
+
+
+def hpair(b: str, a: str, metric: str, dim: str | None = None, group: str | None = None) -> dict:
+    """Linha B-A de `pairs[<b>_vs_<a>]` (delta = B - A); geral ou de um grupo de `dim`."""
+    node = hom()["pairs"][f"{b}_vs_{a}"]
+    rows = node["context_kind"]["overall"] if group is None else node[dim]["groups"][group]["metrics"]
+    for r in rows:
+        if r["metric"] == metric:
+            return r
+    raise KeyError((b, a, metric, dim, group))
+
+
+def hdelta(r: dict) -> str:
+    return f"{hd(r['delta'])} pp [{hd(r['ci_low'])}, {hd(r['ci_high'])}]"
+
+
+def hpval(r: dict) -> str:
+    p = r.get("p_holm", r.get("p"))
+    return "<0.001" if p < 0.001 else f"{p:.3f}"
+
+
+def render_hom_table(tier: "Tier") -> str:
+    H = hom()["models"]
+    lines = ["| Model | FIM acc (%) [95% CI] | Exec-valid (%) | Exec ÷ ceiling (%) [95% CI] | Syntax-valid (%) |",
+             "|---|---|---:|---|---:|"]
+    for label, k in hom_rows(tier):
+        o = H[k]["overall"]
+        lines.append(f"| {label} | {hp(o['normalized_match'])} {hci(o['normalized_match_ci95'])} | {hp(o['exec_valid'])} | "
+                     f"{hp(o['exec_over_ceiling'])} {hci(o['exec_over_ceiling_ci95'])} | {hp(o['syntax_valid'])} |")
+    o = H[HOM_KEYS[tier.key][1]]["overall"]
+    lines += ["", f"Internal evaluation, synthetic out-of-distribution homologation, n={hnum(o['n'])}. Validator ceiling for exec-valid: {hp(o['ceiling_exec_valid'])}%."]
+    return "\n".join(lines)
+
+
+def render_hom_fields_table(tier: "Tier") -> str:
+    H = hom()["models"]
+    ref = H[HOM_KEYS[tier.key][1]]["by_context_kind"]
+    head = "| Nonexistent fields (%) by `context_kind`, homologation | " + " | ".join(f"`{c}` (n={hnum(ref[c]['n'])})" for c in HOM_CTX) + " |"
+    lines = [head, "|---|" + "---:|" * len(HOM_CTX)]
+    for label, k in hom_rows(tier):
+        lines.append("| " + label + " | " + " | ".join(hp(H[k]["by_context_kind"][c]["nonexistent_fields_rate"]) for c in HOM_CTX) + " |")
+    return "\n".join(lines)
+
+
+def hom_gap(k: str) -> dict:
+    d = hom()
+    h, v = d["models"][k]["overall"], d["val_v2c"][k]
+    return {"fim": (v["normalized_match"], h["normalized_match"]),
+            "exec": (v["exec_over_ceiling"], h["exec_over_ceiling"]),
+            "full": (v["nonexistent_fields_full"], d["models"][k]["by_context_kind"]["full"]["nonexistent_fields_rate"])}
+
+
+def render_hom_gap_table(tier: "Tier") -> str:
+    lines = ["| Model | FIM acc (%): validation → homologation (Δ pp) | Exec ÷ ceiling (%): validation → homologation (Δ pp) | Nonexistent fields `full` (%): validation → homologation (Δ pp) |",
+             "|---|---|---|---|"]
+    for label, k in hom_rows(tier):
+        g = hom_gap(k)
+        cells = [f"{hp(a)} → {hp(b)} ({(b - a) * 100:+.2f})" for a, b in (g["fim"], g["exec"], g["full"])]
+        lines.append(f"| {label} | " + " | ".join(cells) + " |")
+    mdl = HOM_KEYS[tier.key][1]
+    vc, hc = hom()["val_v2c"][mdl]["ceiling_exec_valid"], hom()["models"][mdl]["overall"]["ceiling_exec_valid"]
+    lines += ["", f"The exec ÷ ceiling column compares two validators (validation: ceiling {hp(vc)}%, homologation: ceiling {hp(hc)}%); read trends, not decimals."]
+    return "\n".join(lines)
+
+
+def hom_vals(tier: "Tier") -> dict:
+    """Todos os numeros usados nos blocos de leitura, tirados do JSON."""
+    H = hom()["models"]
+    base, mdl, gold = HOM_KEYS[tier.key]
+    o = lambda k: H[k]["overall"]  # noqa: E731
+    f = lambda k, c: H[k]["by_context_kind"][c]["nonexistent_fields_rate"]  # noqa: E731
+    return {"base": base, "mdl": mdl, "gold": gold,
+            "gap": hom_gap(mdl), "gap_base": hom_gap(base),
+            "o_m": o(mdl), "o_b": o(base),
+            "f_m": {c: f(mdl, c) for c in HOM_CTX}, "f_b": {c: f(base, c) for c in HOM_CTX},
+            "val_full_m": hom()["val_v2c"][mdl]["nonexistent_fields_full"],
+            "au_m": {a: H[mdl]["by_author"][a] for a in ("grammar", "llm")},
+            "ck_stage": H[mdl]["by_cut_kind"]["stage"]["normalized_match"],
+            "ck_multiline": H[mdl]["by_cut_kind"]["multiline"]["normalized_match"],
+            "n_total": o(mdl)["n"],
+            "vs_base_author": {a: hpair(mdl, base, "normalized_match", "author", a) for a in ("grammar", "llm")},
+            "vs_teacher_fim": hpair(mdl, "teacher_v2d", "normalized_match"),
+            "vs_teacher_exec": hpair(mdl, "teacher_v2d", "exec_valid"),
+            "t1_t0_fim": hpair("t1_distill", "t0_distill", "normalized_match"),
+            "t1_t0_exec": hpair("t1_distill", "t0_distill", "exec_valid"),
+            "dg_fim": hpair("t0_distill", "t0_gold", "normalized_match"),
+            "dg_exec": hpair("t0_distill", "t0_gold", "exec_valid"),
+            "dg_exec_grammar": hpair("t0_distill", "t0_gold", "exec_valid", "author", "grammar"),
+            "dg_exec_llm": hpair("t0_distill", "t0_gold", "exec_valid", "author", "llm"),
+            "nx_distill": o("t0_distill")["nonexistent_fields_rate"], "nx_gold": o("t0_gold")["nonexistent_fields_rate"],
+            "nx_t1": o("t1_distill")["nonexistent_fields_rate"], "nx_teacher": o("teacher_v2d")["nonexistent_fields_rate"],
+            "nx_t0": o("t0_distill")["nonexistent_fields_rate"]}
+
+
+def render_hom_reading(tier: "Tier") -> str:
+    v = hom_vals(tier)
+    g, gb = v["gap"], v["gap_base"]
+    full, irr, none = (v["f_m"][c] for c in HOM_CTX)
+    bfull, birr, bnone = (v["f_b"][c] for c in HOM_CTX)
+    A, B = v["au_m"]["grammar"], v["au_m"]["llm"]
+    ga, lb = v["vs_base_author"]["grammar"], v["vs_base_author"]["llm"]
+    L = ["Reading the homologation tables:", ""]
+    L.append(f"- **Generalisation gap.** From the synthetic validation set to unseen schemas, FIM accuracy goes {hp(g['fim'][0])}% → {hp(g['fim'][1])}% "
+             f"({(g['fim'][1] - g['fim'][0]) * 100:+.2f} pp) and exec ÷ ceiling {hp(g['exec'][0])}% → {hp(g['exec'][1])}% ({(g['exec'][1] - g['exec'][0]) * 100:+.2f} pp). "
+             f"The zero-shot base model goes the other way ({hp(gb['fim'][0])}% → {hp(gb['fim'][1])}% FIM accuracy), so the homologation queries are "
+             "easier for a model that was not trained here, and the gap of the trained model may be understated (interpretation, not tested).")
+    L.append("- **Field names are the main risk. Do not trust field names unless the schema is in the context, and validate a suggestion before running it.** "
+             f"On schemas never seen in training this model invents field names more often than its base: {hp(full)}% of suggestions with the schema visible (`full`) "
+             f"against {hp(bfull)}% for the zero-shot base (on the synthetic validation set it was {hp(v['val_full_m'])}%). "
+             f"Without the schema the rates are {hp(irr)}% (`irrelevant`) and {hp(none)}% (`none`), against {hp(birr)}% and {hp(bnone)}% for the base. "
+             f"Having the schema in the header did not lower the rate here ({hp(full)}% with it, {hp(none)}% without); why is a hypothesis that was not tested. "
+             f"The rate is counted only on suggestions whose command reached the server, and the base model more often fails to parse (syntax-valid {hp(v['o_b']['syntax_valid'])}% "
+             f"against {hp(v['o_m']['syntax_valid'])}%), so the base rates cover fewer suggestions and are not directly comparable.")
+    if v["gold"]:
+        L.append(f"- **Distillation against the gold-label control is a small effect.** Same 6,030 items, paired: FIM accuracy {hdelta(v['dg_fim'])} for the distilled model "
+                 f"(McNemar-Holm p={hpval(v['dg_fim'])}, no evidence of a difference in FIM accuracy); exec-valid {hdelta(v['dg_exec'])} "
+                 f"({hdelta(v['dg_exec_grammar'])} on `grammar`, {hdelta(v['dg_exec_llm'])} on `llm`); nonexistent fields {hp(v['nx_distill'])}% against {hp(v['nx_gold'])}% "
+                 "(all `context_kind` together). On the synthetic validation set the distilled model was also higher in exec-valid and not significantly different in FIM accuracy (see above); the size is small here too.")
+        L.append(f"- **Against the siblings.** KapiCoder-Mongo-Small is ahead on this set: FIM accuracy {hdelta(v['t1_t0_fim'])} and exec-valid {hdelta(v['t1_t0_exec'])} over this model "
+                 f"(95% CIs above zero). The 7B teacher is ahead of this model by {hd(-v['vs_teacher_fim']['delta'])} pp in FIM accuracy and {hd(-v['vs_teacher_exec']['delta'])} pp in exec-valid.")
+    else:
+        L.append("- **The effect of distillation at this size was not measured** (no gold-label control exists for this model). In the 0.5B sibling, on this same set, distilled against gold control: "
+                 f"FIM accuracy {hdelta(v['dg_fim'])} (McNemar-Holm p={hpval(v['dg_fim'])}, no evidence of a difference) and exec-valid {hdelta(v['dg_exec'])}; small effect.")
+        L.append(f"- **Against the 0.5B sibling and the teacher.** This model is ahead of KapiCoder-Mongo-Nano: FIM accuracy {hdelta(v['t1_t0_fim'])}, exec-valid {hdelta(v['t1_t0_exec'])} "
+                 f"(95% CIs above zero), nonexistent fields {hp(v['nx_t1'])}% against {hp(v['nx_t0'])}%. Against the 7B teacher its FIM accuracy is tied: {hdelta(v['vs_teacher_fim'])} "
+                 f"(McNemar-Holm p={hpval(v['vs_teacher_fim'])}); exec-valid is {hdelta(v['vs_teacher_exec'])} and nonexistent fields {hp(v['nx_t1'])}% against {hp(v['nx_teacher'])}% "
+                 "(differences small; the 7B NF4 model does not beat this one here).")
+    L.append(f"- **`grammar` against `llm`.** The gain over the zero-shot base in FIM accuracy is larger on `grammar` ({hdelta(ga)}) than on `llm` ({hdelta(lb)}), and exec ÷ ceiling is higher on "
+             f"`grammar` ({hp(A['exec_over_ceiling'])}%) than on `llm` ({hp(B['exec_over_ceiling'])}%). This fits learning a known structure: `grammar` queries come from templates of the same family as the "
+             "training data, with different schemas, so they are not an independent test of style; `llm` is the new-style test, and it is where the trained model is weakest.")
+    L.append(f"- **Long cuts.** FIM accuracy on `stage` and `multiline` cuts is {hp(v['ck_stage'])}% and {hp(v['ck_multiline'])}% (exact match against a long target within 96 new tokens); "
+             "do not read the overall number as evenly spread over cut kinds.")
+    return "\n".join(L)
+
+
+def render_hom_pt(tier: "Tier") -> str:
+    v = hom_vals(tier)
+    g = v["gap"]
+    full, irr, none = (v["f_m"][c] for c in HOM_CTX)
+    bfull = v["f_b"]["full"]
+
+    def t(x: float) -> str:
+        return to_pt(hp(x))
+
+    return (f"- **Homologação ({REQUIRED_HOM_PT}):** {to_pt(hnum(v['n_total']))} cortes de 28 schemas de telecom e adtech nunca vistos no treino, escritos pelo Qwen3-14B e por gramática, **não por humanos** "
+            f"(mesma família Qwen dos modelos). FIM acc {t(g['fim'][1])}% (validação sintética: {t(g['fim'][0])}%; base: {t(v['o_b']['normalized_match'])}%); "
+            f"exec ÷ teto {t(g['exec'][1])}% (validação: {t(g['exec'][0])}%, com validadores diferentes). "
+            f"**Alerta:** com o schema visível (`full`), {t(full)}% das sugestões usam campos inexistentes, contra {t(bfull)}% da base zero-shot (validação sintética: {t(v['val_full_m'])}%); "
+            f"sem schema, {t(irr)}% (`irrelevant`) e {t(none)}% (`none`). Não confie nos nomes de campo sem o schema no contexto; valide antes de executar. "
+            "Executar não é acertar a intenção.")
+
+
+HOM_BLOCKS = {"homolog-table": render_hom_table, "homolog-fields-table": render_hom_fields_table,
+              "homolog-gap-table": render_hom_gap_table, "homolog-reading": render_hom_reading, "homolog-pt": render_hom_pt}
+
+
+def check_homolog_sources() -> list[str]:
+    """Consistencia interna das fontes da homologacao (JSON x manifesto selado)."""
+    errs: list[str] = []
+    d = hom()
+    man = json.loads((ROOT / HOM_MANIFEST).read_text(encoding="utf-8"))
+    if d.get("set_sha256") != man.get("set_sha256"):
+        errs.append("homolog: set_sha256 do eval.json difere do manifesto selado")
+    if d.get("n") != man.get("n_items"):
+        errs.append(f"homolog: n={d.get('n')} difere do manifesto ({man.get('n_items')})")
+    if len(man.get("by_schema", {})) != 28:
+        errs.append(f"homolog: manifesto tem {len(man.get('by_schema', {}))} schemas, o card diz 28")
+    if min(man.get("by_cut_kind", {}).values()) != 269:
+        errs.append("homolog: menor cut_kind do manifesto nao e 269")
+    for k, m in d["models"].items():
+        if m["overall"]["n"] != d["n"]:
+            errs.append(f"homolog: modelo {k} com n={m['overall']['n']} != {d['n']}")
+    for c, n in man.get("by_context_kind", {}).items():
+        if d["models"]["t0_distill"]["by_context_kind"][c]["n"] != n:
+            errs.append(f"homolog: n de context_kind={c} difere do manifesto")
+    return errs
+
+
 # ------------------------------------------------------------------ utilidades
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -247,7 +498,7 @@ def block(text: str, name: str) -> str | None:
 
 def write_tables(tier: Tier) -> None:
     text = read_text(tier.card)
-    for name, fn in TABLES.items():
+    for name, fn in {**TABLES, **HOM_BLOCKS}.items():
         b, e = BEGIN.format(name), END.format(name)
         i, j = text.find(b), text.find(e)
         if i < 0 or j < 0:
@@ -310,6 +561,25 @@ def check_tier(key: str) -> list[str]:
         elif got.strip() != fn(tier).strip():
             errors.append(f"[{key}] tabela {name} diverge das fontes (rode --write para ver a diferenca esperada)")
 
+    for name, fn in HOM_BLOCKS.items():
+        got = block(text, name)
+        if got is None:
+            errors.append(f"[{key}] marcadores {name} ausentes")
+        elif got.strip() != fn(tier).strip():
+            errors.append(f"[{key}] bloco {name} diverge de {HOM_JSON} (rode --write para ver a diferenca esperada)")
+    errors += [f"[{key}] {e}" for e in check_homolog_sources()]
+    # o val v2c dentro do JSON da homologacao precisa ser o mesmo que o card traz na tabela sintetica
+    hm = hom()["val_v2c"]
+    hom_of_run = {tier.rows[0][1]: HOM_KEYS[key][0], tier.rows[1][1]: HOM_KEYS[key][1]}
+    if HOM_KEYS[key][2]:
+        hom_of_run[tier.rows[2][1]] = HOM_KEYS[key][2]
+    for run, hk in hom_of_run.items():
+        m = measures(tier, run)
+        for hkey, mkey, scale in (("normalized_match", "fim_acc", 1), ("exec_over_ceiling", "exec_valid_vs_ceiling", 1),
+                                  ("nonexistent_fields_full", "nonexistent_fields_full_rate_pct", 0.01)):
+            if abs(hm[hk][hkey] - m[mkey] * scale) > 1e-4:
+                errors.append(f"[{key}] {run}: val_v2c.{hk}.{hkey}={hm[hk][hkey]} != measures.{mkey}={m[mkey]}")
+
     # coerencia cruzada summary x measures
     for _label, run in tier.rows:
         s = summary(tier, run)["headline"]
@@ -348,9 +618,24 @@ def check_tier(key: str) -> list[str]:
             ds = res["dataset"]["name"].lower()
             if "internal" not in ds or ("synthetic" not in ds and "npm" not in ds):
                 errors.append(f"[{key}] dataset do model-index sem rotulo interno/sintetico: {res['dataset']['name']!r}")
+            is_hom = "homolog" in res["dataset"].get("type", "")
+            if is_hom and ("out-of-distribution" not in ds or "synthetic" not in ds):
+                errors.append(f"[{key}] model-index da homologacao sem o rotulo 'internal ... synthetic out-of-distribution homologation'")
             for met in res["metrics"]:
                 if met.get("verified") is not False:
                     errors.append(f"[{key}] model-index metrica {met['type']} sem `verified: false`")
+                if is_hom:
+                    ho = hom()["models"][HOM_KEYS[key][1]]
+                    hmap = {"fim_accuracy": ho["overall"]["normalized_match"], "exec_valid": ho["overall"]["exec_valid"],
+                            "exec_valid_vs_ceiling": ho["overall"]["exec_over_ceiling"],
+                            "nonexistent_fields_full_pct": ho["by_context_kind"]["full"]["nonexistent_fields_rate"] * 100}
+                    if met["type"] not in hmap:
+                        errors.append(f"[{key}] model-index homologacao: metrica desconhecida {met['type']}")
+                        continue
+                    seen.add("hom:" + met["type"])
+                    if abs(float(met["value"]) - hmap[met["type"]]) > 1e-9:
+                        errors.append(f"[{key}] model-index homologacao {met['type']}={met['value']} != {HOM_JSON} ({hmap[met['type']]})")
+                    continue
                 if "Generic JavaScript" in res["task"]["name"]:
                     want = m["generic_js_fim_acc"]
                     seen.add("generic")
@@ -366,6 +651,10 @@ def check_tier(key: str) -> list[str]:
         for k in list(MODEL_INDEX_MAP) + ["generic"]:
             if k not in seen:
                 errors.append(f"[{key}] model-index sem {k}")
+        # a homologacao so entra no model-index rotulada; se entrar, entra completa
+        hom_seen = {x for x in seen if x.startswith("hom:")}
+        if hom_seen and len(hom_seen) != 4:
+            errors.append(f"[{key}] model-index da homologacao incompleto: {sorted(hom_seen)}")
 
     # 3. fatos
     for label, needles in facts(tier):
@@ -374,7 +663,7 @@ def check_tier(key: str) -> list[str]:
                 errors.append(f"[{key}] fato '{label}': trecho '{n}' ausente do card")
 
     # 4. afirmacoes de prosa
-    for snippet, src, src_snippet in COMMON_CLAIMS + tier.claims:
+    for snippet, src, src_snippet in COMMON_CLAIMS + HOM_CLAIMS + tier.claims:
         path = resolve(src, tier)
         if snippet not in text:
             errors.append(f"[{key}] trecho do card ausente: {snippet!r}")
@@ -387,6 +676,8 @@ def check_tier(key: str) -> list[str]:
     for p in REQUIRED_PHRASES:
         if p not in text:
             errors.append(f"[{key}] frase obrigatoria ausente: {p!r}")
+    if "**TBD.**" in text:
+        errors.append(f"[{key}] o TBD da homologacao deveria ter sido substituido pelos resultados")
     for bad in ("state-of-the-art", "best-in-class", "outperforms", "beats GPT", "production-ready", "blazing"):
         if bad.lower() in text.lower():
             errors.append(f"[{key}] linguagem nao sobria: {bad!r}")
@@ -417,12 +708,26 @@ def render_sources(tier: Tier) -> str:
               "| base: licenca e revisao | `BaseRepos/Qwen2.5-Coder-*/README.md`, `BaseRepos/base-repos.lock.json` |",
               "| contrato `editor-context-v1` | `data/contracts/editor-context-v1.golden`, `scripts/data/render_contract.py` (exemplo do card testado contra o golden) |",
               "| ONNX: variantes, tamanhos, paridade, latencia proxy, bug do EOS | `reports/export/onnx_export_t0_t1.md`, `scripts/export/README.md`, `kapibarastudio-model.json` / `kapicoder_manifest.json` de cada pacote |",
+              "", "## Homologacao v1 (fora da distribuicao; autor Qwen3-14B/gramatica, nao humano)", "",
+              "Tabelas e blocos de leitura do card (`homolog-table`, `homolog-fields-table`, `homolog-gap-table`, `homolog-reading`, `homolog-pt`) e o `model-index` da homologacao sao renderizados/conferidos por `verify_card_numbers.py` a partir de `reports/datasets/homolog-v1-eval.json` (agregados; nenhum item de `data/homolog` e lido). Percentuais com 2 casas = o valor de 4 casas do JSON (o `.md` da fonte arredonda para 1 casa).", "",
+              "| Celula do card | Chave em `reports/datasets/homolog-v1-eval.json` |", "|---|---|",
+              "| FIM acc [IC95] | `models.<m>.overall.normalized_match`, `normalized_match_ci95` |",
+              "| Exec-valid, sintaxe | `models.<m>.overall.exec_valid`, `syntax_valid` |",
+              "| Exec ÷ teto [IC95]; teto | `models.<m>.overall.exec_over_ceiling`, `exec_over_ceiling_ci95`, `ceiling_exec_valid` |",
+              "| Campos inexistentes por `context_kind` | `models.<m>.by_context_kind.<c>.nonexistent_fields_rate` |",
+              "| Lacuna val -> hom | `val_v2c.<m>.{normalized_match, exec_over_ceiling, nonexistent_fields_full}` vs `models.<m>.overall` / `by_context_kind.full` |",
+              "| Deltas pareados, IC95, McNemar-Holm | `pairs.<b>_vs_<a>.context_kind.overall[]` e `pairs.<b>_vs_<a>.author.groups.<g>.metrics[]` (`delta`, `ci_low`, `ci_high`, `p_holm`) |",
+              "| `grammar` x `llm` | `models.<m>.by_author.<g>.exec_over_ceiling`; pares `author.groups` |",
+              "| Conjunto selado (28 schemas, n=6.030, sha `aca0aae5...`, menor corte 269) | `reports/datasets/homolog-v1-manifest.json` (conferido contra o eval.json) |",
+              "| Protocolo e limites (autor, executar != acertar, teto 93,1% com 418 itens, n por celula, greedy unico) | `reports/datasets/homolog-v1-eval.md` |",
               "", "Os `v1-*-report.md` em `reports/datasets/` descrevem o dataset v1 e NAO foram usados para nenhum numero do card.", "",
               "## Afirmacoes de prosa (trecho do card <-> trecho da fonte)", "", "| Trecho no card | Fonte | Trecho na fonte |", "|---|---|---|"]
-    for snippet, src, src_snippet in COMMON_CLAIMS + tier.claims:
+    for snippet, src, src_snippet in COMMON_CLAIMS + HOM_CLAIMS + tier.claims:
         path = src.format(ws=tier.ws, run=tier.run, pkg=tier.name)
         lines.append(f"| {snippet.replace('|', '\\|')} | `{path}` | {src_snippet.replace('|', '\\|')} |")
     lines += ["", "## Sem fonte numerica (descritivo; revisar)", "",
+              "- Homologacao: \"the gap of the trained model may be understated\" e \"why is a hypothesis that was not tested\" sao interpretacao do relatorio da fonte (`homolog-v1-eval.md`, secoes Interpretacao e Contexto), marcadas como hipotese no card; nao ha experimento que as teste.",
+              "- Homologacao: \"the base more often fails to parse, so base rates cover fewer suggestions\" decorre da definicao da fonte (campo inexistente so conta quando o comando chega ao servidor) e das taxas de sintaxe; o efeito sobre a taxa nao foi quantificado.",
               "- \"No personal data by construction\": README dos workspaces (\"dados sinteticos ... nao contem dados pessoais\") e rejeicao de 17 registros com padroes proibidos na etapa sanitize do v2c. Nao ha revisao humana (G3.7 nao feita); o card diz isso.",
               "- \"Behaviour around destructive operations was neither trained nor tested\": ausencia de qualquer teste desse tipo nos relatorios; so ha `write_or_destructive_executions: 0` (guarda de leitura).",
               "- \"Not evaluated: bias or toxicity, long-context beyond 2048, multi-turn, adversarial\": ausencia nos relatorios.",

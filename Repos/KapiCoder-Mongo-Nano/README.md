@@ -9,7 +9,7 @@ Autocomplete FIM de MongoDB (Mongo Console / mongosh / pipelines JSON) para o Ka
 | Dados | `data\student\{distill,gold}\t0` (159.865 exemplos, 44,2 M tokens/epoca): prompts de treino do dataset v2c (split `train`), alvos do professor validados por execucao somente leitura, replay de codigo JS/TS permissivo (12% dos tokens); detalhes em `reports\student\corpus_report.md` (raiz) |
 | Gates | `configs\gates.yaml` tier T0 (Fase 06 §8); G2.4 do professor em `configs\gates.teacher.yaml`; resultados em `reports\eval\<run>\gates.json` quando existirem |
 | Job | `README_job.md` (iniciar, monitorar, retomar, avaliar, criterios distilado x controle) |
-| Estado | corpus pronto e verificado (G2.7), smoke de treino/retomada/avaliacao ok, jobs J16a/J14/J16 (+J10b/J10be opcionais) na fila sem iniciar; sem metricas de qualidade ainda |
+| Estado | T0 treinado (`sft_distill_v1`, full fine-tuning, 3,33 h) com controle gold (`sft_gold_v1`); avaliado no val v2c sintetico e na homologacao v1 (6.030 cortes de schemas novos, escrita por LLM, nao humana: FIM acc 33,1% contra 12,6% da base; mais campos inexistentes que a base em schema novo). Card em preview local (`hf/`); nada publicado |
 
 Contrato de uso (IDE): prompt `QwenFimPromptBuilder` com cabecalho de contexto do editor (`editor-context-v1`, contexto de 2.048 tokens, ate 32 tokens no autocomplete); tokenizer identico ao do professor e dos demais
 Qwen2.5-Coder. Escopo: autocomplete; chat curto fora ate a decisao Q1.

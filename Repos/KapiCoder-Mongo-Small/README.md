@@ -9,7 +9,7 @@ Autocomplete FIM de MongoDB (e, apos a decisao Q1, chat curto) para o Kapibara S
 | Dados | `data\student\{distill,gold}\t1` (229.834 exemplos, 63,7 M tokens/epoca; T0 e subconjunto): prompts de treino do dataset v2c (split `train`), alvos do professor validados por execucao somente leitura, replay JS/TS permissivo (12% dos tokens); `reports\student\corpus_report.md` (raiz) |
 | Gates | `configs\gates.yaml` tier T1 (Fase 06 §8; so os itens do Python aplicaveis ao autocomplete sao avaliados aqui, o resto fica `unevaluated`); resultados em `reports\eval\<run>\gates.json` quando existirem |
 | Job | `README_job.md` (iniciar, monitorar, retomar, avaliar, criterios distilado x controle) |
-| Estado | corpus pronto e verificado (G2.7), smoke de treino/retomada/avaliacao ok, jobs J17a/J15/J17/J10/J10e na fila sem iniciar; sem metricas de qualidade ainda |
+| Estado | T1 treinado (`sft_distill_v1`, LoRA r=64, 1,5 epoca, 11,74 h; sem controle gold); avaliado no val v2c sintetico e na homologacao v1 (6.030 cortes de schemas novos, escrita por LLM, nao humana: FIM acc 37,0% contra 18,7% da base; mais campos inexistentes que a base em schema novo). Card em preview local (`hf/`); nada publicado |
 
 Contrato de uso (IDE): prompt `QwenFimPromptBuilder` com cabecalho `editor-context-v1` (contexto de 2.048 tokens); tokenizer identico ao do professor. Escopo desta rodada: autocomplete; chat curto fora ate a Q1.
 

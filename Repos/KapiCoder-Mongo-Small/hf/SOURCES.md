@@ -29,6 +29,22 @@ Coerencia cruzada: `summary.json` (`headline.normalized_match`, `exec_valid`, `s
 | contrato `editor-context-v1` | `data/contracts/editor-context-v1.golden`, `scripts/data/render_contract.py` (exemplo do card testado contra o golden) |
 | ONNX: variantes, tamanhos, paridade, latencia proxy, bug do EOS | `reports/export/onnx_export_t0_t1.md`, `scripts/export/README.md`, `kapibarastudio-model.json` / `kapicoder_manifest.json` de cada pacote |
 
+## Homologacao v1 (fora da distribuicao; autor Qwen3-14B/gramatica, nao humano)
+
+Tabelas e blocos de leitura do card (`homolog-table`, `homolog-fields-table`, `homolog-gap-table`, `homolog-reading`, `homolog-pt`) e o `model-index` da homologacao sao renderizados/conferidos por `verify_card_numbers.py` a partir de `reports/datasets/homolog-v1-eval.json` (agregados; nenhum item de `data/homolog` e lido). Percentuais com 2 casas = o valor de 4 casas do JSON (o `.md` da fonte arredonda para 1 casa).
+
+| Celula do card | Chave em `reports/datasets/homolog-v1-eval.json` |
+|---|---|
+| FIM acc [IC95] | `models.<m>.overall.normalized_match`, `normalized_match_ci95` |
+| Exec-valid, sintaxe | `models.<m>.overall.exec_valid`, `syntax_valid` |
+| Exec ÷ teto [IC95]; teto | `models.<m>.overall.exec_over_ceiling`, `exec_over_ceiling_ci95`, `ceiling_exec_valid` |
+| Campos inexistentes por `context_kind` | `models.<m>.by_context_kind.<c>.nonexistent_fields_rate` |
+| Lacuna val -> hom | `val_v2c.<m>.{normalized_match, exec_over_ceiling, nonexistent_fields_full}` vs `models.<m>.overall` / `by_context_kind.full` |
+| Deltas pareados, IC95, McNemar-Holm | `pairs.<b>_vs_<a>.context_kind.overall[]` e `pairs.<b>_vs_<a>.author.groups.<g>.metrics[]` (`delta`, `ci_low`, `ci_high`, `p_holm`) |
+| `grammar` x `llm` | `models.<m>.by_author.<g>.exec_over_ceiling`; pares `author.groups` |
+| Conjunto selado (28 schemas, n=6.030, sha `aca0aae5...`, menor corte 269) | `reports/datasets/homolog-v1-manifest.json` (conferido contra o eval.json) |
+| Protocolo e limites (autor, executar != acertar, teto 93,1% com 418 itens, n por celula, greedy unico) | `reports/datasets/homolog-v1-eval.md` |
+
 Os `v1-*-report.md` em `reports/datasets/` descrevem o dataset v1 e NAO foram usados para nenhum numero do card.
 
 ## Afirmacoes de prosa (trecho do card <-> trecho da fonte)
@@ -57,6 +73,19 @@ Os `v1-*-report.md` em `reports/datasets/` descrevem o dataset v1 e NAO foram us
 | 2048-token context | `Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1/summary.json` | "context_tokens": 2048 |
 | (the IDE caps it at 32 tokens) | `Repos/KapiCoder-Mongo-Small/exports/KapiCoder-Mongo-Small-ONNX-int4/kapibarastudio-model.json` | "maxTokens": 32 |
 | `Mongo Console JavaScript` and `json` | `reports/datasets/v2c-validation-report.md` | dialetos {'console': 889205, 'json': 111410} |
+| 28 schemas | `reports/datasets/homolog-v1-eval.md` | 28 schemas `hom` |
+| Qwen3-14B | `reports/datasets/homolog-v1-eval.md` | Autor Qwen3-14B / gramatica |
+| `aca0aae5` | `reports/datasets/homolog-v1-manifest.json` | "set_sha256": "aca0aae5 |
+| telecom and adtech | `reports/datasets/homolog-v1-eval.md` | telecom/adtech |
+| 418 items | `reports/datasets/homolog-v1-eval.md` | 418 itens |
+| smallest `cut_kind` has n=269 | `reports/datasets/homolog-v1-eval.md` | menor `cut_kind` tem n=269 |
+| single greedy run | `reports/datasets/homolog-v1-eval.md` | Greedy unico |
+| NF4 | `reports/datasets/homolog-v1-eval.md` | NF4+LoRA |
+| McNemar | `reports/datasets/homolog-v1-eval.md` | McNemar exato |
+| 95% CI | `reports/datasets/homolog-v1-eval.md` | Wilson (FIM) e bootstrap |
+| no write command was forwarded | `reports/datasets/homolog-v1-eval.md` | nenhum comando de escrita encaminhado |
+| RX 7800 XT | `reports/datasets/homolog-v1-eval.md` | Todas as geracoes na RX 7800 XT |
+| greedy decoding, up to 96 new tokens | `reports/datasets/homolog-v1-eval.md` | greedy, 96 tokens, contexto 2048 |
 | (217,306 MongoDB examples + 12,528 | `reports/student/corpus_report.md` | (217,306 Mongo + 12,528 replay) |
 | 54.11% | `reports/student/corpus_report.md` | 54.11% |
 | alpha=128, dropout 0.05 | `Repos/KapiCoder-Mongo-Small/configs/sft_distill_v1.yaml` | alpha: 128 |
@@ -83,6 +112,8 @@ Os `v1-*-report.md` em `reports/datasets/` descrevem o dataset v1 e NAO foram us
 
 ## Sem fonte numerica (descritivo; revisar)
 
+- Homologacao: "the gap of the trained model may be understated" e "why is a hypothesis that was not tested" sao interpretacao do relatorio da fonte (`homolog-v1-eval.md`, secoes Interpretacao e Contexto), marcadas como hipotese no card; nao ha experimento que as teste.
+- Homologacao: "the base more often fails to parse, so base rates cover fewer suggestions" decorre da definicao da fonte (campo inexistente so conta quando o comando chega ao servidor) e das taxas de sintaxe; o efeito sobre a taxa nao foi quantificado.
 - "No personal data by construction": README dos workspaces ("dados sinteticos ... nao contem dados pessoais") e rejeicao de 17 registros com padroes proibidos na etapa sanitize do v2c. Nao ha revisao humana (G3.7 nao feita); o card diz isso.
 - "Behaviour around destructive operations was neither trained nor tested": ausencia de qualquer teste desse tipo nos relatorios; so ha `write_or_destructive_executions: 0` (guarda de leitura).
 - "Not evaluated: bias or toxicity, long-context beyond 2048, multi-turn, adversarial": ausencia nos relatorios.

@@ -80,7 +80,11 @@ def test_required_labels_and_sober_language(key):
     assert vcn.REQUIRED_EN in text
     assert vcn.REQUIRED_PT in text
     assert "PREVIEW / experimental" in text
-    assert re.search(r"### Out-of-distribution validation\s+\*\*TBD\.\*\*", text)
+    # a homologacao sintetica substituiu o TBD: heading + rotulo obrigatorio, e nenhum TBD sobrando
+    assert re.search(r"### Out-of-distribution validation \(homologation v1\)\s+\*\*" + re.escape(vcn.REQUIRED_HOM_EN), text)
+    assert vcn.REQUIRED_HOM_PT in text
+    assert "**TBD.**" not in text
+    assert "Do not trust field names unless the schema is in the context" in text
     # ingles primeiro, pt-BR depois
     assert text.index("## What it is, and what it is not") < text.index("## Resumo em português")
     for bad in ("state-of-the-art", "best-in-class", "outperforms", "production-ready", "GPT-4", "Copilot", "DeepSeek"):
@@ -175,3 +179,79 @@ def test_example_builder_enforces_window_limits_and_neutralizes_comment_end(key)
     before, after = body.split("<|fim_suffix|>")
     assert len(before) == 4096 and before.endswith("TAIL")
     assert after == "S" * 1024 + "<|fim_middle|>"
+
+
+HOM_JSON = vcn.ROOT / vcn.HOM_JSON
+
+
+def have_homolog() -> bool:
+    return HOM_JSON.exists() and (vcn.ROOT / vcn.HOM_MANIFEST).exists()
+
+
+@pytest.mark.skipif(not have_homolog(), reason="relatorio da homologacao ausente")
+@pytest.mark.parametrize("key", TIERS)
+def test_homolog_blocks_match_json(key):
+    text = vcn.TIERS[key].card.read_text(encoding="utf-8")
+    for name, fn in vcn.HOM_BLOCKS.items():
+        assert vcn.block(text, name).strip() == fn(vcn.TIERS[key]).strip(), name
+
+
+@pytest.mark.skipif(not have_homolog(), reason="relatorio da homologacao ausente")
+def test_homolog_anchor_numbers():
+    """Ancoras direto do JSON (nao do script): protege contra o proprio verificador errar."""
+    import json
+    d = json.loads(HOM_JSON.read_text(encoding="utf-8"))
+    t0 = vcn.TIERS["nano"].card.read_text(encoding="utf-8")
+    t1 = vcn.TIERS["small"].card.read_text(encoding="utf-8")
+    assert d["n"] == 6030
+    assert f"{d['models']['t0_distill']['by_context_kind']['full']['nonexistent_fields_rate'] * 100:.2f}" in t0   # 15.35
+    assert f"{d['models']['base_0.5b']['by_context_kind']['full']['nonexistent_fields_rate'] * 100:.2f}" in t0     # 7.02
+    assert f"{d['models']['t1_distill']['by_context_kind']['full']['nonexistent_fields_rate'] * 100:.2f}" in t1   # 9.19
+    assert "15.35" in t0 and "7.02" in t0 and "9.19" in t1 and "7.15" in t1
+
+
+@pytest.mark.skipif(not have_homolog(), reason="relatorio da homologacao ausente")
+@pytest.mark.parametrize("key", TIERS)
+@pytest.mark.parametrize("what", ["table", "model-index", "reading"])
+def test_check_tier_fails_when_homolog_number_diverges(key, what, monkeypatch):
+    tier = vcn.TIERS[key]
+    text = tier.card.read_text(encoding="utf-8")
+    full = "15.35" if key == "nano" else "9.19"
+    if what == "table":
+        i = text.index("<!-- BEGIN:homolog-fields-table -->")
+        tampered = text[:i] + text[i:].replace(full, "1.11", 1)
+    elif what == "model-index":
+        mi = f"value: {float(full)}"
+        assert mi in text
+        tampered = text.replace(mi, "value: 1.11", 1)
+    else:
+        i = text.index("<!-- BEGIN:homolog-reading -->")
+        tampered = text[:i] + text[i:].replace(full + "%", "1.11%", 1)
+    assert tampered != text
+    real = vcn.read_text
+    monkeypatch.setattr(vcn, "read_text", lambda path: tampered if path == tier.card else real(path))
+    errs = vcn.check_tier(key)
+    assert errs, "o verificador deveria falhar"
+    assert any("homolog" in e for e in errs)
+
+
+@pytest.mark.skipif(not have_homolog(), reason="relatorio da homologacao ausente")
+def test_model_index_homolog_entry_is_labelled_and_unverified():
+    for key in TIERS:
+        fm = vcn.front_matter(vcn.TIERS[key].card.read_text(encoding="utf-8"))
+        hom = [r for r in fm["model-index"][0]["results"] if "homolog" in r["dataset"]["type"]]
+        assert len(hom) == 1
+        name = hom[0]["dataset"]["name"].lower()
+        assert "internal" in name and "synthetic" in name and "out-of-distribution" in name
+        assert all(m["verified"] is False for m in hom[0]["metrics"])
+
+
+@pytest.mark.skipif(not have_homolog(), reason="relatorio da homologacao ausente")
+def test_homolog_sources_are_consistent():
+    assert vcn.check_homolog_sources() == []
+
+
+def test_homolog_sources_are_only_published_aggregates():
+    """O verificador le so agregados publicados em reports/datasets; nunca itens de data/homolog."""
+    for p in (vcn.HOM_JSON, vcn.HOM_MD, vcn.HOM_MANIFEST):
+        assert p.startswith("reports/datasets/homolog-v1-")
