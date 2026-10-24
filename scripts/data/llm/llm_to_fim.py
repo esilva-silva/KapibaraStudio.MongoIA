@@ -297,10 +297,20 @@ def build(validated: list[dict], role: str, out_dir: Path, cfg: dict, *, n_cuts:
                      list({s.full_id: s for s in schemas_for_pools + dist}.values()), dist)
     recs = contextualize(cuts, kinds, pools, dscfg, tok, seed)
     # guarda de isolamento
+    hom_dropped = 0
     if role == "train":
+        # prompt/id identico a item selado da homologacao NAO e fatal: prefixos curtos e genericos (p.ex. contexto none)
+        # coincidem entre schemas diferentes; o candidato e descartado e contado, e a decontaminacao n-grama roda em seguida
+        kept = []
         for r in recs:
-            hg.check_record(r)
-            hg.check_text(r["prefix"] + "\x00" + r["suffix"])
+            try:
+                hg.check_record(r)
+                hg.check_text(r["prefix"] + "\x00" + r["suffix"])
+            except hg.HomologAccessError:
+                hom_dropped += 1
+                continue
+            kept.append(r)
+        recs = kept
     rep = None
     if do_decontam:
         evals = eval_docs_v2c()
@@ -309,7 +319,7 @@ def build(validated: list[dict], role: str, out_dir: Path, cfg: dict, *, n_cuts:
     out_dir.mkdir(parents=True, exist_ok=True)
     nrec = write_jsonl(out_dir / "fim_ctx.jsonl", recs)
     st = {"role": role, "queries": len(validated), "snippets": len(snips), "skipped": dict(sk), "cuts_generated": len(cuts), "cuts_final": nrec,
-          "context_assignment": kst, "decontam": rep, "seconds": round(time.time() - t0, 1),
+          "context_assignment": kst, "homolog_exact_dropped": hom_dropped, "decontam": rep, "seconds": round(time.time() - t0, 1),
           "by_cut_kind": dict(Counter(r["cut_kind"] for r in recs)), "by_context_kind": dict(Counter(r["context_kind"] for r in recs)),
           "by_category": dict(Counter(r["category"] for r in recs)), "by_domain": dict(Counter(r["domain"] for r in recs)),
           "middle_tokens_method": dict(Counter(r["middle_tokens_method"] for r in recs)),

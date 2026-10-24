@@ -26,6 +26,7 @@ META_READ = {"listcollections", "listindexes", "dbstats", "collstats"}
 HANDSHAKE = {"hello", "ismaster", "ping", "buildinfo", "endsessions", "whatsmyuri", "atlasversion", "connectionstatus", "getparameter",
              "getcmdlineopts", "hostinfo", "listdatabases", "serverstatus", "features", "replsetgetstatus", "saslstart", "saslcontinue"}
 ALLOWED = DATA_CMDS | CURSOR_CMDS | META_READ | HANDSHAKE | {"explain"}
+MAX_CAPTURE_BYTES = 4_000_000   # comando de leitura capturado inteiro (limite do BSON do servidor e 16 MiB)
 BAD_AGG = (b"$out\x00", b"$merge\x00", b"$function\x00", b"$accumulator\x00", b"$where\x00", b"$currentOp\x00", b"$listSessions\x00")
 
 
@@ -347,7 +348,10 @@ class RoProxy:
             if mt is None:
                 new_payload = payload[:4] + b"\x00" + add_max_time(body, self.max_time_ms) + payload[5 + len(body):]
                 out = struct.pack("<iiii", 16 + len(new_payload), *struct.unpack_from("<iii", msg, 4)) + new_payload
-            self.event_cb({"ev": "cmd", "id": qid, "name": raw_name, "db": db, "bson": base64.b64encode(body).decode()})
+            if len(body) > MAX_CAPTURE_BYTES:      # nunca trunca BSON: o comando segue ao servidor, mas o validador rejeita (cmd_too_large)
+                self.event_cb({"ev": "cmd", "id": qid, "name": raw_name, "db": db, "bson": None, "too_large": len(body)})
+            else:
+                self.event_cb({"ev": "cmd", "id": qid, "name": raw_name, "db": db, "bson": base64.b64encode(body).decode()})
         self.stats.add(self.stats.allowed, name)
         return ("pass", out, name, qid)
 

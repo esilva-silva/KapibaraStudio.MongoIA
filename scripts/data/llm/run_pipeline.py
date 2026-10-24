@@ -34,8 +34,21 @@ def save_state(out: Path, st: dict):
     (out / STATE).write_text(json.dumps(st, indent=1), encoding="utf-8")
 
 
+_HB_LOCK = threading.Lock()
+
+
 def heartbeat(out: Path, **kw):
-    (out / "heartbeat.json").write_text(json.dumps({"ts": time.time(), **kw}), encoding="utf-8")
+    """Escrita atomica (geracao e validacao escrevem de threads diferentes; o watchdog le o arquivo)."""
+    with _HB_LOCK:
+        tmp = out / "heartbeat.json.tmp"
+        tmp.write_text(json.dumps({"ts": time.time(), **kw}), encoding="utf-8")
+        for _ in range(5):
+            try:
+                tmp.replace(out / "heartbeat.json")
+                return
+            except OSError:
+                time.sleep(0.2)
+        (out / "heartbeat.json").write_text(json.dumps({"ts": time.time(), **kw}), encoding="utf-8")
 
 
 def run(a) -> int:
@@ -68,13 +81,20 @@ def run(a) -> int:
     def validate_round(name: str):
         try:
             d = out / "rounds" / name
-            summ = V.validate(d / "queries.raw.jsonl", d, cfg, workers=a.workers, seen_keys=seen, infos=infos, shape_seen=shapes)
+            def prog(p, _n=name):
+                # heartbeat por lote validado (o watchdog enxerga progresso); `accepted` = aceitas consolidadas + aprovadas na execucao nesta rodada (provisorio)
+                heartbeat(out, phase="validate", round=_n, accepted=st["accepted"], accepted_provisional=st["accepted"] + p.get("exec_ok", 0), **{
+                    k: v for k, v in p.items() if k in ("stage", "batches_done", "batches_total", "exec_ok", "exec_resumed", "queries")})
+
+            heartbeat(out, phase="validate", round=name, accepted=st["accepted"], stage="start")
+            summ = V.validate(d / "queries.raw.jsonl", d, cfg, workers=a.workers, seen_keys=seen, infos=infos, shape_seen=shapes, progress=prog)
             for q in read_jsonl(d / "queries.validated.jsonl"):
                 seen.add(q["qkey"])
             st["rounds_val"].append(name)
             st["accepted"] += summ["accepted"]
             st["raw"] += summ["funnel"]["raw"]
             save_state(out, st)
+            heartbeat(out, phase="validated", round=name, accepted=st["accepted"], round_accepted=summ["accepted"])
             print(f"[pipeline] rodada {name} validada: aceitas={summ['accepted']} ({100 * summ['acceptance_rate']:.1f}%) total_aceitas={st['accepted']}", flush=True)
         except BaseException as e:  # noqa: BLE001
             val_err.append(e)
@@ -86,6 +106,8 @@ def run(a) -> int:
         pending = [x for x in st["rounds_gen"] if x not in st["rounds_val"]]
         for name in pending:
             validate_round(name)
+            if val_err:
+                raise val_err[0]
         t_run = time.time()
         while st["accepted"] < a.accepted and not val_err:
             name = f"r{r:04d}"

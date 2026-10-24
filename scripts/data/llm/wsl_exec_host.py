@@ -13,6 +13,7 @@ Resultado por consulta: status (ok | error | timeout | no_exec | blocked), error
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import os
 import queue
@@ -37,8 +38,10 @@ def chunk_text(item: dict) -> str:
 
 
 class Host:
-    def __init__(self, batch, out, timeout, max_time_ms, mongo, allowed_dbs):
+    def __init__(self, batch, out, timeout, max_time_ms, mongo, allowed_dbs, tag="kapi", deadline_s=None):
         self.batch, self.out, self.timeout = batch, out, timeout
+        self.tag = tag                                    # entra no appName do mongosh e na linha de comando: o orquestrador mata por ele
+        self.deadline = time.time() + deadline_s if deadline_s else None   # prazo duro do lote inteiro
         self.events: "queue.Queue" = queue.Queue()
         host, port = mongo.split(":")
         self.proxy = RoProxy((host, int(port)), allowed_dbs, max_time_ms, event_cb=self.events.put)
@@ -47,7 +50,7 @@ class Host:
 
     def run_chunk(self, items: list[dict]) -> str | None:
         """Roda `items` num mongosh; devolve id da consulta que travou (timeout) ou None."""
-        uri = f"mongodb://127.0.0.1:{self.proxy.port}/?directConnection=true&appName=kapi-llm-validate"
+        uri = f"mongodb://127.0.0.1:{self.proxy.port}/?directConnection=true&appName=kapi-llm-validate-{self.tag}"
         p = subprocess.Popen(["mongosh", "--quiet", "--norc", uri], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                              text=True, encoding="utf-8", errors="replace", bufsize=1)
         lines: "queue.Queue" = queue.Queue()
@@ -66,7 +69,7 @@ class Host:
             except (BrokenPipeError, OSError, ValueError):
                 pass
         threading.Thread(target=feed, daemon=True).start()
-        cur, seg, t_last, t_start, hung = None, [], time.time(), {}, None
+        cur, seg, t_last, t_start, hung = None, collections.deque(maxlen=400), time.time(), {}, None
         done_ids = set()
         while True:
             try:
@@ -75,10 +78,22 @@ class Host:
                 if time.time() - t_last > self.timeout:
                     hung = cur or next((it["id"] for it in items if it["id"] not in done_ids), None)
                     break
+                if cur and time.time() - t_start.get(cur, time.time()) > 2 * self.timeout:      # prazo duro da consulta
+                    hung = cur
+                    break
+                if self.deadline and time.time() > self.deadline:
+                    hung = cur or next((it["id"] for it in items if it["id"] not in done_ids), None)
+                    break
                 continue
             if ln is None:
                 break
             t_last = time.time()
+            if cur and time.time() - t_start.get(cur, time.time()) > 2 * self.timeout:       # saida continua sem fim (nunca fica ocioso)
+                hung = cur
+                break
+            if self.deadline and time.time() > self.deadline:
+                hung = cur or next((it["id"] for it in items if it["id"] not in done_ids), None)
+                break
             m = re.search(r"@@S:([^@]+)@@", ln)
             if m and "print(" not in ln:
                 cur, seg = m.group(1), []
@@ -96,7 +111,8 @@ class Host:
                 seg.append(ln)
         try:
             p.kill()
-        except OSError:
+            p.wait(timeout=10)
+        except (OSError, subprocess.TimeoutExpired):
             pass
         return hung
 
@@ -111,7 +127,7 @@ class Host:
                 continue
             r = self.res.setdefault(i, {})
             if ev["ev"] == "cmd":
-                r.setdefault("commands", []).append({"name": ev["name"], "db": ev["db"], "bson": ev["bson"]})
+                r.setdefault("commands", []).append({"name": ev["name"], "db": ev["db"], "bson": ev["bson"], "too_large": ev.get("too_large")})
             elif ev["ev"] == "docs":
                 r["n_docs"] = (r.get("n_docs") or 0) + (ev.get("n") or 0)
                 r["n_reads"] = r.get("n_reads", 0) + 1
@@ -127,6 +143,11 @@ class Host:
         timed_out = set()
         t0 = time.time()
         while remaining:
+            if self.deadline and time.time() > self.deadline:      # estourou o prazo do lote: o resto vira timeout (o orquestrador nao trava)
+                for it in remaining:
+                    if it["id"] not in self.res or "output" not in self.res[it["id"]]:
+                        self.res.setdefault(it["id"], {})["timeout"] = True
+                break
             hung = self.run_chunk(remaining)
             self.drain()
             if hung is None:
@@ -163,7 +184,7 @@ class Host:
                     else:
                         status = "ok"
                 f.write(json.dumps({"id": it["id"], "status": status, "error": err, "n_docs": r.get("n_docs", 0), "n_reads": r.get("n_reads", 0),
-                                    "ms": r.get("ms"), "commands": (r.get("commands") or [])[:12], "output_tail": out[-600:]},
+                                    "ms": r.get("ms"), "commands": (r.get("commands") or [])[:12], "n_commands_total": len(r.get("commands") or []), "output_tail": out[-600:]},
                                    ensure_ascii=False) + "\n")
         st = self.proxy.stats.to_dict()
         st["seconds"] = round(time.time() - t0, 1)
@@ -180,10 +201,12 @@ def main():
     ap.add_argument("--timeout", type=float, default=20.0)
     ap.add_argument("--max-time-ms", type=int, default=3000)
     ap.add_argument("--mongo", default="127.0.0.1:27017")
+    ap.add_argument("--tag", default="kapi")
+    ap.add_argument("--deadline", type=float, default=0.0, help="prazo duro do lote em segundos (0 = sem)")
     a = ap.parse_args()
     items = [json.loads(l) for l in open(a.batch, encoding="utf-8") if l.strip()]
     dbs = {it["db"] for it in items}
-    Host(items, a.out, a.timeout, a.max_time_ms, a.mongo, dbs).run()
+    Host(items, a.out, a.timeout, a.max_time_ms, a.mongo, dbs, tag=a.tag, deadline_s=a.deadline or None).run()
 
 
 if __name__ == "__main__":
