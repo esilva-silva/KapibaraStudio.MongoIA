@@ -4,7 +4,7 @@ Objetivo: validar, em PCs diferentes (RX 6000, RTX, Intel Arc, notebooks com iGP
 Cada máquina devolve **um arquivo** em `reports/hwmap/machines/<hostname>_<AAAAMMDD>.json` (formato no §5). **Somente leitura**: nada de escrita no MongoDB nem em `Repos/`.
 
 ## 0. Prioridade das máquinas
-1. GTX 1060/1070/1080 (Pascal) — decide D2 e o `dml-fp32` do T0. 2. RX 6600/6700 (RDNA2). 3. RTX 3060/4060. 4. Intel Arc A/B. 5. Notebook com 780M/680M. 6. Core Ultra / Iris Xe. 7. RX Vega 56/64, RX 580. 8. GTX 1650/1660.
+1. GTX 1060/1070/1080 (Pascal) — valida a regra D2 (Pascal `unknown`; sem fp32, reprovou = CPU). 2. RX 6600/6700 (RDNA2). 3. RTX 3060/4060. 4. Intel Arc A/B. 5. Notebook com 780M/680M. 6. Core Ultra / Iris Xe. 7. RX Vega 56/64, RX 580. 8. GTX 1650/1660.
 
 ## 1. Pré-requisitos (checklist, ~5 min)
 - [ ] Windows 10 1903+ (ideal Windows 11); anote `winver`/build.
@@ -38,8 +38,9 @@ Aceite do passo: memória dedicada > 100 MB e utilização no LUID esperado; 0% 
 Opcional (harness de latência completo, exige `Repos\...\merged\sft_v3` com o tokenizador e `transformers`/`psutil` — por isso é só para PCs de desenvolvimento): `scripts\export\onnx_run.py --mode latency --provider dml --tier t1 --pkg <pacote> --n 100 --luid <LUID> --out ...` (usa os prompts reais de `reports\export\work_v3\t1_prompts.json`; a bandeira `on_7800xt` do JSON significa "no LUID passado em `--luid`" e a sonda ainda confere a iGPU antiga pelo LUID fixo — ignore o nome). Não alterar `scripts\export`.
 
 Casos especiais:
-- **Pascal:** além de T0/T1 `dml-fp16`, anote TTFT e `nvidia-smi`; **se TTFT do T0 > 1 s ou o T1 > 3 s, pare** (não é falha do roteiro: confirma o risco do FP16 a 1/64 [F S5]) e registre `notes`. Se `dml-fp32` do T0 existir, repita com ele.
-- **iGPU (notebook sem dGPU):** rodar T0 `dml-fp16` na iGPU **e** T0 `int4` na CPU; o ganho esperado é <30% ou perda (§3 do mapa).
+- **Pascal:** além de T0/T1 `dml-fp16`, anote TTFT e `nvidia-smi`; **se TTFT do T0 > 1 s ou o T1 > 3 s, pare** (não é falha do roteiro: confirma o risco do FP16 a 1/64 [F S5]) e registre `notes`. Não há variante fp32 (D2/D5).
+- **iGPU (notebook sem dGPU):** hoje vai SEMPRE para a CPU (D3, `igpu_policy: cpu_always_until_measured`). Esta medição é o que pode torná-la candidata: rodar T0 `dml-fp16` na iGPU **e** T0 `int4` na CPU e anotar o ganho (critério proposto [E]: >= 30% de ganho no TTFT e decode >= 60 tok/s para virar `candidate_after_measurement`).
+- **dGPU de 6 GB / 4 GB (D1):** rodar `scripts/hwmap/vram_curve.py` (curva de VRAM × contexto) e confirmar o `context_cap_by_vram` desta placa.
 - **Intel Arc / RTX 50 / RDNA4:** anotar erros de criação de sessão (código `0x…`) integralmente.
 
 ## 4. O que NÃO executar

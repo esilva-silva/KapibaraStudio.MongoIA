@@ -1,7 +1,7 @@
 # Mapa de compatibilidade de GPU — qual variante de autocomplete para cada placa
 
-Data: 2026-10-26 (fase 2 de medicao incluida: `reports/hwmap/phase2_measurements.md`) · Escopo: Windows 11/10, T0 Nano (0,5B) e T1 Small (1,5B), pacotes ONNX v3 (GenAI 0.15.2 = IDE; DirectML fp16/int4, CPU int4/int8).
-Tabela de decisão legível por máquina: `configs/gpu_compat.yaml` · detector: `scripts/hwmap/detect_gpus.py` · roteiro de homologação: `docs/roteiro-homologacao-hardware.md`.
+Data: 2026-10-26 (fase 2 de medição: `reports/hwmap/phase2_measurements.md`; curva VRAM × contexto: `reports/hwmap/vram_curve.md`; **decisões D1–D5 consolidadas em §9**, YAML schema 2) · Escopo: Windows 11/10, T0 Nano (0,5B) e T1 Small (1,5B), pacotes ONNX v3 (GenAI 0.15.2 = IDE; DirectML fp16/int4, CPU int4/int8).
+Tabela de decisão legível por máquina: `configs/gpu_compat.yaml` · detector: `scripts/hwmap/detect_gpus.py` · roteiro de homologação: `docs/roteiro-homologacao-hardware.md` · seleção de adaptador na IDE: `docs/prs/pr-5-selecao-de-adaptador-dml.md`.
 Contexto: `docs/fase-07-exportacao-onnx.md` (§2.3, §5), `reports/export/onnx_export_t0_t1.md`, `reports/export/prefix_cache_ttft.md`.
 
 ## 0. Convenção de evidência (leia primeiro)
@@ -28,27 +28,30 @@ Fatos já registrados em `docs/fase-07-exportacao-onnx.md` §2.3 (NuGet `Microso
 
 ## 1. Resumo executivo e árvore de decisão
 
-**Conclusão.** O DirectML fp16 que já exportamos é o caminho certo para **GPU dedicada com VRAM suficiente e FP16 nativo**; a CPU int4 é o piso universal; a iGPU quase nunca compensa. Os três pontos de maior incerteza são: **Pascal (FP16 a 1/64) [E]**, **Intel Arc/iGPUs (DML nunca medido por nós) [E]** e **a VRAM mínima do T1 (5,1 GB medidos, não 4 GB)** [M].
+**Conclusão.** O DirectML fp16 que já exportamos é o caminho certo para **GPU dedicada com VRAM suficiente e FP16 nativo**, **com teto de contexto por VRAM**; a CPU T0 int4 é o piso universal; **toda iGPU vai para a CPU nesta versão (D3)**. Os pontos de maior incerteza são: **Pascal (FP16 a 1/64) [E]**, **Intel Arc / outras dGPUs (DML nunca medido por nós) [E]** e **a VRAM do T1 conforme o comprimento do contexto** [M].
 
 - **[M] Referência:** RX 7800 XT 16 GB (624 GB/s): T1 DML fp16 TTFT 148/170 ms (média/p95), 104 tok/s; T0 DML fp16 109/124 ms. CPU (Ryzen 9 7900, 12C/24T): T0 int4 285/480 ms (229/382 com 24 threads), T1 int8 697/1.192 ms. iGPU de 2 CU RDNA2 ≈ 50× mais lenta que a 7800 XT em llama.cpp Vulkan (pp 27 × 1.395 t/s; tg 2,5 × 90 t/s) — `reports/export/onnx_export_t0_t1.md` §4–§5 e medição do usuário. **[M fase 2, GenAI-WinML 0.15.2, 100 prompts reais]:** 7800 XT T0 104 ms / 173 tok/s, T1 141 ms / 108 tok/s; CPU T0 int4 216 ms (24 thr) / 313 ms (12 thr) / 106–116 tok/s, T1 int8 535 ms (24 thr) / 786 ms (12 thr) / 28–33 tok/s; **iGPU 2 CU: T0 1.338 ms / 23 tok/s, T1 3.713 ms / 7,3 tok/s** (a CPU vence a iGPU em todos os casos).
-- **[M] VRAM de processo medida (dedicada):** T1 dml-fp16 **5.133 MB**, T0 dml-fp16 **2.933 MB** (bem acima do tamanho do pacote: buffers/KV do DML) → o limiar "≥ 4 GB → T1" do pedido original **não se sustenta**: placas de 4 GB não comportam T1. O YAML usa T1 ≥ 5.900 MB (placas de 6 GB, que o DXGI reporta ~6.144 MB) e T0 ≥ 3.500 MB. **Decisão D1 do usuário.**
-- **Regra geral:** dGPU elegível e `supported ≠ false` → T1 dml-fp16 (VRAM ≥ 5.900 MB) ou T0 dml-fp16 (≥ 3.500 MB); família `unknown`/Pascal/Intel/Blackwell → mesma variante **só após o micro-benchmark**; iGPU → CPU, salvo as de ≥ ~4 TFLOPS (780M/680M/890M/Arc de Core Ultra), que são *candidatas* a T0 DML sujeitas ao micro-benchmark; CPU sempre T0 int4 no autocomplete; T1 int8 na CPU só como opção (chat/qualidade) com **≥ 12 núcleos físicos e ≥ 16 GB** (N=12 **[M fase 2]**: T1 int8 em 4/6/8/12/16/20/24 threads = 2.224/1.452/1.133/786/685/608/535 ms de TTFT médio; o 7900 reprova o gate 500/650 até com 24 threads; T0 int4: 884/613/440/313/256/219/216 ms; abaixo de 12 threads o T1 passa de ~1,1 s [M]; threads ≠ núcleos físicos isolados, ver phase2 §D).
+- **[M] VRAM de processo × contexto (curva, n = 10 por ponto, `reports/hwmap/vram_curve.md`):** pico dedicado **máximo** para contexto total de 302 / 544 / 800 / 1.056 / 1.568 / 2.048 tokens — **T0** 1.858 / 2.337 / 2.465 / 3.246 / 3.510 / 5.560 MB; **T1** 4.064 / 4.526 / 4.654 / 5.452 / 5.708 / **7.759 MB**. Os limiares originais (T1 ≥ ~6 GB, T0 ≥ 3,5 GB) valem para o regime de autocomplete (prompts de ~270–700 tokens); o **contexto maior é limitado por uma regra de teto por VRAM** (D1): T1 dml-fp16 só em dGPU com **≥ 8 GB** (contexto cheio de 2.048 → YAML `t1_full_min_vram_mb` 8.150 MB; 8 GB reporta ~8.176); entre **~6 e 8 GB** (6.100–8.149 MB) só T1 com **teto de 1.536 tokens e se o micro-benchmark aprovar**, senão T0; **T0 dml-fp16 com ≥ 3,5 GB** com teto proporcional (3.500 → 768, 3.650 → 1.024, 3.900 → 1.536, ≥ 5.950 → 2.048); < 3,5 GB ou sem DX12 → CPU.
+- **Regra geral:** dGPU elegível e `supported ≠ false` → T1 dml-fp16 (VRAM ≥ 8.150 MB, ou 6.100–8.149 com teto e micro-benchmark) ou T0 dml-fp16 (≥ 3.500 MB, teto proporcional); família `unknown` (Pascal, Polaris, nome novo), Intel Arc e Blackwell → mesma variante **só após o micro-benchmark** (Pascal/Polaris reprovando → CPU T0 int4 direto; **sem variante fp32**, D2); **iGPU → sempre CPU** (`igpu_policy: cpu_always_until_measured`, D3; 680M/780M/880M/890M/8060S, Arc de Core Ultra e Iris Xe **não são candidatas** até haver medição real); CPU sempre T0 int4 no autocomplete; **T1 int8 em CPU só como modo opcional e declaradamente lento, escolha do usuário, nunca padrão** (≥ 12 núcleos físicos e ≥ 16 GB; não cumpre o gate de TTFT: 535 ms a 24 thr, 786 ms a 12 — D4). **Nenhuma variante nova agora (D5).** A saída do detector inclui `context_cap_tokens`.
+- **Seleção do adaptador (achado de produto):** o GenAI-WinML 0.15.2 ignora `device_id`/`device_filter`/`performance_preference`/`device_filtering_options` e usa o adaptador padrão do DirectML (neste PC, a 7800 XT; num notebook híbrido, provavelmente a iGPU). A IDE deve validar o adaptador **efetivo** e cair para a CPU se for iGPU/WARP/lento: `docs/prs/pr-5-selecao-de-adaptador-dml.md`.
 
 ```
 início ─ enumerar adaptadores DXGI (nunca pelo índice: vendor/device/VRAM)
   │
   ├─ descartar: software/WARP (0x1414), VM, supported=false
   │
-  ├─ há dGPU (não integrada) elegível?
-  │     ├─ VRAM ≥ 5.900 MB ─────────► T1 dml-fp16   ┐  se família confiança alta e medida (RDNA3, Ampere/Ada...)  → aceita direto [E]
-  │     ├─ 3.500 ≤ VRAM < 5.900 ────► T0 dml-fp16   ┘  senão (Pascal, Polaris, Intel, Blackwell, unknown) → micro-benchmark antes de aceitar
-  │     └─ VRAM < 3.500 MB ─────────► CPU
+  ├─ iGPU (qualquer uma)? ──► IGNORAR / CPU  (D3: igpu_policy cpu_always_until_measured; só uma dGPU elegível assume)
   │
-  ├─ só iGPU?  ≥ ~4 TFLOPS (780M, 680M, 890M, Arc Core Ultra) ─► candidata T0 dml-fp16 + micro-benchmark (vence a CPU por ≥ 30%? senão CPU)
-  │            demais (Vega 3–11, 610M, UHD, Iris Xe*, Gen ≤ 9) ─► CPU   (*Iris Xe: candidata opcional ao micro-benchmark)
+  ├─ há dGPU (não integrada) elegível?  (VRAM dedicada do DXGI)
+  │     ├─ VRAM ≥ 8.150 MB (placa de 8 GB+) ───► T1 dml-fp16, contexto até 2.048          ┐ família medida/alta confiança → aceita direto [E];
+  │     ├─ 6.100 ≤ VRAM < 8.150 (6–8 GB) ──────► T1 dml-fp16 com teto 1.536 SÓ se o      │ senão (Pascal, Polaris, Intel, Blackwell, unknown)
+  │     │                                         micro-benchmark aprovar; senão T0       │ → micro-benchmark antes de aceitar
+  │     ├─ 3.500 ≤ VRAM < 6.100 ────────────────► T0 dml-fp16, teto 768/1.024/1.536/2.048 ┘ (Pascal/Polaris reprovando → CPU T0 int4, D2)
+  │     └─ VRAM < 3.500 MB ────────────────────► CPU
   │
-  └─ CPU: T0 cpu-int4 (autocomplete). T1 cpu-int8 só se ≥ 12 núcleos físicos e ≥ 16 GB (opcional, chat)
+  └─ CPU: T0 cpu-int4 (autocomplete, sempre). T1 cpu-int8 só como modo opcional e lento, escolha do usuário (≥ 12 núcleos físicos e ≥ 16 GB), nunca padrão (D4)
   fallback de qualquer falha de DML/GPU ─► T0 cpu-int4
+  IDE: validar o adaptador DXGI EFETIVO (PR-5) — o GenAI 0.15.2 ignora device_id
 ```
 
 ## 2. Tabela por família
@@ -61,10 +64,10 @@ Mínimos de plataforma comuns [F]: Windows 10 1903+ para o DirectML (S1); DX12 (
 | Família | DX12 / driver | FP16 | INT8 / matriz | VRAM · banda | Classe T0 / T1 | Variante (regra) | Riscos |
 |---|---|---|---|---|---|---|---|
 | GTX 9xx e anteriores (Maxwell/Kepler/Fermi) | DX12 FL 11_0–12_1; DML roda em Kepler+ [F S2]; Maxwell em driver *security-only* [F S8] | sem ganho | sem dp4a | 2–6 GB · 80–225 GB/s | C / C | **NÃO SUPORTADA** → CPU T0 int4 | política: abaixo da fronteira GTX 1000 [E] |
-| **GTX 10 (Pascal GP10x)**, MX150/250, GT 1030 | FL 12_1; driver R580 *security-only* [F S8] | **1/64 do FP32 nas GP10x de consumo [F S5, S6]** | `dp4a` existe [F S5]; uso pelo DML [E] desconhecido | 2–11 GB · 48–484 GB/s (1060 6 GB: 192) | T0: B/C ?; T1: C ? **[E] — sem medida** | `unknown` → T1 (≥ 5.900 MB) ou T0 (≥ 3.500 MB) **só com micro-benchmark**; fallback CPU. GT 1030/MX/1050 2 GB → CPU | **maior risco do mapa**: se o DML executar FP16 nativo no Pascal, o prefill de ~270 tokens do T1 (~0,8 TFLOP) levaria > 10 s (1060: FP32 4,4 TFLOPS → FP16 ~70 GFLOPS) [E]; se converter para FP32 em shader, é aceitável [E]. Testar `dml-fp32`/`dml-int4` (§5.2) |
-| GTX 16 (Turing TU116/TU117) | FL 12_1 | 2× FP32 [E] (sem Tensor Cores) | dp4a [E] | 4–6 GB · 112–336 GB/s | T0 B; T1 B | 4 GB (1650) → **T0 dml-fp16**; 6 GB (1660/Super/Ti) → T1 no limite (5.900 MB) | 6 GB reportado ~6.100 MB: margem pequena; micro-benchmark confirma |
-| RTX 20 (Turing) | FL 12_1 | 2× [E] | dp4a + Tensor [E] | 6–24 GB · 336–672 GB/s | A/B | T1 dml-fp16 (≥ 5.900 MB) | RTX 2060 6 GB no limite de VRAM |
-| RTX 30 (Ampere) | FL 12_2 | sim | Tensor gen 3 | 6–24 GB · 168–936 GB/s | A (3060+) | T1 dml-fp16 | 3050 6 GB (96–168 GB/s): banda baixa — T1 decode pode cair <~40 tok/s [E] |
+| **GTX 10 (Pascal GP10x)**, MX150/250, GT 1030 | FL 12_1; driver R580 *security-only* [F S8] | **1/64 do FP32 nas GP10x de consumo [F S5, S6]** | `dp4a` existe [F S5]; uso pelo DML [E] desconhecido | 2–11 GB · 48–484 GB/s (1060 6 GB: 192) | T0: B/C ?; T1: C ? **[E] — sem medida** | `unknown` (D2) → T1 (6.100–8.149 MB: teto 1.536; ≥ 8.150: 2.048) ou T0 (≥ 3.500 MB) **só com micro-benchmark**; **reprovou → CPU T0 int4** (sem fp32). GT 1030/MX/1050 2 GB → CPU | **maior risco do mapa**: se o DML executar FP16 nativo no Pascal, o prefill de ~270 tokens do T1 (~0,8 TFLOP) levaria > 10 s (1060: FP32 4,4 TFLOPS → FP16 ~70 GFLOPS) [E]; se converter para FP32 em shader, é aceitável [E]. Sem variante fp32 (D2; o builder 0.15.2 não gera FP32+DML válido [M]) |
+| GTX 16 (Turing TU116/TU117) | FL 12_1 | 2× FP32 [E] (sem Tensor Cores) | dp4a [E] | 4–6 GB · 112–336 GB/s | T0 B; T1 B | 4 GB (1650) → **T0 dml-fp16**, teto 1.536; 6 GB (1660/Super/Ti) → faixa com teto: T1 teto 1.536 só com micro-benchmark aprovado, senão T0 | 6 GB reportado ~6.144 MB (piso do T1 = 6.100): margem pequena |
+| RTX 20 (Turing) | FL 12_1 | 2× [E] | dp4a + Tensor [E] | 6–24 GB · 336–672 GB/s | A/B | T1 dml-fp16 (≥ 8.150 MB: 2.048; 6 GB: teto 1.536 + micro-benchmark) | RTX 2060 6 GB na faixa com teto |
+| RTX 30 (Ampere) | FL 12_2 | sim | Tensor gen 3 | 6–24 GB · 168–936 GB/s | A (3060+) | T1 dml-fp16 | 3050 6 GB (96–168 GB/s): faixa com teto (T1 1.536 + micro-benchmark) e banda baixa — T1 decode pode cair <~40 tok/s [E] |
 | RTX 40 (Ada) | FL 12_2 | sim | Tensor gen 4 | 8–24 GB · 272–1.008 GB/s | A | T1 dml-fp16 | — |
 | RTX 50 (Blackwell) | FL 12_2 | sim | Tensor gen 5 | 8–32 GB · 448–1.792 GB/s | A [E] | T1 dml-fp16 **com micro-benchmark** | hardware/driver recentes, sem teste nosso; DML "legacy" pode ficar atrás [E] |
 | MX/laptops Max-Q | variam | variam | variam | 2–8 GB | variam | por device_id; "unknown" → micro-benchmark | híbrido NVIDIA+iGPU: o adaptador padrão do Windows costuma ser a iGPU [F S2: "device 0 nem sempre é a mais rápida"] → sempre escolher por vendor/device/VRAM |
@@ -74,17 +77,17 @@ Mínimos de plataforma comuns [F]: Windows 10 1903+ para o DirectML (S1); DX12 (
 | Família | DX12 / driver | FP16 | INT8 / matriz | VRAM · banda | Classe T0 / T1 | Variante | Riscos |
 |---|---|---|---|---|---|---|---|
 | Pré-Polaris (GCN1–3, TeraScale, Fury) | FL 11_1–12_0; DML aceita GCN 1ª ger.+ [F S2] | não | não | 2–4 GB | C / C | **NÃO SUPORTADA** → CPU | drivers abandonados [E] |
-| **Polaris (RX 400/500)** — *abaixo de Vega* | FL 12_0; driver *legacy* [F S9] | sem Rapid Packed Math [E] | sem dp4a [E] | 4–8 GB · 112–256 GB/s | ? / ? **[E]** | `unknown`: T1 (8 GB) ou T0 com micro-benchmark; fallback CPU | RX 580 é popular: homologar |
-| **Vega** (RX Vega 56/64, Radeon VII) | FL 12_1; driver *legacy* [F S9] | 2× (RPM) [E] | limitado [E] | 8–16 GB HBM2 · 410–1.024 GB/s | B / B (banda alta) [E] | **T1 dml-fp16** (≥ 5.900 MB) | driver legacy: bugs DX12 não corrigidos [E]; Vega 56 8 GB é candidata forte |
+| **Polaris (RX 400/500)** — *abaixo de Vega* | FL 12_0; driver *legacy* [F S9] | sem Rapid Packed Math [E] | sem dp4a [E] | 4–8 GB · 112–256 GB/s | ? / ? **[E]** | `unknown` (D2): T1 (8 GB) ou T0 **só com micro-benchmark**; reprovou → CPU T0 int4 | RX 580 é popular: homologar; sem fp32 |
+| **Vega** (RX Vega 56/64, Radeon VII) | FL 12_1; driver *legacy* [F S9] | 2× (RPM) [E] | limitado [E] | 8–16 GB HBM2 · 410–1.024 GB/s | B / B (banda alta) [E] | **T1 dml-fp16** (8 GB: contexto 2.048) | driver legacy: bugs DX12 não corrigidos [E]; Vega 56 8 GB é candidata forte |
 | iGPU Vega 3–11 (Raven/Picasso/Renoir/Cezanne/Barcelo) | FL 12_1 | 2× [E] | limitado | compartilhada (DDR4 38–51 GB/s) | C / C | **CPU** | ≤ ~2,2 TFLOPS e banda de DDR4: pior que a CPU [E] |
-| RX 5000 (RDNA1) | FL 12_1 | 2× [F S10] | dp4a em Navi 10 incerto [E] | 4–8 GB · 112–448 GB/s | B / B [E] | 4 GB (5500 XT) → T0; 6–8 GB → T1 | sem medida; sem WMMA |
-| RX 6000 (RDNA2) | FL 12_1/12_2 | 2× [E] | dot4; sem WMMA | 4–16 GB · 144–512 GB/s | B–A [E] | 6400/6500 XT (4 GB) → T0; 6600+ (8 GB) → T1 | prioridade nº 1 de homologação |
+| RX 5000 (RDNA1) | FL 12_1 | 2× [F S10] | dp4a em Navi 10 incerto [E] | 4–8 GB · 112–448 GB/s | B / B [E] | 4 GB (5500 XT) → T0 (teto 1.536); 6 GB → T1 teto 1.536 + micro-benchmark; 8 GB → T1 | sem medida; sem WMMA |
+| RX 6000 (RDNA2) | FL 12_1/12_2 | 2× [E] | dot4; sem WMMA | 4–16 GB · 144–512 GB/s | B–A [E] | 6400/6500 XT (4 GB) → T0 (teto 1.536); 6600/6600 XT/6650 XT (8 GB) → T1 (contexto 2.048); 6 GB (RX 6600 LE/OEM) → T1 teto 1.536 + micro-benchmark | prioridade nº 1 de homologação |
 | **RX 7000 (RDNA3)** | FL 12_2 | 2× | WMMA | 8–24 GB · 288–960 GB/s | **A [M] (7800 XT)** | **T1 dml-fp16 [M]** | 7600 (288 GB/s) deve ficar ~2× atrás da 7800 XT no decode [E] |
 | RX 9000 (RDNA4) | FL 12_2 | 2× | WMMA gen 2 | 8–32 GB · 320–640 GB/s | A [E] | T1 dml-fp16 com micro-benchmark | sem teste nosso |
-| iGPU 610M / "Radeon Graphics" 2 CU (Raphael) | FL 12_x | sim | dot4 | compartilhada | **C [M]** (piso) | **CPU** | medida neste PC: ~50× mais lenta que a 7800 XT |
-| iGPU 660M/680M (RDNA2 6–12 CU) | FL 12_x | sim | dot4 | LPDDR5/DDR5 75–100 GB/s | B/C [E] | candidata T0 dml-fp16 + micro-benchmark | empata com CPU de desktop; ganha de CPU de notebook 4–8 núcleos [E] |
-| iGPU 780M/760M/880M/890M (RDNA3/3.5 8–16 CU) | FL 12_x | sim | WMMA | 90–120 GB/s | B [E] | candidata T0 dml-fp16 + micro-benchmark; **T1 não** | banda compartilhada limita decode do T1 a ~25–35 tok/s [E] |
-| iGPU 8060S (Strix Halo, 40 CU) | FL 12_x | sim | WMMA | até ~256 GB/s; VRAM = *carve-out* configurável | B/A [E] | T1 dml-fp16 com micro-benchmark | `DedicatedVideoMemory` não é confiável (0,5–96 GB) → usar RAM total |
+| iGPU 610M / "Radeon Graphics" 2 CU (Raphael) | FL 12_x | sim | dot4 | compartilhada | **C [M]** (piso) | **CPU** (D3) | medida neste PC: ~50× mais lenta que a 7800 XT em llama.cpp; 13× (T0) / 26× (T1) no DML e a CPU vence em todos os casos |
+| iGPU 660M/680M (RDNA2 6–12 CU) | FL 12_x | sim | dot4 | LPDDR5/DDR5 75–100 GB/s | B/C [E] | **CPU** (D3: não candidata até medir; `candidate_after_measurement` T0 dml-fp16) | empata com CPU de desktop; talvez ganhe de CPU de notebook 4–8 núcleos [E], sem medida |
+| iGPU 780M/760M/880M/890M (RDNA3/3.5 8–16 CU) | FL 12_x | sim | WMMA | 90–120 GB/s | B [E] | **CPU** (D3: não candidata até medir; depois só T0, **T1 não**) | banda compartilhada limita decode do T1 a ~25–35 tok/s [E] |
+| iGPU 8060S (Strix Halo, 40 CU) | FL 12_x | sim | WMMA | até ~256 GB/s; VRAM = *carve-out* configurável | B/A [E] | **CPU** (D3: não candidata até medir) | `DedicatedVideoMemory` não é confiável (0,5–96 GB) → usar RAM total quando for medida |
 
 ### 2.3 Intel (PCI 0x8086)
 
@@ -92,30 +95,31 @@ Mínimos de plataforma comuns [F]: Windows 10 1903+ para o DirectML (S1); DX12 (
 |---|---|---|---|---|---|---|---|
 | Pré-Gen9 (HD 2000–5000, Gen6–8) | DML "Haswell+" [F S2]; sem FP16 útil | não | não | compartilhada | C / C | **NÃO SUPORTADA** → CPU | — |
 | UHD/HD Gen9–Gen11, UHD Xe-LP 24–32 EU (UHD 630/730/750/770) | FL 12_0/12_1 | 2× [E] | dp4a Gen11+ [E] | DDR4 38–51 GB/s; 0,4–0,8 TFLOPS | C / C [E] | **CPU** | menos compute que o piso medido (2 CU ≈ 1,1 TFLOPS) [E] |
-| Iris Xe (Gen12 80–96 EU) | FL 12_1; iGPU Alder Lake+ citada no Windows ML [F S11] | 2× | dp4a | LPDDR4x/DDR4 51–68 GB/s; ~2 TFLOPS | C/B [E] | **CPU**; candidata opcional ao micro-benchmark (T0) | pode empatar com CPU de notebook fraco |
-| Arc A-series (Alchemist) | FL 12_2; Arc A310+ citada [F S11] | sim | dp4a + XMX | 6–16 GB · 186–560 GB/s | A/B [E] | A750/A770 (8–16 GB) → T1; A380 (6 GB) → T1 elegível pela VRAM mas banda baixa (186 GB/s), o micro-benchmark decide; A310 (4 GB) → T0 — sempre **com micro-benchmark** | histórico de drivers DX12 irregular [E]; DML nunca medido por nós |
+| Iris Xe (Gen12 80–96 EU) | FL 12_1; iGPU Alder Lake+ citada no Windows ML [F S11] | 2× | dp4a | LPDDR4x/DDR4 51–68 GB/s; ~2 TFLOPS | C/B [E] | **CPU** (D3: não candidata até medir) | pode empatar com CPU de notebook fraco, sem medida |
+| Arc A-series (Alchemist) | FL 12_2; Arc A310+ citada [F S11] | sim | dp4a + XMX | 6–16 GB · 186–560 GB/s | A/B [E] | A750/A770 (8–16 GB) → T1; A380 (6 GB) → faixa com teto (T1 1.536 só com micro-benchmark; banda 186 GB/s), senão T0; A310 (4 GB) → T0 teto 1.536 — sempre **com micro-benchmark** | histórico de drivers DX12 irregular [E]; DML nunca medido por nós |
 | Arc B-series (Battlemage) | FL 12_2; B580+ citada [F S11] | sim | XMX | 10–12 GB · 456 GB/s | A [E] | T1 com micro-benchmark | hardware recente, sem teste |
-| iGPU Arc de Core Ultra (Meteor/Arrow-H/Lunar Lake) | iGPU 12ª ger.+ [F S11] | sim | XMX (Lunar) / dp4a | LPDDR5X 90–135 GB/s; ~4–4,6 TFLOPS | B [E] | candidata T0 dml-fp16 + micro-benchmark | Arrow Lake desktop (4 Xe cores, ~2 TFLOPS) casa pelo mesmo nome e é mais fraca [E] |
+| iGPU Arc de Core Ultra (Meteor/Arrow-H/Lunar Lake) | iGPU 12ª ger.+ [F S11] | sim | XMX (Lunar) / dp4a | LPDDR5X 90–135 GB/s; ~4–4,6 TFLOPS | B [E] | **CPU** (D3: não candidata até medir) | Arrow Lake desktop (4 Xe cores, ~2 TFLOPS) casa pelo mesmo nome e é mais fraca [E] |
 
 ## 3. iGPU × CPU
 
 **Dado de piso [M]:** 2 CU RDNA2 (≈ 1,1 TFLOPS FP32 de pico [E]): pp 27 t/s no 7B Q5_K_M ⇒ ~0,38 TFLOPS efetivos (2·7e9·27) [E, derivado]. O mesmo cálculo na 7800 XT dá ~19 TFLOPS efetivos (53% de ~37 de pico).
 **Medido na fase 2 [M] (ONNX/DML, prompts reais de ~260 tokens):** T0 dml-fp16 na iGPU TTFT 1.338 ms (p95 2.223), 23 tok/s forçado, vs CPU 216–313 ms e 106–119 tok/s e 7800 XT 104 ms / 173 tok/s; T1: iGPU 3.713 ms / 7,3 tok/s vs CPU int8 535–786 ms / 28–33 tok/s e 7800 XT 141 ms / 108 tok/s. A estimativa de "~0,7 s de prefill" abaixo era otimista (real 1,3 s). A iGPU usa ~370–410 MB dedicados + 2,2–4,9 GB compartilhados; RAM de pico 3,5 GB (T0) / 5,7 GB (T1).
-**Extrapolação para o T0 [E; para 2 CU substituída pela medida acima]** (0,5B ⇒ ~2·0,5e9·270 = 0,27 TFLOP de prefill [E]): iGPU de 2 CU ≈ 0,7 s de prefill (> CPU 285 ms [M]) → CPU vence. Uma iGPU de 12 CU RDNA3 (~8 TFLOPS de pico) levaria ~0,1 s no regime do llama.cpp; mas o DML do ORT atingiu só ~2,5 TFLOPS efetivos no T0 e ~5,5 no T1 da 7800 XT [M, derivado: 109 ms e 148 ms para 0,27/0,81 TFLOP, com sobrecarga fixa de dezenas de ms] — logo uma 780M tende a **empatar** (~250–350 ms) com a CPU de desktop de 12 núcleos e a ganhar de CPU de notebook (4–8 núcleos: 400–700 ms [E, da escala 4thr 731/8thr 406 ms]). **Conclusão [E]: só vale a pena iGPU com ≥ ~4 TFLOPS e, mesmo assim, apenas se o micro-benchmark confirmar ≥ 30% de ganho sobre a CPU do mesmo PC.**
+**Extrapolação para o T0 [E; para 2 CU substituída pela medida acima]** (0,5B ⇒ ~2·0,5e9·270 = 0,27 TFLOP de prefill [E]): iGPU de 2 CU ≈ 0,7 s de prefill (> CPU 285 ms [M]) → CPU vence. Uma iGPU de 12 CU RDNA3 (~8 TFLOPS de pico) levaria ~0,1 s no regime do llama.cpp; mas o DML do ORT atingiu só ~2,5 TFLOPS efetivos no T0 e ~5,5 no T1 da 7800 XT [M, derivado: 109 ms e 148 ms para 0,27/0,81 TFLOP, com sobrecarga fixa de dezenas de ms] — logo uma 780M tende a **empatar** (~250–350 ms) com a CPU de desktop de 12 núcleos e a ganhar de CPU de notebook (4–8 núcleos: 400–700 ms [E, da escala 4thr 731/8thr 406 ms]). **Conclusão [E] da versão anterior (substituída pela decisão D3, §9):** a extrapolação errou por ~2× na única iGPU medida (previa 0,7 s, mediu 1,3 s), então ela **não** é base para colocar uma iGPU maior em produção. **D3: toda iGPU vai para a CPU nesta versão** (`igpu_policy: cpu_always_until_measured`); as iGPUs maiores (680M/780M/880M/890M/8060S, Arc de Core Ultra, Iris Xe) **não são candidatas** até haver medição real nelas pelo roteiro de homologação, e só então a política pode ser revista (≥ 30% de ganho sobre a CPU do mesmo PC era o critério proposto [E]).
 **Banda [E, especificação]:** DDR4-3200 dual = 51 GB/s; DDR5-5600 dual = 90; LPDDR5X-7500 128-bit = 120; GDDR6 da 7800 XT = 624 [M]. O decode do T1 fp16 (3 GB lidos/token) fica limitado a ~17 tok/s em 51 GB/s, ~30 em 90, ~40 em 120 [E, 3 GB/token] — por isso **T1 em iGPU não é recomendado**. O decode do T0 (1 GB/token) = 50/90/120 tok/s [E] é suficiente.
 **CPU também disputa a mesma RAM**: iGPU e CPU dividem banda; o ganho da iGPU é de compute (prefill), não de banda.
-Em PC com dGPU, a iGPU é **sempre ignorada** (teste `test_this_pc_ignores_igpu_and_warp_regardless_of_order`), como o contador de GPU confirmou [M] (0 MB e 0% na iGPU, `onnx_export_t0_t1.md` §2).
+Em PC com dGPU, a iGPU é **sempre ignorada** (e sem dGPU elegível também vai para a CPU, D3) (teste `test_this_pc_ignores_igpu_and_warp_regardless_of_order`), como o contador de GPU confirmou [M] (0 MB e 0% na iGPU, `onnx_export_t0_t1.md` §2).
 
 ## 4. Mapa de NÃO SUPORTADAS (fronteira)
 
 | Hardware | Motivo | Comportamento |
 |---|---|---|
 | NVIDIA Fermi/Kepler/Maxwell (GTX 400–900, GT 7xx, GTX 750) | abaixo de GTX 1000 por política [E]; DML roda em Kepler+ [F S2] mas sem FP16 acelerado; Maxwell *security-only* [F S8] | CPU T0 int4; override avançado manual |
-| NVIDIA com < 3,5 GB (GTX 1050 2 GB, GT 1030, MX150/250 2 GB, 1060 3 GB) | VRAM < T0 (2.933 MB medidos no processo) [M] | CPU |
+| NVIDIA/AMD/Intel dGPU com < 3,5 GB (GTX 1050 2 GB, GT 1030, MX150/250 2 GB, 1060 3 GB) | VRAM < piso do T0 (D1: 3,5 GB; pico 1,9–2,9 GB no regime típico e 5,6 GB em contexto cheio [M]) | CPU |
 | AMD pré-Polaris (GCN1–3, TeraScale, R9 200/300, Fury) | sem FP16, drivers abandonados [E]; DML aceita GCN1+ [F S2] | CPU |
-| AMD Polaris (RX 4xx/5xx) | **fronteira "unknown"**, não "não suportada": GCN4 sem FP16 empacotado, driver *legacy* [F S9] | micro-benchmark; senão CPU |
+| AMD Polaris (RX 4xx/5xx) e NVIDIA Pascal (GTX 10) | **fronteira "unknown"** (D2), não "não suportada": GCN4 sem FP16 empacotado, driver *legacy* [F S9]; Pascal GP10x FP16 a 1/64 [F S5] | micro-benchmark; **reprovou → CPU T0 int4** (sem variante fp32) |
 | Intel pré-Gen9 / sem DX12 | sem DX12 pleno/FP16 [E] | CPU |
 | Intel UHD/HD Gen9–11, UHD 24–32 EU | suportado mas "não recomendado": mais lento que a CPU [E] | CPU |
+| **Toda iGPU** (inclui 680M/780M/880M/890M/8060S, Arc de Core Ultra, Iris Xe, Vega 3–11, 610M) | D3: a iGPU de 2 CU mediu 13× (T0) / 26× (T1) mais lenta que a 7800 XT e perde para a CPU em todos os casos [M]; as maiores são [E] e **não são candidatas até haver medição real** | CPU (`igpu_policy: cpu_always_until_measured`) |
 | Adaptadores de software (Microsoft Basic Render Driver, WARP), Hyper-V/RDP sem GPU | sem hardware DX12 [F S1] | CPU |
 | Qualcomm Adreno / NPUs (Ryzen AI, Intel NPU, Snapdragon) | fora desta versão (§7) | CPU |
 | Windows < 10 1903 | DirectML introduzido no 1903 [F S1] | CPU |
@@ -131,7 +135,7 @@ Em PC com dGPU, a iGPU é **sempre ignorada** (teste `test_this_pc_ignores_igpu_
 - *Pascal GP10x:* FP16 a 1/64 [F S5]. O ORT/DML pode converter para FP32 (nesse caso o `dml-fp16` já serve) ou executar FP16 lento [E]. A GTX 1060 (6 GB) é o caso crítico: o T1 em fp32 pesa ~5,9 GB (`fp32-cpu` é 5.916 MB [M]) e não cabe; o **T0 em fp32 (~1,9 GB; `fp32-cpu` 1.904 MB [M])** caberia em ≥ 4 GB. O `dml-int4` (T0 544 MB; T1 1,29 GB [M]) usa ativações fp16 (não resolve o FP16 lento) e o T1 int4 perde 1,4–1,8 p.p. (fora de cogitação).
 - *Medido na fase 2 [M] (7800 XT, T0; `phase2_measurements.md` §B):* o builder 0.15.2 **não exporta `dml-fp32` válido** (FP32+DML não está na lista de combinações válidas; o grafo sai sem `present.*` e o ORT recusa o carregamento). Com monkeypatch (MHA, sem graph capture) obtém-se um fp32 de 1.908 MB (2× o fp16), +1,3 GB de VRAM, prefill +~35% sobre o fp16 no mesmo caminho de atenção, paridade igual (94% × 95%), mas decode de ~9 tok/s tanto em fp32 quanto em fp16 no caminho MHA (o fp16 padrão GQA+graph capture faz 173 tok/s): a lentidão é do caminho de atenção, não da precisão (~5%). `dml-int4`: 548 MB, TTFT +29%, decode +30%, **paridade greedy 72%** (reprovado). O benefício do fp32 em Pascal continua **[E]** (sem GPU).
 - *Teste recomendado em Pascal (continua [PENDENTE]):* numa GP106/GP104, rodar `onnx_run.py --mode latency` com `dml-fp16` (T0 e T1) e, **se o `dml-fp16` for lento**, gerar `dml-fp32` do T0 (`build_variants.py`, `-p fp32 -e dml`; não suportado pelo `build_variants.py` atual, que só tem `dml-fp16` e `dml-int4` [M: `scripts/export/README.md`]) e comparar. DML **int8** não existe no builder 0.15.2 (o `-p int8` gera grafo inválido e o contorno é CPU-only [M]) → descartar.
-- Decisão provisória: Pascal = `unknown`/micro-benchmark; **não** criar variante nova até o teste.
+- **Decisão D2 (DECIDIDO, 2026-10-26):** Pascal = `unknown` decidido pelo micro-benchmark; **sem variante fp32** (o builder 0.15.2 não aceita FP32+DML e o remendo cai a ~9 tok/s); reprovou → CPU T0 int4.
 
 **(iii) Backend/export extra para NVIDIA, Intel, AMD?** **Não agora.**
 | Opção | O que exigiria | Ganho [E] | Custo/risco | Veredito |
@@ -155,13 +159,13 @@ Em PC com dGPU, a iGPU é **sempre ignorada** (teste `test_this_pc_ignores_igpu_
 | | Itens |
 |---|---|
 | **Manter** | T0 `dml-fp16`, T1 `dml-fp16`, T0 `int4` (CPU), T1 `int8` (CPU) — os quatro já medidos e suficientes para o mapa |
-| **Adicionar (condicional, fase 2)** | T0 `dml-fp32` **somente se** o teste em Pascal mostrar `dml-fp16` > 2× pior que a expectativa (ex.: TTFT T0 > 1 s) — ~1,9 GB, ≥ 4 GB VRAM |
+| **Adicionar** | **Nada agora (D5).** `dml-fp32` do T0 deixou de ser condicional (D2): não é gerável pelo builder 0.15.2; reavaliar quando houver builder/ORT GenAI mais novo |
 | **NÃO fazer** | CUDA / TensorRT-RTX / OpenVINO / MIGraphX / GGUF como variantes agora; `dml-int4` para o T1 (−1,8 p.p., [M]); exports por vendor; pacote por família |
 | **Spikes (sem pacote)** | OpenVINO numa Arc/Core Ultra; WebGPU EP; registro de EPs do Windows ML |
 
 ## 6. Micro-benchmark de primeira execução e fallback seguro (desenho)
 
-**Quando:** no primeiro uso de uma variante GPU com `needs_microbench: true` (qualquer família `unknown`, Pascal, Polaris, Blackwell, Intel, iGPU candidata) e quando o cache invalida. Para famílias medidas/de alta confiança (RDNA3, Ampere/Ada) roda em segundo plano, sem bloquear.
+**Quando:** no primeiro uso de uma variante GPU com `needs_microbench: true` (qualquer família `unknown`, Pascal, Polaris, Blackwell, Intel Arc, e **a faixa de 6–8 GB do T1, D1**; iGPUs não passam por ele: D3) e quando o cache invalida. Para famílias medidas/de alta confiança (RDNA3, Ampere/Ada) roda em segundo plano, sem bloquear.
 **Orçamento:** 5–10 s no total, em **processo filho isolado por candidato** (um processo por candidato; o fato de carregar um 2º modelo DML no mesmo processo já derrubou o processo [F fase-07 §2.3]).
 **Passos por candidato:** (1) carregar o pacote com o adaptador escolhido por LUID/vendor/device (nunca pelo índice) e conferir por contador que a memória dedicada subiu **nesse** LUID e não na iGPU (como `gpu_probe.ps1`/`onnx_run.py --mode verify` [M]); (2) 1 aquecimento descartado; (3) prefill de ~270 tokens (mediana medida 260; `microbench.prompt_tokens`) e 32 tokens de decodificação, 3 repetições; (4) mediana de TTFT e tok/s; (5) também medir a CPU T0 int4 (a mesma carga) se ainda não houver medida da CPU neste PC.
 **Aceite (calibrado na fase 2, [M] só para 7800 XT/RDNA3 e CPU Zen 4 deste PC; ver `microbench` no YAML):** GPU aceita se `TTFT_p50 ≤ 250 ms` (T0; era 350 [E]) / `≤ 250 ms` (T1), `decode ≥ 60 tok/s` (T0; era 25 [E]) / `≥ 40` (T1), **e** `TTFT_gpu ≤ 0,7 × TTFT_cpu(T0 int4)` (T0) / `≤ 1,0 ×` (T1: 170/231 = 0,74; com 0,7 a própria 7800 XT reprovaria). Dados (10 execuções, processo novo cada): 7800 XT T1 170 ms (160–181) e 82,7 tok/s; T0 121 ms (108–127) e 131 tok/s; CPU T0 231 ms; iGPU T0 1.347 ms / 21 tok/s, T1 3.488 ms / 8,1 tok/s. Tempo por candidato (parede): 7800 XT T1 6,3 s, T0 4,2 s, CPU T0 4,8 s, CPU T1 10,4 s, **iGPU T0 14,9 s, T1 34 s** (a iGPU lenta estoura os 10 s ⇒ abortar no aquecimento, proposta). Dispersão entre execuções: TTFT 1,5–5,4%, tok/s 1,4–3,1% (iGPU 5–9%). Se o T1 falhar mas o T0 passar → T0 DML; se ambos falharem → CPU T0 int4.
@@ -181,15 +185,65 @@ Feitas neste PC (`reports/hwmap/phase2_measurements.md/.json`; n=100 prompts rea
 3. **[M] Micro-benchmark** (10 execuções por candidato, 6 candidatos) e limiares calibrados (§6).
 4. **[M] Curva de threads** T0 int4 e T1 int8 (4–24) — N=12 consistente (§1).
 5. **[M] VRAM de processo:** T0 2,5–2,9 GB, T1 4,8–5,1 GB com prompts de autocomplete; **5,4 GB (T0) / 7,6 GB (T1) com contexto de 2.048 tokens**.
+6. **[M] Curva VRAM × contexto (`reports/hwmap/vram_curve.md`, 120 execuções, n = 10 por ponto):** T0 1.858 / 2.337 / 2.465 / 3.246 / 3.510 / 5.560 MB e T1 4.064 / 4.526 / 4.654 / 5.452 / 5.708 / 7.759 MB (pico máximo) para contexto total 302 / 544 / 800 / 1.056 / 1.568 / 2.048 tokens; a curva é em degraus (buffers do DML), não linear; base do `context_cap_by_vram` (D1).
 
-Continuam **[E]**/pendentes: todo hardware fora deste PC (Pascal 1060/1070/1080, GTX 1650/1660, RTX 20/30/40/50, RX 5000/6000/9000, Vega 56/64, Polaris RX 580, Intel Arc A/B, Iris Xe, Core Ultra, 780M/680M); as faixas de `device_id`; a curva VRAM × comprimento do prompt (270–1.900 tokens); o fp32 em GPU de FP16 fraco; o corte de aborto no aquecimento do micro-benchmark; "núcleos físicos" ≠ threads em outras microarquiteturas; iGPUs de 6–16 CU (a de 2 CU não permite extrapolar com segurança).
+Continuam **[E]**/pendentes: todo hardware fora deste PC (Pascal 1060/1070/1080, GTX 1650/1660, RTX 20/30/40/50, RX 5000/6000/9000, Vega 56/64, Polaris RX 580, Intel Arc A/B, Iris Xe, Core Ultra, 780M/680M); as faixas de `device_id`; o fp32 em GPU de FP16 fraco; o corte de aborto no aquecimento do micro-benchmark; "núcleos físicos" ≠ threads em outras microarquiteturas; iGPUs de 6–16 CU (a de 2 CU não permite extrapolar com segurança).
 
-## 9. Decisões do usuário
+## 9. Decisões (D1–D5)
 
-- **D1** — VRAM mínima do T1: 4 GB (pedido) × **5.900 MB (proposta [M])**. Com 4 GB o T1 estoura (5.133 MB medidos no processo).
-- **D2** — Pascal: aceitar `unknown` + micro-benchmark e testar `dml-fp32` do T0 em fase 2 (recomendado) ou declarar Pascal "não suportada".
-- **D3** — iGPUs candidatas (780M/680M/890M/Arc Core Ultra) com micro-benchmark, ou simplesmente CPU (mais simples, perde ganho em notebook).
-- **D4** — CPU: T1 int8 como opção de chat com ≥ 12 núcleos/16 GB (proposto) ou nunca no autocomplete.
-- **D5** — Aprovar o plano "nenhuma nova variante agora; DML fp32 T0 condicional".
+Todas **DECIDIDAS pelo usuário em 2026-10-26**, consolidadas em `configs/gpu_compat.yaml` (schema 2: bloco `decisions`, `decision_ref` por regra/limiar, `migration`) e em `scripts/hwmap/detect_gpus.py` (testes: `scripts/hwmap/tests`). Evidência: [M] = medida neste PC (7800 XT, iGPU Raphael 2 CU, Ryzen 9 7900); o que vale fora dele é [E].
 
-**Dados da fase 2 que apoiam as decisões (sem decidi-las):** D1 — T1 4,8–5,1 GB de pico com autocomplete, 7,6 GB com contexto cheio; T0 2,5–2,9 / 5,4 GB. D2 — `dml-fp32` do T0 não é gerável pelo builder 0.15.2 (grafo inválido); via MHA é viável mas ~9 tok/s e 2× o tamanho; `dml-int4` perde paridade (72%). D3 — a iGPU de 2 CU perde da CPU em todos os casos; 6–16 CU não medidas. D4 — T1 int8 em CPU: 786 ms (12 thr) / 535 ms (24 thr), nenhum atinge o gate 500/650 ms. D5 — nenhuma variante nova foi necessária nas medições.
+### D1 — VRAM por regime de uso + teto de contexto por VRAM · **DECIDIDO** (2026-10-26)
+
+- **Decisão.** Os limiares de VRAM valem para o **regime de autocomplete típico** (prompts de ~270–700 tokens). Há uma **regra de teto de contexto por VRAM**: **T1 dml-fp16 só em GPU dedicada com ≥ 8 GB** (contexto cheio de 2.048 tokens); **entre ~6 e 8 GB** o T1 só com **teto de contexto menor** e só se o **micro-benchmark** aprovar; abaixo disso **T0**; **T0 dml-fp16 com ≥ 3,5 GB** (2,5–2,9 GB medidos no regime típico) com teto proporcional; **< 3,5 GB ou sem DX12 → CPU/não suportada**.
+- **Justificativa.** O pedido original (T1 em 4 GB) não se sustenta: o T1 mede 4,8–5,1 GB no regime típico e **7,6–7,8 GB com contexto cheio**; o T0 mede 2,5–2,9 GB e **5,4–5,6 GB** com contexto cheio. Uma placa de 6 GB comporta o T1 só enquanto o contexto for curto, e uma de 4 GB não comporta o T0 em contexto cheio — daí o teto por VRAM em vez de um único corte.
+- **Evidência [M] (curva, `reports/hwmap/vram_curve.md`; pico dedicado máximo de 10 processos por ponto, adaptador confirmado por contadores — `adapter_ok` 120/120; prompt L e `max_length` = L + 32, em 2.048 o prompt tem 2.016):**
+
+| contexto total (tokens) | 302 | 544 | 800 | 1.056 | 1.568 | 2.048 |
+|---|---|---|---|---|---|---|
+| T0 dml-fp16 — pico (MB) | 1.858 | 2.337 | 2.465 | 3.246 | 3.510 | 5.560 |
+| T1 dml-fp16 — pico (MB) | 4.064 | 4.526 | 4.654 | 5.452 | 5.708 | 7.759 |
+| TTFT mediano T0 / T1 (ms) | 116 / 155 | 122 / 162 | 128 / 190 | 146 / 228 | 224 / 331 | 324 / 570 |
+
+  Os dados da fase 2 (§E de `phase2_measurements.md`) coincidem: T1 4,8–5,1 GB e T0 2,5–2,9 GB com prompts reais, 7,6 / 5,4 GB em contexto cheio. O pico cresce em degraus porque o pacote usa graph capture com KV compartilhado de tamanho `max_length` e buffers de prefill proporcionais ao prompt. A execução do bench foi **ruidosa** (apps do usuário mantiveram 4–17% de CPU, a porta de ≤ 3% raramente foi cumprida); o pico de memória varia < 10 MB entre execuções, então o ruído não afeta este número.
+- **Regra aplicada (YAML `context_cap_by_vram` = maior pico medido + 400 MB, arredondado a 50 MB; teto = tokens totais prompt + saída):**
+
+| VRAM dedicada (DXGI) | variante | `context_cap_tokens` | condição |
+|---|---|---|---|
+| ≥ 8.150 MB (placa de 8 GB+; 8 GB reporta ~8.176) | T1 dml-fp16 | 2.048 | família confiável → direto; `unknown`/Intel/Blackwell → micro-benchmark |
+| 6.100 – 8.149 MB (6 GB reporta ~6.144) | T1 dml-fp16 | **1.536** | **só se o micro-benchmark aprovar**, senão T0 |
+| 5.950 – 6.099 MB | T0 dml-fp16 | 2.048 | — |
+| 3.900 – 5.949 MB (4 GB reporta ~4.096) | T0 dml-fp16 | 1.536 | — |
+| 3.650 – 3.899 MB | T0 dml-fp16 | 1.024 | — |
+| 3.500 – 3.649 MB | T0 dml-fp16 | 768 | piso do T0 (D1); a curva só pede 2.850 MB para 768 |
+| < 3.500 MB, sem DX12, software | CPU T0 int4 | 2.048 (CPU) | — |
+
+  `context_cap_min_useful_tokens` = 768 (envelope típico de 270–700 tokens + saída): teto menor que isso = variante inútil → próxima/CPU. **[E]:** a curva foi medida só na 7800 XT; outras GPUs/drivers devem ficar na mesma ordem de grandeza e serão confirmados na homologação; a margem de 400 MB é política.
+
+### D2 — Pascal: `unknown` + micro-benchmark, sem variante fp32 · **DECIDIDO** (2026-10-26)
+
+- **Decisão.** Pascal (GTX 10, MX150/250, GT 1030) = `unknown`, decidido pelo micro-benchmark; **sem variante fp32** (o builder 0.15.2 não aceita FP32+DML e o decode cai a ~9 tok/s com o remendo); se o micro-benchmark reprovar → **CPU T0 int4** (direto, sem tentar T0 DML — `microbench_fail_goes_to_cpu`). Polaris segue a mesma linha.
+- **Evidência.** [M] `phase2_measurements.md` §B: `-p fp32 -e dml` gera grafo sem `present.*` (rejeitado pelo ORT); com o remendo MHA o decode fica em 8,9 tok/s (fp32) e 9,4 (fp16) contra 173 tok/s do fp16 padrão; fp32 custa 2× em disco e +1,3 GB de VRAM; paridade igual (94% × 95%). [F S5, S6] FP16 a 1/64 nas GP10x. [E] Desempenho real do `dml-fp16` em Pascal: sem GPU local.
+
+### D3 — iGPUs sempre na CPU · **DECIDIDO** (2026-10-26)
+
+- **Decisão.** Nesta versão **toda iGPU vai para a CPU** (`igpu_policy: cpu_always_until_measured`). As iGPUs maiores (680M/780M/880M/890M/8060S, Arc dos Core Ultra, Iris Xe) **não são candidatas** até haver medição real nelas (roteiro de homologação). As regras ficam com `gpu_variant: cpu` e `candidate_after_measurement` apenas informativo; o detector não roda micro-benchmark de iGPU e lista as iGPUs em `igpus_pending_measurement`.
+- **Evidência [M]** (`phase2_measurements.md` §A, §C): iGPU de 2 CU T0 1.338 ms / 23 tok/s e T1 3.713 ms / 7,3 tok/s contra 7800 XT 104 ms / 173 e 141 ms / 108 (**12,9× e 26,4× mais lenta no TTFT; 7,5× e 14,8× no decode**) e contra CPU 216–313 ms / 106–119 (T0) e 535–786 ms / 28–33 (T1): a CPU vence em todos os casos. A extrapolação do mapa para essa iGPU (0,7 s) era otimista (real 1,3 s). Maiores: **[E]**.
+
+### D4 — T1 em CPU · **DECIDIDO** (2026-10-26)
+
+- **Decisão.** O autocomplete em CPU é **sempre T0 int4**. **T1 int8 em CPU só como modo opcional e declaradamente lento**, escolha do usuário, **nunca padrão**, com ≥ 12 núcleos físicos e ≥ 16 GB de RAM; **não cumpre o gate de TTFT** (T1 500/650 ms).
+- **Evidência [M]** (`phase2_measurements.md` §D): T1 int8 TTFT médio 2.224 / 1.452 / 1.133 / 786 / 685 / 608 / 535 ms com 4 / 6 / 8 / 12 / 16 / 20 / 24 threads (786 ms a 12, 535 ms a 24); T0 int4 884 / 613 / 440 / 313 / 256 / 219 / 216 ms. O N = 12 é consistente com o dado (threads de um Zen 4, não núcleos físicos isolados: ressalva [E]).
+
+### D5 — Nenhuma variante nova agora · **DECIDIDO** (2026-10-26)
+
+- **Decisão.** Aprovado "nenhuma variante nova agora": sem CUDA / TensorRT-RTX / OpenVINO / MIGraphX / GGUF, sem `dml-int4` do T1/T0, sem `dml-fp32`. **Reavaliar quando houver builder / ORT GenAI mais novo.** Registrado em `variants_not_exported` (YAML).
+- **Evidência.** [M] `dml-int4` do T0: paridade greedy 72% (prefixo 81%) contra 95% do fp16, `dml-int4` do T1 −1,8 p.p.; `dml-fp32`: grafo inválido no builder (D2). Demais opções: [E]/[F] (§5.1 (iii)).
+
+### Achado de produto → PR 5
+
+O GenAI-WinML 0.15.2 **ignora** `device_id`, `device_filter`, `performance_preference` e `device_filtering_options`; qualquer pedido cai no adaptador padrão do DirectML (neste PC, a 7800 XT; num notebook híbrido, provavelmente a iGPU). A IDE deve garantir a GPU certa (preferência de GPU do Windows por app, DXGI para o adaptador efetivo + micro-benchmark, queda segura para CPU, upgrade do GenAI se suportar seleção): **`docs/prs/pr-5-selecao-de-adaptador-dml.md`** (não implementado na IDE). O detector sinaliza `adapter_selection.effective_adapter_check_required`.
+
+### Continua [E] depois das decisões
+
+Todo hardware fora deste PC (Pascal, GTX 16, RTX 20/30/40/50, RX 5000/6000/9000, Vega, Polaris, Intel Arc, todas as iGPUs além da de 2 CU); as faixas de `device_id`; a curva de VRAM em outras GPUs/drivers; o desempenho real do `dml-fp16` em Pascal/Polaris; "núcleos físicos" ≠ threads em outras microarquiteturas; o corte de aborto do micro-benchmark (`abort_warmup_ttft_factor` 4×, proposta); a margem de 400 MB do teto de contexto (política).

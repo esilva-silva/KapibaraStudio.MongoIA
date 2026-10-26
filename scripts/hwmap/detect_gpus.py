@@ -11,6 +11,11 @@ Uso:
   python scripts/hwmap/detect_gpus.py                       # JSON no stdout
   python scripts/hwmap/detect_gpus.py --simulate caso.json  # {"adapters":[...], "cpu":{"physical_cores":12,"ram_gb":32}}
   python scripts/hwmap/detect_gpus.py --list-only           # so a enumeracao bruta
+
+Regras vigentes (decisoes D1-D5 de 2026-10-26, configs/gpu_compat.yaml schema 2): VRAM minima e TETO DE CONTEXTO por VRAM (`context_cap_tokens`),
+iGPU sempre na CPU (`igpu_policy: cpu_always_until_measured`), Pascal/Polaris `unknown` decididos pelo micro-benchmark (sem variante fp32),
+T1 int8 em CPU so como opcao lenta escolhida pelo usuario, nenhuma variante nova. A selecao do adaptador e por vendor/device/VRAM; como o GenAI-WinML
+0.15.2 ignora device_id, a IDE precisa validar o adaptador EFETIVO (docs/prs/pr-5-selecao-de-adaptador-dml.md): ver `adapter_selection`.
 """
 from __future__ import annotations
 
@@ -26,7 +31,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = ROOT / "configs" / "gpu_compat.yaml"
-SCHEMA = 1
+SCHEMA = 2
 
 # ------------------------------------------------------------------ enumeracao (DXGI via ctypes)
 
@@ -189,7 +194,7 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict:
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     if cfg.get("schema_version") != SCHEMA:
-        raise SystemExit(f"schema_version {cfg.get('schema_version')} != {SCHEMA}")
+        raise SystemExit(f"schema_version {cfg.get('schema_version')} != {SCHEMA} (ver `migration` no gpu_compat.yaml)")
     return cfg
 
 
@@ -208,21 +213,42 @@ def match_rule(a: dict, cfg: dict) -> dict | None:
     return None
 
 
-def resolve_variant(rule: dict, a: dict, th: dict) -> tuple[str, str]:
-    """-> (variante GPU ou 'cpu', motivo)."""
+def cap_for(cfg: dict, variant: str, vram_mb: int) -> int | None:
+    """Teto de contexto (tokens totais = prompt + saida) que a VRAM comporta para a variante, pela curva medida (context_cap_by_vram); None = nao cabe."""
+    for min_vram, cap in sorted(cfg["context_cap_by_vram"].get(variant, []), key=lambda r: -r[0]):
+        if vram_mb >= min_vram:
+            return int(cap)
+    return None
+
+
+def resolve_variant(rule: dict, a: dict, cfg: dict, is_igpu: bool = False) -> dict:
+    """-> {variant, why, context_cap_tokens, capped, force_microbench, t0_cap}. `variant` = variante GPU ou 'cpu'."""
+    th = cfg["thresholds"]
+    cpu_cap = th["cpu_context_cap_tokens"]
+
+    def out(variant, why, cap=None, capped=False, force_mb=False, t0_cap=None):
+        return {"variant": variant, "why": why, "context_cap_tokens": cap if variant != "cpu" else cpu_cap, "capped": capped,
+                "force_microbench": force_mb, "t0_cap": t0_cap}
+
     gv = rule["gpu_variant"]
     if rule.get("supported") is False:
-        return "cpu", f"familia fora da politica de suporte ({rule['family']})"
+        return out("cpu", f"familia fora da politica de suporte ({rule['family']})")
+    if is_igpu and cfg.get("igpu_policy") == "cpu_always_until_measured":
+        return out("cpu", f"igpu_policy cpu_always_until_measured (D3): iGPU sempre na CPU nesta versao (regra {rule['id']})")
     if gv == "cpu":
-        return "cpu", f"regra {rule['id']}: CPU e melhor/igual (ver evidence)"
+        return out("cpu", f"regra {rule['id']}: CPU e melhor/igual (ver evidence)")
     if gv == "auto_vram":
         vram = a["dedicated_vram_mb"]
-        if vram >= th["t1_min_vram_mb"]:
-            return "t1-dml-fp16", f"VRAM dedicada {vram} MB >= {th['t1_min_vram_mb']} MB (T1 dml-fp16 mediu 5.133 MB)"
-        if vram >= th["t0_min_vram_mb"]:
-            return "t0-dml-fp16", f"VRAM dedicada {vram} MB < {th['t1_min_vram_mb']} (T1) e >= {th['t0_min_vram_mb']} (T0 dml-fp16 mediu 2.933 MB)"
-        return "cpu", f"VRAM dedicada {vram} MB < {th['t0_min_vram_mb']} MB"
-    return gv, f"regra {rule['id']}: variante fixa {gv}"
+        floor = cfg["context_cap_min_useful_tokens"]
+        c1, c0 = cap_for(cfg, "t1-dml-fp16", vram), cap_for(cfg, "t0-dml-fp16", vram)
+        if c1 is not None and c1 >= floor:
+            if vram >= th["t1_full_min_vram_mb"]:
+                return out("t1-dml-fp16", f"VRAM dedicada {vram} MB >= {th['t1_full_min_vram_mb']} MB (D1: T1 dml-fp16 com contexto de ate {c1} tokens)", c1, False, False, c0)
+            return out("t1-dml-fp16", f"VRAM dedicada {vram} MB entre {th['t1_capped_min_vram_mb']} e {th['t1_full_min_vram_mb']} MB (D1: T1 so com teto de contexto {c1} tokens e se o micro-benchmark aprovar)", c1, True, True, c0)
+        if c0 is not None and c0 >= floor:
+            return out("t0-dml-fp16", f"VRAM dedicada {vram} MB < {th['t1_capped_min_vram_mb']} MB (T1) e >= {th['t0_min_vram_mb']} MB (D1: T0 dml-fp16 com contexto de ate {c0} tokens)", c0)
+        return out("cpu", f"VRAM dedicada {vram} MB < {th['t0_min_vram_mb']} MB (D1): sem VRAM para o T0 dml-fp16")
+    return out(gv, f"regra {rule['id']}: variante fixa {gv}", cap_for(cfg, gv, a["dedicated_vram_mb"]) or th["cpu_context_cap_tokens"])
 
 
 def decide(adapters: list[dict], cpu: dict, cfg: dict) -> dict:
@@ -234,61 +260,71 @@ def decide(adapters: list[dict], cpu: dict, cfg: dict) -> dict:
             rule = next(r for r in cfg["rules"] if r["id"] == "software-basic-render")
         if rule is None:
             rule = dict(cfg["unknown_vendor"], id="unknown_vendor", family="vendor desconhecido", kind="dgpu")
-        variant, why = resolve_variant(rule, a, th)
         is_igpu = bool(rule.get("integrated")) or rule.get("kind") == "igpu"
+        rv = resolve_variant(rule, a, cfg, is_igpu)
+        variant, why = rv["variant"], rv["why"]
         ev = {"luid": a.get("luid"), "name": a["name"], "vendor_id": f"0x{a['vendor_id']:04X}", "device_id": f"0x{a['device_id']:04X}",
-              "dedicated_vram_mb": a["dedicated_vram_mb"], "shared_mb": a.get("shared_mb"), "driver_version": a.get("driver_version"),
+              "dxgi_index": a.get("dxgi_index"), "dedicated_vram_mb": a["dedicated_vram_mb"], "shared_mb": a.get("shared_mb"), "driver_version": a.get("driver_version"),
               "is_software": bool(a.get("is_software")), "is_integrated": is_igpu, "rule": rule["id"], "family": rule["family"],
-              "supported": rule.get("supported"), "variant_if_chosen": variant, "needs_microbench": bool(rule.get("needs_microbench")),
-              "confidence": rule.get("confidence"), "why": why}
+              "supported": rule.get("supported"), "variant_if_chosen": variant, "context_cap_tokens": rv["context_cap_tokens"],
+              "context_capped": rv["capped"], "needs_microbench": bool(rule.get("needs_microbench")) or rv["force_microbench"],
+              "confidence": rule.get("confidence"), "decision_ref": rule.get("decision_ref"), "why": why}
         evaluated.append(ev)
         if a.get("is_software"):
             ignored.append({"name": a["name"], "luid": a.get("luid"), "reason": "adaptador de software/WARP"})
         elif variant == "cpu":
             ignored.append({"name": a["name"], "luid": a.get("luid"), "reason": why})
         else:
-            cands.append((ev, rule))
+            cands.append((ev, rule, rv))
 
     cpu_variant = th["cpu_default_variant"]
     t1_cpu_ok = (cpu.get("physical_cores") or 0) >= th["cpu_t1_int8_min_physical_cores"] and (cpu.get("ram_gb") or 0) >= th["cpu_t1_int8_min_ram_gb"]
 
     def score(c):  # dGPU > iGPU; T1 > T0; mais VRAM; (nunca o indice)
-        ev, _ = c
+        ev = c[0]
         return (not ev["is_integrated"], ev["variant_if_chosen"] == "t1-dml-fp16", ev["dedicated_vram_mb"])
 
+    pending = [{"name": e["name"], "luid": e["luid"], "rule": e["rule"],
+                "candidate_after_measurement": next((r.get("candidate_after_measurement") for r in cfg["rules"] if r["id"] == e["rule"]), None)}
+               for e in evaluated if e["is_integrated"] and not e["is_software"]]
     res = {"schema_version": SCHEMA, "config": str(DEFAULT_CONFIG.name), "cpu": cpu, "adapters": evaluated, "ignored": ignored,
-           "cpu_options": {"default": cpu_variant, "t1_cpu_int8_allowed": t1_cpu_ok,
-                           "t1_cpu_int8_rule": f">= {th['cpu_t1_int8_min_physical_cores']} nucleos fisicos e >= {th['cpu_t1_int8_min_ram_gb']} GB RAM (opcional; autocomplete usa T0 int4)"}}
-    def mb_cands(exclude):
-        out = []
-        for e in evaluated:
-            r = next((x for x in cfg["rules"] if x["id"] == e["rule"]), None)
-            if r and r.get("candidate_variant") and e["variant_if_chosen"] == "cpu" and e["luid"] != exclude and not e["is_software"]:
-                out.append({"name": e["name"], "luid": e["luid"], "variant": r["candidate_variant"]})
-        return out
+           "igpu_policy": cfg.get("igpu_policy"),
+           "cpu_options": {"default": cpu_variant, "context_cap_tokens": th["cpu_context_cap_tokens"],
+                           "t1_cpu_int8_allowed": t1_cpu_ok, "t1_cpu_int8_is_default": False, "t1_cpu_int8_user_choice_only": True,
+                           "t1_cpu_int8_declared_slow": True, "t1_cpu_int8_meets_ttft_gate": False,
+                           "t1_cpu_int8_rule": (f"D4: opcional e declaradamente lento (escolha do usuario, nunca padrao), >= {th['cpu_t1_int8_min_physical_cores']} nucleos fisicos "
+                                                f"e >= {th['cpu_t1_int8_min_ram_gb']} GB RAM; autocomplete usa T0 int4")},
+           "microbench_candidates": [], "igpus_pending_measurement": pending}
 
     if not cands:
-        res["microbench_candidates"] = mb_cands(None)
         res.update(chosen_adapter=None, recommended_variant=cpu_variant, fallback_variant=cpu_variant, fallback_chain=[cpu_variant],
-                   supported=True, needs_microbench=False, confidence="alta" if adapters else "media",
+                   context_cap_tokens=th["cpu_context_cap_tokens"], supported=True, needs_microbench=False,
+                   confidence="alta" if adapters else "media", adapter_selection={"effective_adapter_check_required": False},
                    reason="nenhum adaptador elegivel (todos ignorados ou sem GPU): CPU T0 int4" + ("" if adapters else " [nenhum adaptador enumerado]"))
         return res
-    ev, rule = max(cands, key=score)
+    ev, rule, rv = max(cands, key=score)
     variant = ev["variant_if_chosen"]
     chain = [variant]
-    if variant == "t1-dml-fp16" and ev["dedicated_vram_mb"] >= th["t0_min_vram_mb"]:
+    if (variant == "t1-dml-fp16" and rv["t0_cap"] is not None and rv["t0_cap"] >= cfg["context_cap_min_useful_tokens"]
+            and not rule.get("microbench_fail_goes_to_cpu")):
         chain.append("t0-dml-fp16")
     chain.append(rule.get("fallback", cpu_variant))
-    needs = bool(rule.get("needs_microbench")) or rule.get("supported") == "unknown"
-    res.update(chosen_adapter={k: ev[k] for k in ("luid", "name", "vendor_id", "device_id", "dedicated_vram_mb", "shared_mb", "driver_version", "is_integrated", "rule", "family")},
-               recommended_variant=variant, fallback_variant=rule.get("fallback", cpu_variant), fallback_chain=chain,
-               supported=rule.get("supported"), needs_microbench=needs, confidence=rule.get("confidence"),
+    needs = ev["needs_microbench"] or rule.get("supported") == "unknown"
+    others = [e for e in evaluated if e["luid"] != ev["luid"] and not e["is_software"]]
+    res.update(chosen_adapter={k: ev[k] for k in ("luid", "name", "vendor_id", "device_id", "dxgi_index", "dedicated_vram_mb", "shared_mb", "driver_version",
+                                                  "is_integrated", "rule", "family")},
+               recommended_variant=variant, context_cap_tokens=rv["context_cap_tokens"], context_capped=rv["capped"],
+               context_cap_by_variant={"t1-dml-fp16": cap_for(cfg, "t1-dml-fp16", ev["dedicated_vram_mb"]), "t0-dml-fp16": rv["t0_cap"]},
+               fallback_variant=rule.get("fallback", cpu_variant), fallback_chain=chain,
+               supported=rule.get("supported"), needs_microbench=needs, confidence=rule.get("confidence"), decision_ref=rule.get("decision_ref") or "D1",
                reason=ev["why"] + ("; micro-benchmark de primeira execucao obrigatorio antes de aceitar a GPU" if needs else ""),
+               adapter_selection={"basis": "vendor/device/VRAM dedicada (nunca o indice DXGI)",
+                                  "effective_adapter_check_required": True,
+                                  "multi_adapter_machine": bool(others),
+                                  "chosen_is_dxgi_default": (ev["dxgi_index"] == 0) if ev["dxgi_index"] is not None else None,
+                                  "note": ("GenAI-WinML 0.15.2 ignora device_id/device_filter: validar o adaptador efetivo (DXGI + contadores) e cair para a CPU "
+                                           "se for iGPU/WARP/lento (docs/prs/pr-5-selecao-de-adaptador-dml.md)")},
                evidence=rule.get("evidence"))
-    if ev["is_integrated"]:
-        res["note"] = "iGPU escolhida porque nao ha dGPU elegivel e a regra [E] indica que pode ganhar da CPU; confirmar no micro-benchmark"
-    # candidatas a micro-benchmark que ficaram em CPU (ex.: Iris Xe)
-    res["microbench_candidates"] = mb_cands(ev["luid"])
     return res
 
 

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "config": "gpu_compat.yaml",
   "cpu": {
     "name": "AMD Ryzen 9 7900 12-Core Processor             ",
@@ -14,6 +14,7 @@
       "name": "AMD Radeon RX 7800 XT",
       "vendor_id": "0x1002",
       "device_id": "0x747E",
+      "dxgi_index": 0,
       "dedicated_vram_mb": 16177,
       "shared_mb": 48289,
       "driver_version": "32.0.31041.1004",
@@ -23,15 +24,19 @@
       "family": "AMD RX 7800 XT (RDNA3, Navi 32) - MEDIDA neste PC",
       "supported": true,
       "variant_if_chosen": "t1-dml-fp16",
+      "context_cap_tokens": 2048,
+      "context_capped": false,
       "needs_microbench": false,
       "confidence": "alta",
-      "why": "VRAM dedicada 16177 MB >= 5900 MB (T1 dml-fp16 mediu 5.133 MB)"
+      "decision_ref": "D1",
+      "why": "VRAM dedicada 16177 MB >= 8150 MB (D1: T1 dml-fp16 com contexto de ate 2048 tokens)"
     },
     {
       "luid": "0x00000000_0x00014830",
       "name": "AMD Radeon(TM) Graphics",
       "vendor_id": "0x1002",
       "device_id": "0x164E",
+      "dxgi_index": 1,
       "dedicated_vram_mb": 485,
       "shared_mb": 48289,
       "driver_version": "32.0.21045.5002",
@@ -41,15 +46,19 @@
       "family": "AMD iGPU Raphael/Granite Ridge (Radeon Graphics 2 CU RDNA2) - MEDIDA neste PC",
       "supported": true,
       "variant_if_chosen": "cpu",
+      "context_cap_tokens": 2048,
+      "context_capped": false,
       "needs_microbench": false,
       "confidence": "alta",
-      "why": "regra amd-igpu-raphael-2cu-measured: CPU e melhor/igual (ver evidence)"
+      "decision_ref": "D3",
+      "why": "igpu_policy cpu_always_until_measured (D3): iGPU sempre na CPU nesta versao (regra amd-igpu-raphael-2cu-measured)"
     },
     {
       "luid": "0x00000000_0x000147cb",
       "name": "Microsoft Basic Render Driver",
       "vendor_id": "0x1414",
       "device_id": "0x008C",
+      "dxgi_index": 2,
       "dedicated_vram_mb": 0,
       "shared_mb": 48289,
       "driver_version": "10.0.26100.9711",
@@ -59,8 +68,11 @@
       "family": "Microsoft Basic Render Driver / WARP",
       "supported": false,
       "variant_if_chosen": "cpu",
+      "context_cap_tokens": 2048,
+      "context_capped": false,
       "needs_microbench": false,
       "confidence": "alta",
+      "decision_ref": null,
       "why": "familia fora da politica de suporte (Microsoft Basic Render Driver / WARP)"
     }
   ],
@@ -68,7 +80,7 @@
     {
       "name": "AMD Radeon(TM) Graphics",
       "luid": "0x00000000_0x00014830",
-      "reason": "regra amd-igpu-raphael-2cu-measured: CPU e melhor/igual (ver evidence)"
+      "reason": "igpu_policy cpu_always_until_measured (D3): iGPU sempre na CPU nesta versao (regra amd-igpu-raphael-2cu-measured)"
     },
     {
       "name": "Microsoft Basic Render Driver",
@@ -76,16 +88,32 @@
       "reason": "adaptador de software/WARP"
     }
   ],
+  "igpu_policy": "cpu_always_until_measured",
   "cpu_options": {
     "default": "t0-cpu-int4",
+    "context_cap_tokens": 2048,
     "t1_cpu_int8_allowed": true,
-    "t1_cpu_int8_rule": ">= 12 nucleos fisicos e >= 16 GB RAM (opcional; autocomplete usa T0 int4)"
+    "t1_cpu_int8_is_default": false,
+    "t1_cpu_int8_user_choice_only": true,
+    "t1_cpu_int8_declared_slow": true,
+    "t1_cpu_int8_meets_ttft_gate": false,
+    "t1_cpu_int8_rule": "D4: opcional e declaradamente lento (escolha do usuario, nunca padrao), >= 12 nucleos fisicos e >= 16 GB RAM; autocomplete usa T0 int4"
   },
+  "microbench_candidates": [],
+  "igpus_pending_measurement": [
+    {
+      "name": "AMD Radeon(TM) Graphics",
+      "luid": "0x00000000_0x00014830",
+      "rule": "amd-igpu-raphael-2cu-measured",
+      "candidate_after_measurement": null
+    }
+  ],
   "chosen_adapter": {
     "luid": "0x00000000_0x00012602",
     "name": "AMD Radeon RX 7800 XT",
     "vendor_id": "0x1002",
     "device_id": "0x747E",
+    "dxgi_index": 0,
     "dedicated_vram_mb": 16177,
     "shared_mb": 48289,
     "driver_version": "32.0.31041.1004",
@@ -94,6 +122,12 @@
     "family": "AMD RX 7800 XT (RDNA3, Navi 32) - MEDIDA neste PC"
   },
   "recommended_variant": "t1-dml-fp16",
+  "context_cap_tokens": 2048,
+  "context_capped": false,
+  "context_cap_by_variant": {
+    "t1-dml-fp16": 2048,
+    "t0-dml-fp16": 2048
+  },
   "fallback_variant": "t0-cpu-int4",
   "fallback_chain": [
     "t1-dml-fp16",
@@ -103,11 +137,18 @@
   "supported": true,
   "needs_microbench": false,
   "confidence": "alta",
-  "reason": "VRAM dedicada 16177 MB >= 5900 MB (T1 dml-fp16 mediu 5.133 MB)",
+  "decision_ref": "D1",
+  "reason": "VRAM dedicada 16177 MB >= 8150 MB (D1: T1 dml-fp16 com contexto de ate 2048 tokens)",
+  "adapter_selection": {
+    "basis": "vendor/device/VRAM dedicada (nunca o indice DXGI)",
+    "effective_adapter_check_required": true,
+    "multi_adapter_machine": true,
+    "chosen_is_dxgi_default": true,
+    "note": "GenAI-WinML 0.15.2 ignora device_id/device_filter: validar o adaptador efetivo (DXGI + contadores) e cair para a CPU se for iGPU/WARP/lento (docs/prs/pr-5-selecao-de-adaptador-dml.md)"
+  },
   "evidence": [
     "M reports/export/onnx_export_t0_t1.md: T1 dml-fp16 TTFT 148/170 ms, 104 tok/s; T0 109/124 ms",
     "M PNPDeviceID PCI\\VEN_1002&DEV_747E (Win32_VideoController)"
   ],
-  "microbench_candidates": [],
   "enumeration": "dxgi"
 }
