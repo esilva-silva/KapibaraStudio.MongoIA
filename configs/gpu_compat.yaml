@@ -28,21 +28,28 @@ thresholds:
   t1_min_vram_mb: 5900      # [M+E] processo T1 dml-fp16 mediu 5.133 MB dedicados (onnx_export_t0_t1.md §2); pedido original era 4 GB: 4 GB NAO comporta T1 (decisao do usuario D1)
   t0_min_vram_mb: 3500      # [M+E] processo T0 dml-fp16 mediu 2.933 MB; margem ~0,5 GB para driver/janela
   # --- CPU ---
-  cpu_t1_int8_min_physical_cores: 12   # [M+E] Ryzen 9 7900 (12C/24T) faz T1 int8 697/1192 ms (ja reprova o gate 500/650); T0 int4 escala 4thr 731 -> 8thr 406 -> 12thr 291 -> 24thr 229 ms (onnx_export_t0_t1.md §4); T1 ~2,4x mais lento => <12 nucleos ultrapassa ~1,0-1,5 s
+  cpu_t1_int8_min_physical_cores: 12   # [M fase 2: T1 int8 4/6/8/12/16/20/24 thr = 2224/1452/1133/786/685/608/535 ms de TTFT; 12 thr = 0,79 s, <12 passa de ~1,1 s; threads de Zen4, nao nucleos isolados; valor mantido] antes [M+E] Ryzen 9 7900 (12C/24T) faz T1 int8 697/1192 ms (ja reprova o gate 500/650); T0 int4 escala 4thr 731 -> 8thr 406 -> 12thr 291 -> 24thr 229 ms (onnx_export_t0_t1.md §4); T1 ~2,4x mais lento => <12 nucleos ultrapassa ~1,0-1,5 s
   cpu_t1_int8_min_ram_gb: 16           # [M+E] T1 int8 pico de RAM 3,0 GB + IDE + SO; 16 GB e o piso confortavel
   cpu_t0_min_ram_gb: 8                 # [E] T0 int4 pico 1,53 GB
   cpu_default_variant: t0-cpu-int4     # [M] autocomplete: T0 int4 285/480 ms; T1 int8 so como opcao de chat/qualidade (ver docs §5)
   cpu_optional_variant: t1-cpu-int8
 # Micro-benchmark de primeira execucao: criterios de aceite (docs §6). Valores [E] ate a fase 2 de medicao.
 microbench:
+  # Calibrado na fase 2 (reports/hwmap/phase2_measurements.md §C; 10 execucoes/candidato, processo novo por execucao, 270+32 tokens, SEED_TEXT sintetico):
+  #   7800 XT  T1 dml-fp16: TTFT p50 170 ms (160-181), 82,7 tok/s (79-86) | T0 dml-fp16: 121 ms (108-127), 131 tok/s (124-138)
+  #   CPU 7900 T0 int4 (threads padrao): 231 ms (220-248), 126 tok/s | T1 int8: 755 ms, 32,8 tok/s
+  #   iGPU 2 CU: T0 1.347 ms, 21 tok/s | T1 3.488 ms, 8,1 tok/s  => reprovadas por todos os criterios
+  # Regra de margem: teto de TTFT ~1,4-2x o pior valor bom medido; piso de tok/s = ~metade do pior valor bom medido. [M] so neste PC (RDNA3/Zen4); outras familias seguem [E].
   prompt_tokens: 270       # [M] mediana do val: 260; media 272
   decode_tokens: 32
-  accept_ttft_ms_p50_max: 350      # [E] gate informativo: T0 CPU medido = 285 ms; GPU deve ganhar de forma clara
-  accept_ttft_vs_cpu_ratio_max: 0.7   # [E] GPU so e aceita se TTFT <= 0,7 x TTFT da CPU medida no mesmo teste
-  accept_decode_tok_s_min: 25      # [E] autocomplete de 32 tokens em <= ~1,3 s
-  t1_accept_ttft_ms_p50_max: 250   # [M] T1 DML na 7800 XT = 148/170 ms (gate 170/200); folga ~1,5x
-  t1_accept_decode_tok_s_min: 40   # [M] 104 tok/s na 7800 XT; gate 90
-  budget_seconds: 10
+  accept_ttft_ms_p50_max: 250      # [M] T0: 7800 XT 121 ms (max 127), folga 2x; era 350 [E]
+  accept_ttft_vs_cpu_ratio_max: 0.7   # [M] T0 7800 XT / T0 CPU = 0,52 (121/231); iGPU = 5,8. Baseline = T0 int4 na CPU do mesmo PC
+  accept_decode_tok_s_min: 60      # [M] T0: 7800 XT 131 tok/s (min 124); metade; iGPU 21 reprova. Era 25 [E]
+  t1_accept_ttft_ms_p50_max: 250   # [M] T1: 7800 XT 170 ms (max 181) => folga 1,4x
+  t1_accept_ttft_vs_cpu_ratio_max: 1.0   # [M] novo: T1 GPU contra o baseline T0-CPU: 170/231 = 0,74 (com 0,7 a propria 7800 XT reprovaria o T1); iGPU T1 = 15
+  t1_accept_decode_tok_s_min: 40   # [M] T1: 7800 XT 82,7 tok/s (min 79); metade
+  budget_seconds: 10               # [M] 7800 XT: T1 5,2 s + baseline T0-CPU 2,9 s = ~8 s (sem Python); iGPU lenta estoura (T0 13 s, T1 33 s): abortar no aquecimento se TTFT > 4x o teto
+  abort_warmup_ttft_factor: 4      # [E] proposta (nao medida): aquecimento > 4x teto => reprova sem as 3 repeticoes
   cache_key: "adapter(vendor,device,subsys,revision)+driver_version+genai_version+package_hash+windows_build"
 
 sources:
@@ -221,7 +228,7 @@ rules:
     gpu_variant: cpu
     fallback: t0-cpu-int4
     confidence: alta
-    evidence: ["M llama.cpp Vulkan 7B Q5_K_M: iGPU pp 27 t/s e tg 2,5 t/s contra 7800 XT pp 1.395 e tg 90 (~50x mais lenta)", "E extrapolacao T0: ~0,5 s+ de prefill para 270 tokens (> T0 CPU 285 ms)", "M PNPDeviceID PCI\\VEN_1002&DEV_164E"]
+    evidence: ["M llama.cpp Vulkan 7B Q5_K_M: iGPU pp 27 t/s e tg 2,5 t/s contra 7800 XT pp 1.395 e tg 90 (~50x mais lenta)", "M fase 2 (reports/hwmap/phase2_measurements.md §A): iGPU T0 dml-fp16 TTFT 1.338 ms/23 tok/s vs CPU 216-313 ms/106-119 tok/s e 7800 XT 104 ms/173; T1 3.713 ms/7,3 tok/s vs CPU int8 535-786 ms/28-33 tok/s: a CPU vence em todos os casos", "M PNPDeviceID PCI\\VEN_1002&DEV_164E"]
     notes: "Piso medido de iGPU. Mesma classe: Radeon 610M (2 CU). Nunca escolher; ignorar quando houver dGPU."
 
   - id: amd-rdna4

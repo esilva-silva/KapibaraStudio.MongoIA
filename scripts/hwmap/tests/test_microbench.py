@@ -34,3 +34,17 @@ def test_cache_key_changes_with_driver_and_genai():
     assert k == mb.cache_key(ad, "32.0.31041.1004", "0.15.2", "abc", "26100")
     assert k != mb.cache_key(ad, "32.0.31042.1", "0.15.2", "abc", "26100")
     assert k != mb.cache_key(ad, "32.0.31041.1004", "0.17.1", "abc", "26100")
+
+
+# --- fase 2: calibragem com dados reais (reports/hwmap/phase2_measurements.md §C) ---
+def test_phase2_measured_7800xt_accepted_and_igpu_rejected():
+    cpu_t0 = {"ttft_ms_p50": 231}   # baseline unico: T0 int4 na CPU do mesmo PC
+    assert mb.evaluate("t0", {"ttft_ms_p50": 127, "decode_tok_s": 124}, cpu_t0, MB)["accept"]      # pior execucao boa da 7800 XT
+    assert mb.evaluate("t1", {"ttft_ms_p50": 181, "decode_tok_s": 79.4}, cpu_t0, MB)["accept"]     # T1 7800 XT (170/231 = 0,74 > 0,7: precisa do teto proprio do T1)
+    assert not mb.evaluate("t0", {"ttft_ms_p50": 1347, "decode_tok_s": 21}, cpu_t0, MB)["accept"]  # iGPU 2 CU
+    assert not mb.evaluate("t1", {"ttft_ms_p50": 3488, "decode_tok_s": 8.1}, cpu_t0, MB)["accept"]
+
+
+def test_phase2_thresholds_have_margin_over_worst_good_run():
+    assert MB["accept_ttft_ms_p50_max"] >= 1.5 * 127 and MB["t1_accept_ttft_ms_p50_max"] >= 1.3 * 181
+    assert MB["accept_decode_tok_s_min"] <= 124 / 2 + 1 and MB["t1_accept_decode_tok_s_min"] <= 79 / 2 + 1
