@@ -30,66 +30,66 @@ Gerado por `scripts/eval/eval_homolog.py` (gen: venv ROCm; score: `validate_text
 
 | modelo | n | FIM acc (norm.) IC95 | exact | edit sim. | sintaxe | mongo-style | exec-valid | teto | exec ÷ teto IC95 | campos inex. | campos inex. (full) |
 |---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
-| Qwen2.5-Coder-0.5B base | 6030 | 12.6 [11.8, 13.5] | 12.4 | 29.9 | 56.1 | 49.3 | 36.8 | 93.1 | 39.5 [38.2, 40.8] | 8.0 | 7.0 |
-| T0 Nano distilado | 6030 | 33.1 [31.9, 34.3] | 33.0 | 58.9 | 95.6 | 92.5 | 69.3 | 93.1 | 74.4 [73.2, 75.6] | 15.1 | 15.3 |
-| T0 Nano v3 (corpus v3) | 6030 | 42.3 [41.1, 43.6] | 42.1 | 68.7 | 99.3 | 96.7 | 80.2 | 93.1 | 86.2 [85.3, 87.0] | 10.2 | 10.8 |
+| Qwen2.5-Coder-1.5B base | 6030 | 18.7 [17.8, 19.7] | 18.6 | 37.3 | 67.7 | 60.5 | 49.1 | 93.1 | 52.8 [51.5, 54.1] | 8.2 | 7.1 |
+| T1 Small distilado | 6030 | 37.0 [35.8, 38.2] | 36.9 | 61.9 | 99.0 | 96.2 | 78.6 | 93.1 | 84.4 [83.4, 85.4] | 10.1 | 9.2 |
+| T1 Small v3 (corpus v3) | 6030 | 45.4 [44.1, 46.6] | 45.2 | 70.1 | 99.7 | 97.2 | 83.1 | 93.1 | 89.3 [88.4, 90.1] | 7.9 | 7.5 |
 
 Celulas dos grupos abaixo: FIM acc / exec ÷ teto / campos inexistentes (em %).
 
 ### T2. Por context_kind
 
-| context_kind (n) | Qwen2.5-Coder-0.5B base | T0 Nano distilado | T0 Nano v3 (corpus v3) |
+| context_kind (n) | Qwen2.5-Coder-1.5B base | T1 Small distilado | T1 Small v3 (corpus v3) |
 |---|---:|---:|---:|
-| full (3720) | 9.5 / 38.1 / 7.0 | 28.3 / 74.0 / 15.3 | 35.1 / 84.4 / 10.8 |
-| irrelevant (1155) | 16.4 / 38.9 / 8.4 | 41.1 / 75.3 / 14.5 | 53.7 / 89.4 / 9.1 |
-| none (1155) | 19.0 / 44.6 / 10.9 | 40.6 / 75.1 / 14.7 | 54.2 / 88.6 / 9.2 |
+| full (3720) | 14.0 / 48.7 / 7.1 | 31.5 / 85.3 / 9.2 | 38.3 / 88.8 / 7.5 |
+| irrelevant (1155) | 24.9 / 56.5 / 9.6 | 45.5 / 83.9 / 11.3 | 55.5 / 90.0 / 8.2 |
+| none (1155) | 28.0 / 62.1 / 10.0 | 46.0 / 82.3 / 11.6 | 58.1 / 89.9 / 8.7 |
 
 ### T2. Por author
 
-| author (n) | Qwen2.5-Coder-0.5B base | T0 Nano distilado | T0 Nano v3 (corpus v3) |
+| author (n) | Qwen2.5-Coder-1.5B base | T1 Small distilado | T1 Small v3 (corpus v3) |
 |---|---:|---:|---:|
-| grammar (3220) | 8.5 / 33.1 / 6.4 | 34.6 / 82.8 / 13.9 | 36.4 / 88.7 / 8.0 |
-| llm (2810) | 17.4 / 46.0 / 9.9 | 31.4 / 66.1 / 16.4 | 49.2 / 83.6 / 12.7 |
+| grammar (3220) | 12.6 / 44.0 / 7.6 | 37.6 / 90.8 / 7.2 | 38.4 / 91.9 / 5.3 |
+| llm (2810) | 25.8 / 61.6 / 8.8 | 36.2 / 78.1 / 13.3 | 53.4 / 86.6 / 10.8 |
 
 ### T2. Por domain
 
-| domain (n) | Qwen2.5-Coder-0.5B base | T0 Nano distilado | T0 Nano v3 (corpus v3) |
+| domain (n) | Qwen2.5-Coder-1.5B base | T1 Small distilado | T1 Small v3 (corpus v3) |
 |---|---:|---:|---:|
-| adtech (3057) | 13.4 / 40.7 / 7.4 | 33.7 / 76.2 / 13.7 | 42.5 / 86.4 / 10.1 |
-| telecom (2973) | 11.9 / 38.3 / 8.7 | 32.5 / 72.6 / 16.5 | 42.2 / 85.9 / 10.2 |
+| adtech (3057) | 18.6 / 53.2 / 8.2 | 37.6 / 85.7 / 9.3 | 45.8 / 89.5 / 7.7 |
+| telecom (2973) | 18.9 / 52.4 / 8.2 | 36.3 / 83.1 / 10.8 | 45.0 / 89.0 / 8.0 |
 
 ### T2. Por cut_kind
 
-| cut_kind (n) | Qwen2.5-Coder-0.5B base | T0 Nano distilado | T0 Nano v3 (corpus v3) |
+| cut_kind (n) | Qwen2.5-Coder-1.5B base | T1 Small distilado | T1 Small v3 (corpus v3) |
 |---|---:|---:|---:|
-| key (959) | 8.8 / 35.1 / 8.1 | 27.6 / 72.4 / 18.8 | 40.2 / 87.6 / 9.6 |
-| member (600) | 35.7 / 52.2 / 5.2 | 75.8 / 87.1 / 8.2 | 80.0 / 90.3 / 6.3 |
-| multiline (480) | 2.1 / 32.4 / 13.5 | 1.9 / 54.4 / 35.0 | 11.0 / 70.0 / 22.9 |
-| operator (841) | 14.0 / 40.6 / 6.7 | 43.4 / 81.1 / 8.1 | 55.4 / 90.2 / 7.5 |
-| partial (600) | 22.5 / 37.4 / 11.7 | 54.8 / 73.4 / 18.0 | 59.5 / 81.3 / 14.8 |
-| rest (720) | 6.7 / 33.7 / 4.4 | 26.1 / 69.5 / 11.0 | 38.1 / 88.8 / 6.4 |
-| stage (720) | 1.4 / 38.1 / 14.3 | 3.6 / 63.0 / 26.0 | 8.1 / 76.7 / 19.0 |
-| stmt_start (269) | 9.7 / 44.9 / 5.6 | 16.0 / 62.4 / 20.1 | 29.7 / 83.7 / 10.4 |
-| value (841) | 13.8 / 45.0 / 4.0 | 37.6 / 92.3 / 1.9 | 47.6 / 97.4 / 1.2 |
+| key (959) | 18.6 / 54.9 / 5.6 | 35.7 / 84.4 / 11.6 | 44.0 / 91.3 / 6.9 |
+| member (600) | 45.8 / 64.6 / 7.7 | 78.5 / 92.5 / 4.2 | 83.5 / 92.9 / 4.0 |
+| multiline (480) | 2.5 / 43.7 / 14.4 | 2.7 / 67.8 / 25.0 | 11.2 / 73.3 / 19.0 |
+| operator (841) | 23.4 / 54.0 / 5.6 | 45.5 / 89.6 / 6.1 | 57.6 / 93.4 / 5.2 |
+| partial (600) | 33.3 / 51.8 / 12.2 | 60.8 / 80.8 / 13.3 | 65.7 / 85.9 / 11.3 |
+| rest (720) | 7.8 / 51.0 / 5.3 | 28.7 / 81.1 / 7.6 | 40.0 / 89.9 / 6.8 |
+| stage (720) | 3.1 / 43.6 / 13.6 | 4.0 / 76.6 / 15.8 | 10.6 / 82.0 / 13.9 |
+| stmt_start (269) | 12.3 / 64.3 / 10.0 | 23.8 / 79.1 / 15.6 | 37.2 / 89.0 / 8.9 |
+| value (841) | 18.7 / 53.0 / 4.9 | 42.2 / 97.7 / 1.1 | 49.6 / 98.0 / 1.1 |
 
 ### T2b. author × context_kind
 
-| author/context (n) | Qwen2.5-Coder-0.5B base | T0 Nano distilado | T0 Nano v3 (corpus v3) |
+| author/context (n) | Qwen2.5-Coder-1.5B base | T1 Small distilado | T1 Small v3 (corpus v3) |
 |---|---:|---:|---:|
-| grammar/full (2121) | 6.7 / 31.7 / 5.9 | 29.0 / 81.3 / 15.2 | 30.1 / 86.8 / 8.8 |
-| grammar/irrelevant (553) | 10.1 / 33.5 / 6.3 | 44.5 / 86.1 / 11.2 | 48.1 / 92.7 / 6.3 |
-| grammar/none (546) | 13.7 / 38.1 / 8.2 | 46.3 / 85.0 / 11.9 | 48.7 / 92.0 / 6.6 |
-| llm/full (1599) | 13.2 / 45.6 / 8.5 | 27.3 / 65.5 / 15.6 | 41.8 / 81.6 / 13.5 |
-| llm/irrelevant (602) | 22.3 / 43.4 / 10.3 | 38.0 / 66.5 / 17.6 | 58.8 / 86.7 / 11.6 |
-| llm/none (609) | 23.6 / 49.6 / 13.3 | 35.5 / 67.3 / 17.2 | 59.1 / 85.9 / 11.5 |
+| grammar/full (2121) | 9.9 / 39.8 / 7.1 | 32.2 / 90.6 / 7.3 | 32.3 / 91.1 / 5.3 |
+| grammar/irrelevant (553) | 13.7 / 45.3 / 9.2 | 46.3 / 91.0 / 6.9 | 47.9 / 93.7 / 4.9 |
+| grammar/none (546) | 22.0 / 58.9 / 8.1 | 49.8 / 91.1 / 7.5 | 52.0 / 93.5 / 5.7 |
+| llm/full (1599) | 19.4 / 59.0 / 7.2 | 30.6 / 79.2 / 11.8 | 46.2 / 86.2 / 10.4 |
+| llm/irrelevant (602) | 35.0 / 65.6 / 10.0 | 44.7 / 78.1 / 15.4 | 62.5 / 87.0 / 11.3 |
+| llm/none (609) | 33.3 / 64.5 / 11.8 | 42.5 / 75.4 / 15.3 | 63.5 / 87.0 / 11.5 |
 
 ### T3. Lacuna de generalizacao (val v2c sintetico → homologacao)
 
 | modelo | FIM acc val → hom (Δ pp) | edit sim. val → hom (Δ) | sintaxe val → hom (Δ) | exec ÷ teto val → hom (Δ pp) | campos inex. full val → hom (Δ pp) |
 |---|---|---|---|---|---|
-| Qwen2.5-Coder-0.5B base | 7.6 → 12.6 (+5.0) | 22.1 → 29.9 (+7.8) | 49.8 → 56.1 (+6.3) | 34.1 → 39.5 (+5.5) | 4.1 → 7.0 (+2.9) |
-| T0 Nano distilado | 40.3 → 33.1 (-7.2) | 64.8 → 58.9 (-6.0) | 99.5 → 95.6 (-3.9) | 93.0 → 74.4 (-18.6) | 2.1 → 15.3 (+13.3) |
-| T0 Nano v3 (corpus v3) | 40.5 → 42.3 (+1.8) | 65.0 → 68.7 (+3.7) | 99.6 → 99.3 (-0.3) | 95.0 → 86.2 (-8.9) | 1.3 → 10.8 (+9.5) |
+| Qwen2.5-Coder-1.5B base | 14.2 → 18.7 (+4.5) | 30.6 → 37.3 (+6.7) | 66.7 → 67.7 (+1.0) | 50.5 → 52.8 (+2.3) | 3.8 → 7.1 (+3.4) |
+| T1 Small distilado | 41.0 → 37.0 (-4.1) | 65.7 → 61.9 (-3.8) | 99.6 → 99.0 (-0.5) | 95.1 → 84.4 (-10.7) | 1.6 → 9.2 (+7.6) |
+| T1 Small v3 (corpus v3) | 41.0 → 45.4 (+4.4) | 65.4 → 70.1 (+4.7) | 99.8 → 99.7 (-0.1) | 96.2 → 89.3 (-6.9) | 1.2 → 7.5 (+6.3) |
 
 (O teto do val v2c vem do validador `chat_validate` e o da homologacao do `validate_text`: a razao exec ÷ teto cruza dois validadores; compare tendencias, nao a segunda casa.)
 
@@ -97,47 +97,47 @@ Celulas dos grupos abaixo: FIM acc / exec ÷ teto / campos inexistentes (em %).
 
 | B − A (A → B) | n | Δ normalized_match [IC95] | Δ exec_valid [IC95] | Δ edit_similarity [IC95] | Δ no_nonexistent_field [IC95] | McNemar p (FIM / exec) |
 |---|---:|---|---|---|---|---|
-| T0 Nano distilado − Qwen2.5-Coder-0.5B base | 6030 | +20.5 [+19.3, +21.7] | +32.5 [+31.0, +34.0] | +0.290 [+0.279, +0.301] | -7.0 [-8.1, -6.1] | 6.41e-242 / 3.66e-321 (Holm) |
-| T0 Nano v3 (corpus v3) − T0 Nano distilado | 6030 | +9.2 [+8.3, +10.1] | +10.9 [+9.9, +11.9] | +0.099 [+0.092, +0.105] | +4.9 [+4.0, +5.8] | 8.81e-90 / 1.59e-95 (Holm) |
-| T0 Nano v3 (corpus v3) − Qwen2.5-Coder-0.5B base | 6030 | +29.7 [+28.5, +31.0] | +43.4 [+42.0, +44.8] | +0.388 [+0.378, +0.399] | -2.1 [-3.1, -1.2] | 0 / 0 (Holm) |
+| T1 Small distilado − Qwen2.5-Coder-1.5B base | 6030 | +18.2 [+17.1, +19.4] | +29.4 [+28.0, +30.9] | +0.246 [+0.235, +0.256] | -1.9 [-2.8, -1.0] | 3.46e-193 / 1.91e-314 (Holm) |
+| T1 Small v3 (corpus v3) − T1 Small distilado | 6030 | +8.4 [+7.6, +9.3] | +4.5 [+3.7, +5.3] | +0.082 [+0.076, +0.089] | +2.2 [+1.5, +2.9] | 1.05e-87 / 4.59e-27 (Holm) |
+| T1 Small v3 (corpus v3) − Qwen2.5-Coder-1.5B base | 6030 | +26.6 [+25.4, +27.8] | +33.9 [+32.6, +35.3] | +0.328 [+0.318, +0.338] | +0.3 [-0.5, +1.1] | 0 / 0 (Holm) |
 
 #### T4 por author: Δ normalized_match (pp)
 
 | B − A | author=grammar | author=llm |
 |---|---|---|
-| T0 Nano distilado − Qwen2.5-Coder-0.5B base | +26.2 [+24.7, +27.8] | +14.0 [+12.2, +15.7] |
-| T0 Nano v3 (corpus v3) − T0 Nano distilado | +1.7 [+0.8, +2.7] | +17.8 [+16.3, +19.4] |
-| T0 Nano v3 (corpus v3) − Qwen2.5-Coder-0.5B base | +27.9 [+26.4, +29.5] | +31.8 [+29.9, +33.6] |
+| T1 Small distilado − Qwen2.5-Coder-1.5B base | +25.0 [+23.4, +26.6] | +10.5 [+8.8, +12.2] |
+| T1 Small v3 (corpus v3) − T1 Small distilado | +0.7 [-0.0, +1.6] | +17.2 [+15.7, +18.7] |
+| T1 Small v3 (corpus v3) − Qwen2.5-Coder-1.5B base | +25.7 [+24.2, +27.3] | +27.7 [+25.9, +29.4] |
 
 #### T4 por author: Δ exec_valid (pp)
 
 | B − A | author=grammar | author=llm |
 |---|---|---|
-| T0 Nano distilado − Qwen2.5-Coder-0.5B base | +43.3 [+41.3, +45.2] | +20.1 [+17.7, +22.4] |
-| T0 Nano v3 (corpus v3) − T0 Nano distilado | +5.2 [+4.0, +6.4] | +17.5 [+15.9, +19.2] |
-| T0 Nano v3 (corpus v3) − Qwen2.5-Coder-0.5B base | +48.4 [+46.5, +50.3] | +37.7 [+35.6, +39.7] |
+| T1 Small distilado − Qwen2.5-Coder-1.5B base | +40.7 [+38.8, +42.5] | +16.5 [+14.5, +18.6] |
+| T1 Small v3 (corpus v3) − T1 Small distilado | +1.0 [+0.2, +1.9] | +8.4 [+7.0, +9.8] |
+| T1 Small v3 (corpus v3) − Qwen2.5-Coder-1.5B base | +41.7 [+39.8, +43.6] | +25.0 [+23.0, +27.0] |
 
 #### T4 por context_kind: Δ normalized_match (pp)
 
 | B − A | context_kind=full | context_kind=irrelevant | context_kind=none |
 |---|---|---|---|
-| T0 Nano distilado − Qwen2.5-Coder-0.5B base | +18.8 [+17.4, +20.3] | +24.7 [+21.7, +27.7] | +21.6 [+18.8, +24.5] |
-| T0 Nano v3 (corpus v3) − T0 Nano distilado | +6.9 [+5.8, +7.9] | +12.6 [+10.3, +14.7] | +13.6 [+11.3, +15.9] |
-| T0 Nano v3 (corpus v3) − Qwen2.5-Coder-0.5B base | +25.7 [+24.2, +27.2] | +37.2 [+34.3, +40.3] | +35.2 [+32.3, +38.2] |
+| T1 Small distilado − Qwen2.5-Coder-1.5B base | +17.6 [+16.2, +19.0] | +20.6 [+17.7, +23.5] | +18.0 [+15.0, +21.0] |
+| T1 Small v3 (corpus v3) − T1 Small distilado | +6.7 [+5.8, +7.7] | +10.0 [+8.0, +12.2] | +12.1 [+10.0, +14.3] |
+| T1 Small v3 (corpus v3) − Qwen2.5-Coder-1.5B base | +24.3 [+22.8, +25.8] | +30.6 [+27.8, +33.5] | +30.1 [+27.3, +33.0] |
 
 #### T4 por context_kind: Δ exec_valid (pp)
 
 | B − A | context_kind=full | context_kind=irrelevant | context_kind=none |
 |---|---|---|---|
-| T0 Nano distilado − Qwen2.5-Coder-0.5B base | +33.1 [+31.0, +35.0] | +34.4 [+31.0, +37.7] | +28.7 [+25.3, +31.9] |
-| T0 Nano v3 (corpus v3) − T0 Nano distilado | +9.7 [+8.3, +11.0] | +13.3 [+11.2, +15.6] | +12.6 [+10.5, +14.8] |
-| T0 Nano v3 (corpus v3) − Qwen2.5-Coder-0.5B base | +42.7 [+40.9, +44.5] | +47.7 [+44.7, +50.7] | +41.3 [+38.2, +44.3] |
+| T1 Small distilado − Qwen2.5-Coder-1.5B base | +33.8 [+31.9, +35.6] | +25.9 [+22.9, +29.0] | +19.0 [+15.8, +22.1] |
+| T1 Small v3 (corpus v3) − T1 Small distilado | +3.3 [+2.2, +4.2] | +5.8 [+4.1, +7.5] | +7.1 [+5.3, +8.9] |
+| T1 Small v3 (corpus v3) − Qwen2.5-Coder-1.5B base | +37.0 [+35.2, +38.8] | +31.7 [+28.8, +34.6] | +26.1 [+23.3, +28.9] |
 
 ### T5. Procedencia
 
 | execucao | dispositivo (torch) | contadores do Windows | GB dedicados por adaptador | uso do pid por adaptador (%) | prompt = prompt selado (100 amostras) |
 |---|---|---|---|---|---|
-| Qwen2.5-Coder-0.5B base | AMD Radeon RX 7800 XT | ok | {'luid_0x00000000_0x00012602_phys_0': 2.604, 'luid_0x00000000_0x000147cb_phys_0': 0.0, 'luid_0x00000000_0x00014830_phys_0': 0.332} | {'luid_0x00000000_0x00012602_phys_0': 56.7, 'luid_0x00000000_0x00014830_phys_0': 0.0} | 100/100 |
-| T0 Nano distilado | AMD Radeon RX 7800 XT | ok | {'luid_0x00000000_0x00012602_phys_0': 2.592, 'luid_0x00000000_0x000147cb_phys_0': 0.0, 'luid_0x00000000_0x00014830_phys_0': 0.338} | {'luid_0x00000000_0x00012602_phys_0': 52.3, 'luid_0x00000000_0x00014830_phys_0': 0.0} | 100/100 |
-| T0 Nano v3 (corpus v3) | AMD Radeon RX 7800 XT | ok | {'luid_0x00000000_0x00012602_phys_0': 1.432, 'luid_0x00000000_0x000147cb_phys_0': 0.0, 'luid_0x00000000_0x00014830_phys_0': 0.359} | {'luid_0x00000000_0x00012602_phys_0': 53.5, 'luid_0x00000000_0x00014830_phys_0': 0.0} | 100/100 |
+| Qwen2.5-Coder-1.5B base | AMD Radeon RX 7800 XT | ok | {'luid_0x00000000_0x00012602_phys_0': 4.937, 'luid_0x00000000_0x000147cb_phys_0': 0.0, 'luid_0x00000000_0x00014830_phys_0': 0.421} | {'luid_0x00000000_0x00012602_phys_0': 88.4, 'luid_0x00000000_0x00014830_phys_0': 0.0} | 100/100 |
+| T1 Small distilado | AMD Radeon RX 7800 XT | ok | {'luid_0x00000000_0x00012602_phys_0': 4.822, 'luid_0x00000000_0x000147cb_phys_0': 0.0, 'luid_0x00000000_0x00014830_phys_0': 0.412} | {'luid_0x00000000_0x00012602_phys_0': 89.1, 'luid_0x00000000_0x00014830_phys_0': 0.0} | 100/100 |
+| T1 Small v3 (corpus v3) | AMD Radeon RX 7800 XT | ok | {'luid_0x00000000_0x00012602_phys_0': 3.564, 'luid_0x00000000_0x000147cb_phys_0': 0.0, 'luid_0x00000000_0x00014830_phys_0': 0.393} | {'luid_0x00000000_0x00012602_phys_0': 74.0, 'luid_0x00000000_0x00014830_phys_0': 0.0} | 100/100 |
 <!-- TABLES:END -->
