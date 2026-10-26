@@ -5,13 +5,15 @@ import argparse, json, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "teacher"))
+sys.path.insert(0, str(ROOT / "scripts" / "export"))
+from build_variants import WORK  # noqa: E402
 import eval_teacher as et  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--tier", default="t0"); ap.add_argument("--n", type=int, default=100); ap.add_argument("--out", required=True)
 a = ap.parse_args()
 et.DATA_VERSION = "v2c"
-prompts = json.loads((ROOT / "reports/export/work" / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))
+prompts = json.loads((WORK / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))
 rows = {r["id"]: r for r in et.read_rows("editor-context-v1", "val")}
 Path(a.out).parent.mkdir(parents=True, exist_ok=True)
 with open(a.out, "w", encoding="utf-8", newline="\n") as f:

@@ -26,15 +26,17 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / "reports" / "export" / "work"
-ROWS_PATH = WORK / "v2c_val2000_rows.jsonl"
+sys.path.insert(0, str(ROOT / "scripts" / "export"))
+from build_variants import WORK, package_dir  # noqa: E402  (KAPI_EXPORT_GEN=v3 => pacotes `-v3-ONNX-` e work_v3)
+ROWS_PATH = ROOT / "reports" / "export" / "work" / "v2c_val2000_rows.jsonl"   # rows do val v2c: compartilhado entre geracoes
 SAMPLE_IDS = ROOT / "Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json"
 V2C_DIR = ROOT / "data" / "validated" / "v2c"
-PKG = {("t0", "int4"): "Repos/KapiCoder-Mongo-Nano/exports/KapiCoder-Mongo-Nano-ONNX-int4",
-       ("t0", "int8"): "Repos/KapiCoder-Mongo-Nano/exports/KapiCoder-Mongo-Nano-ONNX-int8",
-       ("t0", "int8-emb4"): "Repos/KapiCoder-Mongo-Nano/exports/KapiCoder-Mongo-Nano-ONNX-int8-emb4",
-       ("t1", "int8"): "Repos/KapiCoder-Mongo-Small/exports/KapiCoder-Mongo-Small-ONNX-int8",
-       ("t1", "int4"): "Repos/KapiCoder-Mongo-Small/exports/KapiCoder-Mongo-Small-ONNX-int4"}
+class _Pkg(dict):
+    def __getitem__(self, key):
+        return str(package_dir(*key).relative_to(ROOT))
+
+
+PKG = _Pkg()   # (tier, variante) -> caminho relativo do pacote (respeita KAPI_EXPORT_GEN)
 GATES = {"t0": (150.0, 250.0), "t1": (500.0, 650.0)}   # configs/gates.yaml: T0.cpu.ttft_{mean,p95}_ms ; T1.cpu_int8.ttft_{mean,p95}_ms
 CTX_TOKENS = 2048
 MAX_NEW = 96

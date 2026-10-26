@@ -6,10 +6,12 @@ from collections import Counter
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "teacher"))
+sys.path.insert(0, str(ROOT / "scripts" / "export"))
+from build_variants import WORK  # noqa: E402
 import eval_teacher as et  # noqa: E402
 ap = argparse.ArgumentParser(); ap.add_argument("--tier", default="t0"); ap.add_argument("--tokens", required=True); ap.add_argument("--out")
 a = ap.parse_args()
-py = {p["id"]: p["prompt_ids"] for p in json.loads((ROOT / "reports/export/work" / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))["items"]}
+py = {p["id"]: p["prompt_ids"] for p in json.loads((WORK / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))["items"]}
 rows = [json.loads(l) for l in Path(a.tokens).read_text(encoding="utf-8").splitlines() if l.strip()]
 rows = [r for r in rows if r.get("id") in py]
 same = [r["id"] for r in rows if r["tokenIds"] == py[r["id"]]]

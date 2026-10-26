@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -17,10 +18,27 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+# Geracao dos modelos: "" = legado (merged/sft_distill_v1, dataset v2c); KAPI_EXPORT_GEN=v3 = retreino v3 (merged/sft_v3, corpus v3).
+# A geracao v3 usa pacotes `<familia>-v3-ONNX-<variante>` e diretorios de trabalho/relatorio separados (work_v3, eval_v3, results_v3_*, gates_v3):
+# nada do legado e sobrescrito. Defina a variavel ANTES de iniciar qualquer script (os subprocessos herdam).
+GEN = os.environ.get("KAPI_EXPORT_GEN", "").strip().lower()
+if GEN not in ("", "v3"):
+    raise SystemExit(f"KAPI_EXPORT_GEN invalido: {GEN!r} (use vazio ou v3)")
+V3 = GEN == "v3"
+RUN = "sft_v3" if V3 else "sft_distill_v1"          # nome do run (merged/<RUN>, reports/eval/<RUN>)
 TIERS = {
-    "t0": {"family": "KapiCoder-Mongo-Nano", "merged": "Repos/KapiCoder-Mongo-Nano/merged/sft_distill_v1"},
-    "t1": {"family": "KapiCoder-Mongo-Small", "merged": "Repos/KapiCoder-Mongo-Small/merged/sft_distill_v1"},
+    "t0": {"family": "KapiCoder-Mongo-Nano", "merged": f"Repos/KapiCoder-Mongo-Nano/merged/{RUN}"},
+    "t1": {"family": "KapiCoder-Mongo-Small", "merged": f"Repos/KapiCoder-Mongo-Small/merged/{RUN}"},
 }
+EXPORT = ROOT / "reports" / "export"
+WORK = EXPORT / ("work_v3" if V3 else "work")                  # prompts, saidas brutas do runtime, latencia
+EVAL_DIR = EXPORT / ("eval_v3" if V3 else "eval")               # predicoes/summary por tier/variante
+GATES_DIR = EXPORT / ("gates_v3" if V3 else "gates")
+HF_EVAL = {t: ROOT / "Repos" / TIERS[t]["family"] / "reports" / "eval" / RUN for t in TIERS}    # predicoes do HF bf16 (n=2000, val v2c)
+
+
+def results_path(tier: str) -> Path:
+    return EXPORT / (f"results_v3_{tier}.json" if V3 else f"results_{tier}.json")
 # variante -> (precisao, EP, extra_options). Fase 07 §5.2/§5.3 + contornos da sonda (reports/probe/onnx_export_t0_t1.md).
 VARIANTS = {
     "fp32-cpu": ("fp32", "cpu", []),
@@ -37,9 +55,17 @@ VARIANTS = {
 PY = Path("C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe")
 
 
-def package_dir(tier: str, variant: str) -> Path:
+def package_dir(tier: str, variant: str, gen: str | None = None) -> Path:
+    """Diretorio do pacote. `gen` (None = a geracao ativa por KAPI_EXPORT_GEN; "" = legado; "v3")."""
     fam = TIERS[tier]["family"]
-    return ROOT / "Repos" / fam / "exports" / f"{fam}-ONNX-{variant}"
+    v3 = V3 if gen is None else gen == "v3"
+    return ROOT / "Repos" / fam / "exports" / (f"{fam}-v3-ONNX-{variant}" if v3 else f"{fam}-ONNX-{variant}")
+
+
+def merged_dir(tier: str, gen: str | None = None) -> Path:
+    fam = TIERS[tier]["family"]
+    v3 = V3 if gen is None else gen == "v3"
+    return ROOT / "Repos" / fam / "merged" / ("sft_v3" if v3 else "sft_distill_v1")
 
 
 def build(tier: str, variant: str, force: bool = False) -> dict:

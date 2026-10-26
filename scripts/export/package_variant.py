@@ -24,11 +24,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "export"))
-from build_variants import TIERS, VARIANTS, package_dir  # noqa: E402
+from build_variants import RUN, TIERS, V3, VARIANTS, package_dir  # noqa: E402
 
 META_SCHEMA = "kapilab-kapi-model-v1"
 MANIFEST_SCHEMA = "kapilab-kapicoder-manifest-v1"
-VERSION = "2.0.0-preview.1"
+VERSION = "3.0.0-preview.1" if V3 else "2.0.0-preview.1"
 STOP_TEXTS = ["<|fim_prefix|>", "<|fim_suffix|>", "<|fim_middle|>", "<|endoftext|>", "<|im_end|>", "<|fim_pad|>"]
 PARAMS = {"t0": "0.5B", "t1": "1.5B"}
 HW = {"cpu": ["cpu"], "dml": ["gpu"]}
@@ -51,9 +51,61 @@ def dump(obj) -> str:
     return json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
 
 
-def package(tier: str, variant: str) -> Path:
+def provenance(tier: str, lock: dict, export_info: dict) -> dict:
+    """Proveniencia do modelo de origem. Legado: model.lock.json (distill, dataset v2c). v3: reports/sft_v3/run_manifest.json do run (corpus v3,
+    config e hashes do treino; T0 full FT, T1 LoRA ja fundido)."""
+    if not V3:
+        return {"dataset_version": lock["dataset_version"], "run": lock["arms"]["distill"]["run"],
+                "method": "SFT sequence-level FIM editor-context-v1, distilado do KapiTeacher-Mongo-7B", "extra": {},
+                "modification": "ajuste fino de dominio MongoDB, destilacao do KapiTeacher-Mongo-7B",
+                "notice": "ajuste fino completo (SFT) com alvos destilados do KapiTeacher-Mongo-7B (derivado de Qwen/Qwen2.5-Coder-7B, Apache-2.0; "
+                          "os pesos do professor nao fazem parte deste pacote)"}
+    fam = TIERS[tier]["family"]
+    rm = json.loads((ROOT / "Repos" / fam / "reports" / RUN / "run_manifest.json").read_text(encoding="utf-8"))
+    method = rm["config"]["effective"]["model"]["method"]
+    ds = rm["dataset"]
+    desc = ("ajuste fino completo (full FT)" if method == "full" else "ajuste fino LoRA r=64 (fundido nos pesos)")
+    extra = {"method_kind": method, "corpusManifestSha256": ds["corpus_manifest_sha256"], "corpusExamples": ds["examples"],
+             "trainConfigSha256": rm["config"]["sha256"], "trainFingerprint": rm["fingerprint"]["combined"], "trainGitCommit": rm["git"]["commit"]}
+    return {"dataset_version": "v3", "run": RUN, "extra": extra,
+            "method": f"SFT {desc} FIM editor-context-v1, corpus v3 (alvos destilados do KapiTeacher-Mongo-7B + cortes gerados por LLM local + gramatica + replay)",
+            "modification": "ajuste fino de dominio MongoDB no corpus v3: destilacao do KapiTeacher-Mongo-7B, consultas geradas por LLM local "
+                            "(Qwen3-14B, Apache-2.0) validadas por execucao, cortes de gramatica e replay de codigo",
+            "notice": desc + " no corpus v3 (alvos destilados do KapiTeacher-Mongo-7B, derivado de Qwen/Qwen2.5-Coder-7B; consultas geradas por LLM local "
+                      "Qwen3-14B, Apache-2.0, validadas por execucao; cortes de gramatica; replay). Os pesos do professor nao fazem parte deste pacote"}
+
+
+EOS_UNREACHABLE = 151935   # id inalcancavel (>= vocab do tokenizer): a IDE ja para pelos seus proprios tokens de parada
+
+
+def eos_copy(src: Path) -> Path:
+    """Copia leve (hardlinks; copia se o FS nao suportar) do pacote para `<nome>-eosfix`, para gerar a variante com o contorno do EOS."""
+    dst = src.with_name(src.name + "-eosfix")
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+    for f in src.iterdir():
+        if f.is_file():
+            try:
+                import os
+                os.link(f, dst / f.name)
+            except OSError:
+                shutil.copyfile(f, dst / f.name)
+    # os arquivos reescritos abaixo nao podem compartilhar inode com o pacote original
+    for name in ("genai_config.json", "kapibarastudio-model.json", "NOTICE.md", "README.md", "kapicoder_manifest.json", "export_manifest.json"):
+        f = dst / name
+        if f.exists():
+            data = f.read_bytes()
+            f.unlink()
+            f.write_bytes(data)
+    return dst
+
+
+def package(tier: str, variant: str, eos_workaround: bool = False) -> Path:
     t, (prec, ep, extra) = TIERS[tier], VARIANTS[variant]
     pkg = package_dir(tier, variant)
+    if eos_workaround:
+        pkg = eos_copy(pkg)
     merged = ROOT / t["merged"]
     lock = json.loads((ROOT / "Repos" / t["family"] / "model.lock.json").read_text(encoding="utf-8"))
     if (pkg / ".build_info.json").exists():
@@ -74,11 +126,14 @@ def package(tier: str, variant: str) -> Path:
     assert cfg["model"]["type"] == "qwen2", cfg["model"]["type"]
     cfg["search"]["do_sample"] = False
     cfg["search"]["max_length"] = 2048
+    if eos_workaround:    # contorno do bug do EOS da IDE (GetSequence()[^1] duplica o ultimo token): decisao do USUARIO; pacotes padrao NAO o tem
+        cfg["model"]["eos_token_id"] = EOS_UNREACHABLE
     write(cfg_path, dump(cfg))
 
     fam = t["family"]
     base = lock["base"]
-    display = f"{fam} ONNX {variant.upper()}"
+    prov = provenance(tier, lock, export_info)
+    display = f"{fam}{' v3' if V3 else ''} ONNX {variant.upper()}"
     meta = {
         "schema": META_SCHEMA,
         "name": display,
@@ -97,13 +152,15 @@ def package(tier: str, variant: str) -> Path:
         "tier": lock["tier"],
         "variant": variant,
         "license": "Apache-2.0",
-        "modification": "Modelo derivado e MODIFICADO de " + base["repo_id"] + " (ajuste fino de dominio MongoDB, destilacao do KapiTeacher-Mongo-7B; "
+        "modification": "Modelo derivado e MODIFICADO de " + base["repo_id"] + " (" + prov["modification"] + "; "
                         "exportado e quantizado para ONNX). Nao e um produto da Alibaba Cloud/Qwen.",
         "base": {"repo_id": base["repo_id"], "revision": base["revision"], "license": "Apache-2.0"},
-        "datasetVersion": lock["dataset_version"],
-        "training": {"run": lock["arms"]["distill"]["run"], "method": "SFT sequence-level FIM editor-context-v1, distilado do KapiTeacher-Mongo-7B",
-                     "mergedWeightsSha256": export_info["files_sha256"]["model.safetensors"]},
+        "datasetVersion": prov["dataset_version"],
+        "training": {"run": prov["run"], "method": prov["method"], "mergedWeightsSha256": export_info["files_sha256"]["model.safetensors"],
+                     **prov["extra"]},
         "manifest": "kapicoder_manifest.json",
+        **({"eosWorkaround": {"eos_token_id": EOS_UNREACHABLE, "reason": "IDE duplica o ultimo token quando a geracao termina em EOS (onnxruntime-genai 0.15.2)"}}
+           if eos_workaround else {}),
         "status": "candidate-unqualified (medidas proxy do Python; o gate oficial e do KapiLab)",
     }
     write(pkg / "kapibarastudio-model.json", dump(meta))
@@ -114,8 +171,7 @@ def package(tier: str, variant: str) -> Path:
 {fam} ONNX `{variant}` ({VERSION}) e um trabalho derivado e **modificado** de `{base['repo_id']}` (revisao `{base['revision']}`), licenciado sob
 Apache License 2.0 (ver `LICENSE`).
 
-Modificacoes: ajuste fino completo (SFT) para autocomplete FIM de MongoDB no contrato `editor-context-v1` (dataset `{lock['dataset_version']}`),
-com alvos destilados do KapiTeacher-Mongo-7B (derivado de Qwen/Qwen2.5-Coder-7B, Apache-2.0; os pesos do professor nao fazem parte deste pacote);
+Modificacoes: {prov['notice']} para autocomplete FIM de MongoDB no contrato `editor-context-v1` (dataset `{prov['dataset_version']}`);
 exportacao para ONNX e quantizacao ({VARIANTS[variant][0]}, provider {VARIANTS[variant][1]}) com onnxruntime-genai 0.15.2.
 Este pacote nao e um produto da Alibaba Cloud/Qwen. Os dados sinteticos (schemas ficticios) nao contem dados pessoais; o replay de codigo vem de
 pacotes npm com licencas MIT/Apache-2.0/BSD/ISC.
@@ -127,7 +183,7 @@ Autocomplete FIM de MongoDB para o Kapibara Studio ({PARAMS[tier]}, tier {lock['
 - Contrato de contexto: `editor-context-v1` (QwenFimPromptBuilder + cabecalho do editor), contexto 2.048 tokens, ate 32 tokens gerados, greedy.
 - Paradas: {', '.join(f'`{s}`' for s in STOP_TEXTS)}.
 - Runtime: onnxruntime-genai >= 0.15.2 (`model.type = qwen2`, adapter Qwen da IDE).
-- Base: `{base['repo_id']}` @ `{base['revision']}` (Apache-2.0). Dataset `{lock['dataset_version']}`. Licenca Apache-2.0 (`LICENSE`, `NOTICE.md`).
+- Base: `{base['repo_id']}` @ `{base['revision']}` (Apache-2.0). Dataset `{prov['dataset_version']}`. Licenca Apache-2.0 (`LICENSE`, `NOTICE.md`).
 - Integridade: `kapicoder_manifest.json` (SHA-256 de cada arquivo) e `export_manifest.json` (ferramenta, comando, tamanhos).
 - Estado: **candidato nao qualificado**. Medidas de paridade/latencia do Python sao PROXY; o gate oficial vem do KapiLab/harness da IDE.
 """)
@@ -142,9 +198,9 @@ Autocomplete FIM de MongoDB para o Kapibara Studio ({PARAMS[tier]}, tier {lock['
         "files": [{"path": p.name, "sha256": sha256(p), "bytes": p.stat().st_size} for p in manifest_files]}))
     all_files = sorted(p for p in pkg.iterdir() if p.is_file() and p.name != "export_manifest.json")
     write(pkg / "export_manifest.json", dump({
-        "schema": "kapi-export-manifest-v1", "package": pkg.name, "tier": lock["tier"], "variant": variant, "created_utc": time.strftime("%FT%TZ", time.gmtime()),
+        "schema": "kapi-export-manifest-v1", "package": pkg.name, "tier": lock["tier"], "variant": variant, "generation": "v3" if V3 else "v2", "created_utc": time.strftime("%FT%TZ", time.gmtime()),
         "source": {"merged_dir": t["merged"], "files_sha256": export_info["files_sha256"], "combined_sha256": export_info["combined_sha256"],
-                   "dtype": export_info["dtype"], "base": base, "dataset_version": lock["dataset_version"]},
+                   "dtype": export_info["dtype"], "base": base, "dataset_version": prov["dataset_version"], "training": prov["extra"]},
         "build": build, "total_bytes": sum(p.stat().st_size for p in all_files),
         "files": [{"path": p.name, "sha256": sha256(p), "bytes": p.stat().st_size} for p in all_files]}))
     print(f"[ok] {pkg.name}: {sum(p.stat().st_size for p in all_files) / 2**20:.1f} MB, {len(all_files)} arquivos")
@@ -156,10 +212,12 @@ def main() -> None:
     ap.add_argument("--tier", choices=list(TIERS), required=True)
     ap.add_argument("--variant", action="append", choices=list(VARIANTS))
     ap.add_argument("--all", action="store_true", help="todas as variantes ja construidas do tier")
+    ap.add_argument("--eos-workaround", action="store_true", help="gera a copia `<pacote>-eosfix` com eos_token_id inalcancavel no genai_config (contorno do EOS da IDE; "
+                    "pendente de decisao do usuario; os pacotes padrao NAO o aplicam)")
     a = ap.parse_args()
     variants = [v for v in VARIANTS if (package_dir(a.tier, v) / "genai_config.json").exists()] if a.all else (a.variant or [])
     for v in variants:
-        package(a.tier, v)
+        package(a.tier, v, a.eos_workaround)
 
 
 if __name__ == "__main__":

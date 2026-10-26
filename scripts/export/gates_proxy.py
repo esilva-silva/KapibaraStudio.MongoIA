@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "eval"))
 sys.path.insert(0, str(ROOT / "scripts" / "export"))
 import check_gates  # noqa: E402
-from build_variants import VARIANTS  # noqa: E402
+from build_variants import GATES_DIR, VARIANTS, results_path  # noqa: E402
 
 GATE_TIER = {"t0": "T0", "t1": "T1"}
 
@@ -73,8 +73,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tier", choices=["t0", "t1"], required=True)
     a = ap.parse_args()
-    res = json.loads((ROOT / "reports/export" / f"results_{a.tier}.json").read_text(encoding="utf-8"))
-    out_dir = ROOT / "reports" / "export" / "gates" / a.tier
+    res = json.loads(results_path(a.tier).read_text(encoding="utf-8"))
+    out_dir = GATES_DIR / a.tier
     out_dir.mkdir(parents=True, exist_ok=True)
     summary = {}
     for v, o in res["variants"].items():

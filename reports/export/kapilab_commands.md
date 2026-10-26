@@ -50,3 +50,20 @@ Antes de qualquer rodada GPU, confirmar que o DML esta na RX 7800 XT (nao na iGP
 
 Ver `reports/export/onnx_export_t0_t1.md` (secao KapiLab). Arquivos brutos: `tmp/kapilab_ws/tmp/*.jsonl` (bench), `reports/export/kapilab_validate_*.json`,
 `reports/export/kapilab_contract_tokens_t0.json`.
+
+## Pacotes v3 (retreino J20-J23, 2026-10-26)
+
+Caminhos: `$EX\KapiCoder-Mongo-Nano\exports\KapiCoder-Mongo-Nano-v3-ONNX-{int4,int8,int8-emb4,dml-fp16}` e
+`$EX\KapiCoder-Mongo-Small\exports\KapiCoder-Mongo-Small-v3-ONNX-{int8,dml-fp16}`. Validacao feita com o apphost publicado (Cpu): 6/6 `Available`, `schemaValid`, `ideSupported`,
+`strictSchema kapilab-kapi-model-v1`, `hashesValid` (saidas em `reports/export/kapilab_validate_v3_t0|t1.json`). Nao rodados: `bench`/`model run` (CPU: nao pedido nesta etapa; GPU: exige fila + token).
+
+```powershell
+& $K model validate --package "$EX\KapiCoder-Mongo-Nano\exports\KapiCoder-Mongo-Nano-v3-ONNX-int4" --strict-kapi --verify-hashes
+& $K model validate --package "$EX\KapiCoder-Mongo-Small\exports\KapiCoder-Mongo-Small-v3-ONNX-int8" --strict-kapi --verify-hashes
+# bench CPU (maquina ociosa): reutilize kapilab_bench_cpu.sh trocando o nome do pacote para ...-v3-ONNX-<variante>
+# GPU (pendente de fila/token):
+& $KW --workspace $WS bench autocomplete --package "$EX\KapiCoder-Mongo-Small\exports\KapiCoder-Mongo-Small-v3-ONNX-dml-fp16" --in tmp/records_t1_203.jsonl --device gpu --via-queue --warmup 1 --iterations 1 --out tmp/bench_t1_v3_dml-fp16.jsonl
+# variante com o contorno do EOS (decisao pendente do usuario): gerar com
+#   KAPI_EXPORT_GEN=v3 python -I scripts/export/package_variant.py --tier t0 --variant int4 --eos-workaround     # => ...-v3-ONNX-int4-eosfix
+```
+LUIDs desta sessao: 7800 XT `0x00000000_0x00012602`, iGPU `0x00000000_0x00014830` (calibrados alocando 3 GB com torch-ROCm).

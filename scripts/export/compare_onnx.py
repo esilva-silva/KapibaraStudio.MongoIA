@@ -23,11 +23,9 @@ sys.path.insert(0, str(ROOT / "scripts" / "eval"))
 sys.path.insert(0, str(ROOT / "scripts" / "teacher"))
 sys.path.insert(0, str(ROOT / "bakeoff" / "v1" / "scripts"))
 import stats  # noqa: E402
-from build_variants import TIERS, VARIANTS, package_dir  # noqa: E402
+from build_variants import EVAL_DIR, HF_EVAL, RUN, TIERS, V3, VARIANTS, WORK, package_dir, results_path  # noqa: E402
 
-WORK = ROOT / "reports" / "export" / "work"
-HF_EVAL = {"t0": ROOT / "Repos/KapiCoder-Mongo-Nano/reports/eval/sft_distill_v1", "t1": ROOT / "Repos/KapiCoder-Mongo-Small/reports/eval/sft_distill_v1"}
-HF_REF = {"t0": {"fim": 0.403, "exec": 0.582}, "t1": {"fim": 0.4105, "exec": 0.595}}
+HF_REF = {"t0": {"fim": 0.403, "exec": 0.582}, "t1": {"fim": 0.4105, "exec": 0.595}}   # n=2000 do legado (informativo; o v3 usa o summary do proprio run)
 
 
 def jl(path: Path) -> list[dict]:
@@ -91,12 +89,16 @@ def main() -> None:
     hf_mean = {"fim": st.mean(r["metrics"]["normalized_match"] for r in hf_rows), "exec": st.mean(strict_exec(r) for r in hf_rows),
                "fields": st.mean(bool(r["exec"]["field_hallucination"]) for r in hf_rows), "syntax": st.mean(bool(r["metrics"]["syntax_valid"]) for r in hf_rows),
                "apt": st.mean(r["metrics"]["accepted_prefix_tokens"] for r in hf_rows)}
-    res = {"tier": tier, "n_quality": len(ids500), "n_parity": n_par, "hf_bf16": {"n500": hf_mean, "n2000_reference": HF_REF[tier],
+    href = HF_REF[tier]
+    if V3:   # referencia n=2000 do proprio run v3
+        hh = json.loads((HF_EVAL[tier] / "summary.json").read_text(encoding="utf-8"))["headline"]
+        href = {"fim": hh["normalized_match"], "exec": hh["exec_valid"]}
+    res = {"tier": tier, "generation": "v3" if V3 else "v2", "hf_run": RUN, "n_quality": len(ids500), "n_parity": n_par, "hf_bf16": {"n500": hf_mean, "n2000_reference": href,
            "regenerated_text_equals_stored_pct": round(100 * san, 2)}, "variants": {}}
     for v in VARIANTS:
         pkg = package_dir(tier, v)
         qf = WORK / f"{tier}_{v}_quality.json"
-        sf = ROOT / "reports/export/eval" / tier / v / "predictions.jsonl"
+        sf = EVAL_DIR / tier / v / "predictions.jsonl"
         if not (qf.exists() and sf.exists()):
             continue
         q = json.loads(qf.read_text(encoding="utf-8"))
@@ -155,7 +157,7 @@ def main() -> None:
         if lat:
             out["latency_proxy"] = lat
         res["variants"][v] = out
-    dest = ROOT / "reports" / "export" / f"results_{tier}.json"
+    dest = results_path(tier)
     dest.write_text(json.dumps(res, indent=2, ensure_ascii=False), encoding="utf-8")
     print("->", dest)
     for v, o in res["variants"].items():

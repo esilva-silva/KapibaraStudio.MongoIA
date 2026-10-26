@@ -19,8 +19,12 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RTX = "0x00000000_0x00012951"   # LUID da RX 7800 XT nesta sessao (confirmado com alocacao torch-ROCm; muda por boot -> --luid)
-IGPU = "0x00000000_0x00014bfc"
+sys.path.insert(0, str(ROOT / "scripts" / "export"))
+from build_variants import WORK  # noqa: E402
+# LUIDs mudam por boot: calibre alocando 3 GB com torch-ROCm em cuda:0 e lendo gpu_probe.ps1; informe por KAPI_RTX_LUID / KAPI_IGPU_LUID (ou --luid)
+# Sessao v3 (2026-10-26): 7800 XT = 0x00000000_0x00012602 (3.299 MB dedicados do processo), iGPU = 0x00000000_0x00014830 (0 MB do processo)
+RTX = os.environ.get("KAPI_RTX_LUID", "0x00000000_0x00012951")
+IGPU = os.environ.get("KAPI_IGPU_LUID", "0x00000000_0x00014bfc")
 PAD_FROM = 151665                # ids >= len(tokenizer) sao padding do vocab (HF os mascara)
 
 
@@ -93,7 +97,7 @@ def main() -> None:
     ap.add_argument("--luid", default=RTX)
     a = ap.parse_args()
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
-    prompts = json.loads((ROOT / "reports/export/work" / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))
+    prompts = json.loads((WORK / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))
     import psutil
     from transformers import AutoTokenizer
     tok = AutoTokenizer.from_pretrained(prompts["model"])

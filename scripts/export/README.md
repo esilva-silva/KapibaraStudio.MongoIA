@@ -8,6 +8,34 @@ Venvs: `PY=C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe` (ROCm, onnx
 `W=C:/IA/models/SlopStudio.MongoAI-Compact/.venv-winml/Scripts/python.exe` (onnxruntime-genai-winml 0.15.2; DML; **sem `-I`**, o `sitecustomize` carrega o
 `onnxruntime.dll` do pacote WinML; nao importar `onnxruntime`). Mongo no WSL (`wsl -d Ubuntu -u root -e systemctl start mongod`) so para o exec-valid.
 
+## Geracao v3 (retreino J20-J23; `KAPI_EXPORT_GEN=v3`)
+
+Todos os scripts respeitam a variavel `KAPI_EXPORT_GEN` (defina ANTES de iniciar; os subprocessos herdam): vazio = legado (`merged/sft_distill_v1`, dataset v2c, pacotes
+`<familia>-ONNX-<variante>`); `v3` = `merged/sft_v3`, dataset v3, pacotes **`<familia>-v3-ONNX-<variante>`**, e diretorios separados (`reports/export/work_v3|eval_v3|gates_v3`,
+`results_v3_<tier>.json`). O legado nao e sobrescrito. Receita completa (PowerShell, `$env:KAPI_EXPORT_GEN='v3'`):
+
+```powershell
+$env:KAPI_EXPORT_GEN='v3'; $PY = "C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe"
+& $PY -I scripts/export/build_variants.py --tier t0 --variant int4 --variant int8 --variant dml-fp16 --variant int8-emb4
+& $PY -I scripts/export/build_variants.py --tier t1 --variant int8 --variant dml-fp16
+& $PY -I scripts/export/package_variant.py --tier t0 --all ; & $PY -I scripts/export/package_variant.py --tier t1 --all   # metadata kapi v3 (run_manifest do treino)
+& $PY -I scripts/export/prep_prompts.py --tier t0         # GPU 7800 XT (HF bf16 do sft_v3); idem t1
+# LUIDs mudam por boot: calibre (torch-ROCm aloca 3 GB; gpu_probe.ps1) e exporte antes das medidas DML
+$env:KAPI_RTX_LUID='0x00000000_0x00012602'; $env:KAPI_IGPU_LUID='0x00000000_0x00014830'
+& $PY -I scripts/export/measure_all.py --tier t0 --phase quality ; & $PY -I scripts/export/measure_all.py --tier t0 --phase latency   # idem t1
+& $PY -I scripts/export/compare_onnx.py --tier t0 ; & $PY -I scripts/export/gates_proxy.py --tier t0
+# homologacao v1 (n=500, SO pela API autorizada de homolog_guard; agregados em reports/export/homolog_onnx_v3_<tier>.json)
+& $PY -I scripts/export/homolog_onnx.py prep --tier t0
+& $PY -I scripts/export/homolog_onnx.py run  --tier t0 --variant int4      # DML: venv WinML sem -I
+& $PY -I scripts/export/homolog_onnx.py post --tier t0 --variant int4
+& env/.venv/Scripts/python.exe -I scripts/eval/eval_homolog.py score --name onnx_v3_t0_int4
+& $PY -I scripts/export/homolog_onnx.py compare --tier t0
+```
+
+**Contorno do EOS da IDE (decisao do usuario PENDENTE; os pacotes padrao NAO o aplicam):** gere a variante com contorno, sem alterar o pacote original (copia por hardlinks
+`<pacote>-eosfix`, `genai_config.model.eos_token_id = 151935`, manifestos refeitos, metadata `eosWorkaround`):
+`& $PY -I scripts/export/package_variant.py --tier t0 --variant int4 --eos-workaround`.
+
 ## Variantes (`build_variants.py`)
 
 | variante | precisao / EP | opcoes do builder | nota |

@@ -17,6 +17,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "teacher"))
+sys.path.insert(0, str(ROOT / "scripts" / "export"))
+from build_variants import EVAL_DIR, WORK  # noqa: E402
 import eval_teacher as et  # noqa: E402
 from _common import ENV_VENV_PY, library_versions, model_fingerprint, read_jsonl, sha256_file, write_json  # noqa: E402
 
@@ -36,14 +38,14 @@ def main() -> None:
     from compact.mongo_validate import validate
     from transformers import AutoTokenizer
 
-    prompts = json.loads((ROOT / "reports/export/work" / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))
+    prompts = json.loads((WORK / f"{a.tier}_prompts.json").read_text(encoding="utf-8"))
     run = json.loads(Path(a.run).read_text(encoding="utf-8"))
     model_dir = Path(prompts["model"])
     tok = AutoTokenizer.from_pretrained(model_dir)
     contract = contract_for(tok)
     stops = contract.stops
     rows_src = {r["id"]: r for r in et.read_rows("editor-context-v1", "val")}
-    out_dir = ROOT / "reports" / "export" / "eval" / a.tier / a.variant
+    out_dir = EVAL_DIR / a.tier / a.variant
     out_dir.mkdir(parents=True, exist_ok=True)
     by_prompt = {p["id"]: p for p in prompts["items"]}
     rows = []

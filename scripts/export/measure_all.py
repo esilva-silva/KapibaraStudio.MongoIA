@@ -19,11 +19,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "export"))
 sys.path.insert(0, str(ROOT / "scripts" / "eval"))
-from build_variants import TIERS, VARIANTS, package_dir  # noqa: E402
+from build_variants import EVAL_DIR, TIERS, VARIANTS, WORK, package_dir  # noqa: E402
 
 PY_ROCM = "C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe"
 PY_WINML = "C:/IA/models/SlopStudio.MongoAI-Compact/.venv-winml/Scripts/python.exe"
-WORK = ROOT / "reports" / "export" / "work"
 IDLE_WAIT_S = 180
 
 
@@ -59,7 +58,7 @@ def quality(tier: str, variant: str, force: bool) -> None:
         rc = run_py(ep, "onnx_run.py", "--pkg", str(pkg), "--provider", ep, "--tier", tier, "--mode", "quality", "--out", str(q))
         if rc:
             raise SystemExit(f"{variant}: quality falhou rc={rc}")
-    if force or not (ROOT / "reports/export/eval" / tier / variant / "summary.json").exists():
+    if force or not (EVAL_DIR / tier / variant / "summary.json").exists():
         rc = run_py("cpu", "score_onnx.py", "--tier", tier, "--variant", variant, "--run", str(q))
         if rc:
             raise SystemExit(f"{variant}: score falhou rc={rc}")

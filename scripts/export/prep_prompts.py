@@ -15,12 +15,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts" / "export"))
 sys.path.insert(0, str(ROOT / "scripts" / "teacher"))
 sys.path.insert(0, str(ROOT / "scripts" / "student"))
 import eval_teacher as et  # noqa: E402
 from _common import Generator, gpu_lock, load_hf  # noqa: E402
 
-TIERS = {"t0": "Repos/KapiCoder-Mongo-Nano/merged/sft_distill_v1", "t1": "Repos/KapiCoder-Mongo-Small/merged/sft_distill_v1"}
+from build_variants import TIERS as _T, WORK  # noqa: E402
+TIERS = {k: v["merged"] for k, v in _T.items()}
 SAMPLE = ROOT / "Repos/KapiTeacher-Mongo-7B/reports/eval/base-v2c/sample_ids.json"
 SEED = 20261020
 N_QUALITY, N_PARITY = 500, 200
@@ -56,7 +58,7 @@ def main() -> None:
                 print(k + 1, flush=True)
         stops = sorted(contract.stops)
         del model
-    dest = ROOT / "reports" / "export" / "work" / f"{a.tier}_prompts.json"
+    dest = WORK / f"{a.tier}_prompts.json"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps({"tier": a.tier, "model": str(model_dir), "seed": SEED, "stops": stops, "max_new": et.MAX_NEW_TOKENS,
                                 "n_parity": N_PARITY, "items": out}, ensure_ascii=False), encoding="utf-8")
