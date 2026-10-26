@@ -1,76 +1,92 @@
-# Prontidao para publicar T0 Nano e T1 Small em PREVIEW no Hugging Face
+# Prontidao para publicar T0 Nano e T1 Small (pesos v3) em PREVIEW PRIVADO no Hugging Face
 
-Data: 2026-10-23, reavaliado em 2026-10-24 com a homologacao v1 (secao 5). **Nada foi enviado**: sem rede, sem token, sem upload; nenhum pacote foi instalado. Tudo abaixo e preparacao local e verificavel.
-Fontes dos numeros: `reports/datasets/homolog-v1-eval.{md,json}`, `reports/datasets/homolog-v1-manifest.json`, `docs/resumo-executivo.md`, `Repos/*/reports/eval/*`, `reports/export/onnx_export_t0_t1.md` (cada afirmacao do card esta em `Repos/*/hf/SOURCES.md`).
+Data: 2026-10-26 (substitui a versao de 2026-10-23/24, que tratava os pesos v1 `sft_distill_v1`). **Nada foi enviado**: sem rede, sem token, sem upload, sem commit; nenhum pacote foi instalado.
+Tudo abaixo e preparacao local e verificavel. O staging de verdade esta em `cache/hf_stage/{nano,small}/` (fora do Git, ignorado por `cache/` no `.gitignore`).
 
-## 1. O que esta pronto
+Fontes dos numeros (cada afirmacao do card esta em `Repos/*/hf/SOURCES.md`): `reports/datasets/homolog-v3-eval-t{0,1}.json`, `reports/datasets/homolog-v1-manifest.json`, `reports/student/v3_decision_t{0,1}.{md,json}`,
+`reports/student/corpus_v3_report.md`, `Repos/*/reports/eval/sft_v3/{summary,measures}.json`, `Repos/*/reports/sft_v3/run_manifest.json`, `Repos/*/configs/sft_v3.yaml`, `docs/resumo-executivo.md`. Nenhum item de `data/homolog` foi lido.
+
+## 1. Recomendacao
+
+**Publicar apenas como PREVIEW PRIVADO**, os dois tiers, repositorios `esilva/KapiCoder-Mongo-Nano` e `esilva/KapiCoder-Mongo-Small`, so safetensors bf16 + tokenizer + card, tag `v0.1.0-preview`.
+Repositorios ONNX (`esilva/KapiCoder-Mongo-{Nano,Small}-ONNX`) ficam para **depois**: o suporte no staging e no upload esta pronto e desligado por padrao (`--target onnx`), mas os pacotes v3 ainda estao sendo produzidos/qualificados por outra frente e nao tem medida propria.
+**Nao tornar publico** enquanto nao houver medida com consultas escritas por humanos ou uma decisao consciente de aceitar so a avaliacao sintetica, e enquanto a IDE nao garantir schema no contexto e validacao de campos antes de executar.
+
+## 2. Numeros do card (avaliacao interna, dado sintetico; `verified: false`)
+
+Val v2c sintetico (n=2.000):
+
+| | FIM acc | Exec-valid | Exec / teto | Campos inexistentes `full` / `irrelevant` / `none` | Generic-JS |
+|---|---|---|---|---|---|
+| T0 Nano v3 (v1 interno; base) | 0,405 (0,403; 0,076) | 0,5945 (0,582; 0,213) | 0,9504 (0,9305; 0,3405) | 1,34 / 8,59 / 9,03 % (v1: 2,06 / 11,11 / 12,90) | 0,530 (0,518; 0,340) |
+| T1 Small v3 (v1 interno; base) | 0,410 (0,4105; 0,142) | 0,6015 (0,595; 0,316) | 0,9616 (0,9512; 0,5052) | 1,21 / 5,56 / 7,10 % (v1: 1,58 / 7,58 / 10,97) | 0,606 (0,632; 0,406) |
+
+Homologacao v1 com os pesos v3 (6.030 cortes, 28 schemas novos, escrita por Qwen3-14B e gramatica, **nao humana**, **nao totalmente independente do treino v3**):
+
+| | FIM acc | Exec / teto | Campos inexistentes `full` | `irrelevant` | `none` |
+|---|---|---|---|---|---|
+| T0 v3 | 42,34% (v1 33,10%; base 12,62%) | 86,17% (v1 74,43%; base 39,54%) | **10,81%** (v1 15,35%; base 7,02%) | 9,09% (base 8,40%) | 9,18% (base 10,91%) |
+| T1 v3 | 45,37% (v1 36,97%; base 18,74%) | 89,26% (v1 84,44%; base 52,81%) | **7,50%** (v1 9,19%; base 7,15%) | 8,23% (base 9,61%) | 8,74% (base 10,04%) |
+
+Leitura (o card diz o mesmo): no T0 o v3 ainda inventa mais campos que a base em schema novo com schema visivel (IC95 pareado exclui zero); no T1 esta proximo da base (IC95 pareado inclui zero, sem teste de equivalencia).
+O FIM acc da homologacao ficar acima do val no v3 **nao** e evidencia de melhor generalizacao: o corpus v3 tem consultas do mesmo gerador LLM e templates de gramatica sobre outros schemas, entao o ganho em consultas escritas pelo LLM provavelmente superestima o ganho em consultas humanas. Uma so semente de treino por tier.
+
+## 3. O que esta pronto
 
 | Item | Onde | Estado |
 |---|---|---|
-| Model card bilingue (en primeiro, pt-BR curto), front matter YAML, `model-index` rotulado interno/sintetico (`verified: false`) | `Repos/KapiCoder-Mongo-{Nano,Small}/hf/README.md` | pronto, conferido por script |
-| Aviso de modificacao e atribuicao ao Qwen | `hf/NOTICE.md` + `LICENSE` (sha igual ao da base) | pronto |
-| Atribuicao do replay npm (555 pacotes, sem e-mails de autores) | `hf/REPLAY_ATTRIBUTION.md` (gerado de `data/replay/v1/LICENSES.md`) | pronto |
-| Checklist de revisao e apendice afirmacao <-> fonte | `hf/MODEL_CARD_REVIEW.md`, `hf/SOURCES.md` | pronto (internos, nao sobem) |
-| Manifesto de upload com tamanhos e sha256 (pacote padrao + variantes ONNX opcionais) | `hf/upload_manifest.json` | gerado; T0 0,95 GB, T1 3,1 GB (so safetensors + tokenizer + card) |
-| Staging em dry-run, varredura de caminhos/segredos/dados, conferencia de hashes | `scripts/publish/stage_hf_package.py` | pronto |
-| Envio protegido (imprime o comando; so executa com `--i-have-user-approval` **e** `HF_TOKEN`) | `scripts/publish/upload_to_hf.py` | pronto, nunca executado |
-| Conferencia dos numeros do card contra os JSON de avaliacao | `scripts/publish/verify_card_numbers.py` | OK nos dois tiers |
-| Testes | `scripts/publish/tests` | 60 passam (inclui os de homologacao: blocos == JSON, model-index, divergencia detectada) (inclui golden do contrato, recusa sem aprovacao/token, nenhuma rede) |
+| Model cards v3 (en primeiro, pt-BR curto), front matter YAML, `model-index` rotulado interno/sintetico (`verified: false`), bloco "Read this first" | `Repos/KapiCoder-Mongo-{Nano,Small}/hf/README.md` | pronto; tabelas e blocos renderizados a partir dos JSON e conferidos por script |
+| Aviso de modificacao e atribuicao ao Qwen (e ao gerador Qwen3-14B) | `hf/NOTICE.md` + `LICENSE` (sha igual ao da base) | pronto |
+| Atribuicao do replay npm (555 pacotes, sem e-mails) | `hf/REPLAY_ATTRIBUTION.md` | pronto (lista a populacao de `data/replay/v1`; ver §6) |
+| Arvore do repositorio principal (raiz plana; `provenance/`, `evaluation/`, `examples/`) | gerada por `stage_hf_package.py`; qualquer arquivo fora da arvore autorizada e erro | pronto; 16 arquivos (T0 953,5 MB; T1 2,9 GB) |
+| `provenance/model_lock.json` (base+revisao, hashes, corpus v3, commit de treino, sem caminhos locais), `provenance/upload_manifest.json` (sha256 de tudo), `evaluation/{val_v2c,homologation_v1}_summary.json` (so agregados), `examples/example_fim.py` | gerados no staging | pronto |
+| Manifesto interno com tamanhos e sha256 | `Repos/*/hf/upload_manifest.json` | gerado e conferido (`--check-manifest`); muda se qualquer script de `scripts/publish` ou card mudar: regenerar antes de subir |
+| Suporte ONNX separado (pastas `cpu-int4/`, `cpu-int8/`, `dml-fp16/` no Nano; `cpu-int8/`, `dml-fp16/` no Small; `export_manifest.json` sanitizado; cards `hf/ONNX_README.md`, `hf/ONNX_NOTICE.md`) | `stage_hf_package.py --target onnx`, `upload_to_hf.py --target onnx` | pronto, **desligado por padrao**, nao incluido em nenhum manifesto |
+| Upload protegido: so imprime criar-repo-privado, subir, tag `v0.1.0-preview` e verificacao (sha256 do manifesto x Hub); executa so com `--i-have-user-approval` **e** credencial do proprio usuario (`HF_TOKEN` ou `--user-is-logged-in`) | `scripts/publish/upload_to_hf.py` | pronto, nunca executado |
+| Conferencia dos numeros do card contra os JSON (inclui `homolog-v3-eval-*.json`, `v3_decision_*`, summaries v3) | `scripts/publish/verify_card_numbers.py` | OK nos dois tiers; falha se o card divergir |
+| Testes | `scripts/publish/tests` | 82 passam, 2 pulados (execucao real do exemplo, opt-in); nenhum teste usa rede |
 
-Numeros do card (avaliacao interna, dado sintetico, n=2.000, val v2c): T0 FIM acc 0,403, exec-valid 0,582, exec/teto 0,9305, campos inexistentes 2,06% (`full`) / 11,11% (`irrelevant`) / 12,90% (`none`), Generic-JS 0,518;
-T1 0,4105, 0,595, 0,9512, 1,58% / 7,58% / 10,97%, 0,632. Base zero-shot: T0 0,076/0,213; T1 0,142/0,316.
+## 4. Exemplo executado de verdade (CPU, sem rede)
 
-## 2. O que falta (e o card declara)
+`examples/example_fim.py` do staging, pesos reais (`merged/sft_v3`, sha256 conferidos), prompt `editor-context-v1` (cabecalho testado contra `data/contracts/editor-context-v1.golden`), `HIP_VISIBLE_DEVICES=-1 CUDA_VISIBLE_DEVICES=-1 HF_HUB_OFFLINE=1`,
+python 3.12.10, torch 2.10 (ROCm, sem dispositivo visivel), transformers 4.57.6, bf16, greedy, 32 tokens: **T0 `'total'`, T1 `'total'`** (cerca de 5 s cada, com o modelo ja em disco). Registro: `reports/publish/example_fim_run.txt`.
+O transformers 4.57.6 imprime um aviso sobre "regex pattern" ao carregar o tokenizer; os arquivos do tokenizer sao identicos aos da base (mesmo sha256 do lock), e o card menciona isso.
 
-- **Medida com consultas escritas por humanos: nao existe.** O cego humano foi descartado em 2026-10-22. A homologacao v1 (secao 5) e fora da distribuicao (schemas novos), mas **sintetica e escrita por LLM/gramatica da mesma familia Qwen**; o card a rotula assim e nao a apresenta como estimativa de qualidade em consultas reais.
-- **Gates oficiais:** KapiLab sem token de GPU (B5), TTFT de CPU reprova sem cache de prefixo (B2), bug do EOS na IDE e nos pacotes ONNX (B1), `gates.yaml` em rascunho, `qualified=false` em todas as medidas de ONNX.
-- **PRs da IDE** (1 a 4) nao implementados; Fase 08 nao iniciada. O card nao promete integracao.
-- **Dataset:** G3.7 (revisao humana) e G3.9 (licencas) pendentes; por isso o dataset nao e publicado e o card diz "sem revisao humana das amostras".
-- **T1 sem controle gold:** o efeito da destilacao no 1,5B nao foi medido (no 0,5B foi pequeno: exec-valid +1,7 p.p., FIM acc -0,85 p.p. n.s.; o professor 7B empata com os alunos).
-- **Higiene dos workspaces (fora do meu escopo, nao alterada):** `README.md`/`README_job.md` dos dois workspaces ainda dizem "treino nao executado"; `model.lock.json` tem `scripts_dirty: true`. Corrigir antes de apontar alguem para o repositorio local.
-- **Decisoes suas** (lista em `MODEL_CARD_REVIEW.md` §1): nome `esilva/...`, privado/publico, incluir ONNX, dataset card, contato, divulgacao do contrato `editor-context-v1`, manter ou nao o `model-index`.
+## 5. Verificacoes feitas (2026-10-26)
 
-## 3. Riscos de publicar agora
+- `verify_card_numbers.py`: OK nos dois tiers (tabelas, model-index, fatos de treino, afirmacoes de prosa, frases obrigatorias, homologacao x `v3_decision_*`).
+- `stage_hf_package.py --tier both` (dry-run com hash) e `--stage --clean`: OK; sem caminho local, token, e-mail, dado de treino ou arquivo do outro workspace (varredura de texto, JSON gerado e cabecalho do safetensors); arvore == a autorizada; sha256 dos pesos == `export_info.json`; LICENSE == o da base; front matter valido; exemplo do card == arquivo publicado.
+- `upload_to_hf.py --tier nano|small` (dry-run): staging confere com o manifesto; imprime os comandos; nada enviado. `--i-have-user-approval` sem credencial: recusado (testado).
+- `--target onnx` em dry-run sem hash nos pacotes v3 existentes no momento: plano OK para o Nano (3 variantes); nao e parte da publicacao agora.
+- `pytest scripts/publish`: 82 passed, 2 skipped. `build_replay_attribution.py --check`: OK.
 
-1. **Reputacao.** Exec-valid 0,58-0,60 e FIM acc 0,40-0,41 soam fortes e sao de dado sintetico gerado por templates; o conjunto satura (o 0,5B empata com o professor 7B). Quem copiar a tabela sem o rotulo pode tomar como qualidade em consultas reais. O card repete o rotulo no topo, na tabela e no resumo pt-BR, mas o risco de citacao fora de contexto permanece.
-2. **Uso fora do escopo.** Pessoas podem tentar chat, agente, dialeto mongosh ou executar sugestoes sem revisao. O modelo foi treinado so em Console JavaScript e JSON; comportamento com operacoes destrutivas nao foi treinado nem testado.
-3. **Campos inexistentes sem schema visivel:** 11-13% no T0 e 8-11% no T1 (`irrelevant`/`none`); o treino nao resolveu e depende de a IDE enviar nomes de campos.
-4. **ONNX:** os pacotes saem com o bug do EOS do GenAI 0.15.2 (token final repetido se o chamador ler `GetSequence(0)[^1]`); o T1 int4 perde 1,4-1,8 p.p. de FIM acc (nao oferecido); latencia de CPU e so proxy e fica acima da meta interna. Publicar ONNX agora e publicar artefatos "candidato nao qualificado".
-5. **Licenca e atribuicao:** Apache-2.0 com aviso de modificacao e sem endosso Qwen; replay de 555 pacotes npm (permissivos) listado, codigo nao redistribuido. Conferir o nome "Kapibara Studio" e a divulgacao do formato do contrato com quem e dono da IDE.
-6. **Irreversibilidade:** um repositorio publico pode ser clonado/espelhado; apagar depois nao desfaz. Por isso privado primeiro.
-7. **Reproducao:** `scripts_dirty: true` no lock e dataset nao publicado; o card nao promete reproducao.
+## 6. Riscos e afirmacoes sem fonte numerica
 
-## 4. Recomendacao
+1. **Reputacao.** Os numeros (FIM acc 0,40-0,41, homologacao 42-45%) vem de dado sintetico e de consultas escritas por LLM; o card repete o rotulo no topo, nas tabelas e no resumo pt-BR, mas a citacao fora de contexto continua possivel.
+2. **Campos inexistentes** em schema novo (T0 acima da base; T1 proximo): a mitigacao e o aviso do card ("valide nomes de campo antes de executar") e a IDE enviar o schema.
+3. **Independencia da homologacao.** Inferencia a partir da composicao do corpus (`corpus_v3_report.md`); o quanto o v3 se beneficia disso nao foi medido.
+4. **Uma semente** por tier: diferencas v1 -> v3 nao tem repeticao.
+5. **Sem fonte numerica (descritivo)**: "sem dados pessoais por construcao"; "comportamento com operacoes destrutivas nao treinado nem testado"; "nao avaliado: vies, contexto longo, multi-turno, adversarial"; "ganho em consultas do LLM provavelmente superestima o humano"; qual checkpoint do run (final ou `best`) virou `merged/sft_v3` nao foi conferido; `REPLAY_ATTRIBUTION.md` lista os 555 pacotes de `data/replay/v1` e nao conferi pacote a pacote se o replay v3 usou todos (pode ser superconjunto). Lista completa em `SOURCES.md`.
+6. **Irreversibilidade.** Mesmo privado, o upload e um ato externo; por isso so com sua aprovacao e credencial.
+7. **Higiene local** (fora do meu escopo): `model.lock.json` sem o braco v3 e `README_job.md` desatualizados; copias `merged/sft_distill_v1` e `sft_gold_v1` ficam fora do staging.
 
-**Privado primeiro**, os dois tiers juntos, **so safetensors bf16 + tokenizer + card** (sem ONNX e sem GGUF):
+## 7. O que voce ainda precisa decidir
 
-1. Voce revisa os dois `MODEL_CARD_REVIEW.md` e decide os itens da §1 de la.
-2. `verify_card_numbers.py`, `pytest scripts/publish/tests`, `stage_hf_package.py --write-manifest` (se o card mudou), `--stage` em diretorio vazio.
-3. Com sua aprovacao explicita e seu `HF_TOKEN`: `upload_to_hf.py ... --i-have-user-approval` (cria o repo **privado**).
-4. Reabrir o card no Hub e conferir; so entao pensar em publico.
+- **Contato / canal de feedback no card** (hoje nenhum; o staging recusa e-mails, entao qualquer contato entra como link ou texto sem e-mail, ou pelo Hub).
+- **Manter ou tirar o `model-index`** (3 blocos "Internal evaluation", `verified: false`); como retirar esta em `MODEL_CARD_REVIEW.md` §1.
+- **Atencao a marca "Mongo" no nome** (`KapiCoder-Mongo-*`): ponto a conferir com as diretrizes de marca da MongoDB, Inc. (nao e parecer juridico); o card usa MongoDB so para descrever a tarefa e nao afirma afiliacao. Alternativa se houver duvida: renomear antes de criar o repositorio (muda `TIER_SPECS`, o card e o exemplo).
+- Citar **"Kapibara Studio"**, **"Qwen"** e o contrato publico `editor-context-v1`; manter os 555 pacotes em `REPLAY_ATTRIBUTION.md` ou resumir por licenca.
+- Quando (e se) publicar o ONNX: pacotes v3 completos e qualificados, decisao do EOS do GenAI 0.15.2 na IDE, e o que o card ONNX pode afirmar sobre qualidade (hoje: nada, sem medida propria).
 
-Antes de tornar publico: (a) ao menos uma medida com consultas escritas por humanos (alternativa do resumo: consultas reais do proprio usuario, sem selar) ou aceitar conscientemente que so ha a homologacao sintetica; (b) decidir o EOS (IDE ou contorno no `genai_config.json`) se for incluir ONNX; (c) corrigir o restante dos README dos workspaces (so a linha "Estado" foi atualizada; a frase da linha 3 e o `README_job.md` seguem desatualizados); (d) decidir sobre dataset card e contato. ONNX pode entrar numa segunda etapa, com `onnx/dml-fp16` (T0 e T1) e `onnx/int4` (T0) / `onnx/int8` (T1) apenas, ja descritos no card.
+## 8. Como seguir (tudo local ate o ultimo passo)
 
-## 5. Reavaliacao com a homologacao v1 (2026-10-24)
-
-Fonte: `reports/datasets/homolog-v1-eval.{md,json}` (6 modelos x 6.030 itens de 28 schemas `hom` telecom/adtech nunca vistos em treino; autor Qwen3-14B/gramatica, **nao humano**); `homolog-v1-manifest.json` (sha `aca0aae5...`). Numeros no card conferidos por `verify_card_numbers.py` (falha se divergirem). Nenhum item de `data/homolog` foi lido.
-
-| | Val v2c sintetico | Homologacao | Base zero-shot (homologacao) |
-|---|---|---|---|
-| T0 Nano, FIM acc | 40,30% | 33,10% | 12,62% |
-| T0 Nano, exec / teto | 93,05% | 74,43% | 39,54% |
-| T0 Nano, campos inexistentes `full` | 2,06% | **15,35%** | 7,02% |
-| T1 Small, FIM acc | 41,05% | 36,97% | 18,74% |
-| T1 Small, exec / teto | 95,12% | 84,44% | 52,81% |
-| T1 Small, campos inexistentes `full` | 1,58% | **9,19%** | 7,15% |
-
-(A razao exec / teto cruza dois validadores; compare tendencias.)
-
-O que muda na avaliacao:
-1. **Boa noticia limitada:** a lacuna existe mas e moderada em FIM acc (T0 -7,2 p.p.; T1 -4,1 p.p.), e os dois modelos seguem muito acima da base; T1 > T0 (+3,9 p.p. FIM, +9,3 p.p. exec, IC95 acima de 0) e T1 empata com o professor 7B em FIM acc (-0,1 p.p. [-0,8, +0,6]). Destilacao x gold (so T0): efeito pequeno (FIM +0,7 p.p., n.s.; exec +3,1 p.p.); no T1 nao ha controle.
-2. **Risco novo e importante:** em schemas nunca vistos os modelos treinados **inventam nomes de campo mais que as bases** (T0 15,35% contra 7,02%; T1 9,19% contra 7,15%), mesmo com o schema no cabecalho. Isso contradiz a leitura otimista do val sintetico (2,06% / 1,58%) e e o ponto que mais pode enganar um usuario. O card agora o diz na secao de homologacao, nos limites e no resumo pt-BR ("nao confie nos nomes de campo sem o schema no contexto; valide antes de executar").
-3. **Limites da propria homologacao:** mesma familia Qwen do autor; nao humano; executar != acertar; teto 93,07% (418 itens com helpers indefinidos); menor corte n=269; greedy unico. Duas leituras do relatorio ("lacuna possivelmente subestimada" e "por que o schema visivel nao reduziu a taxa") sao hipoteses e estao marcadas assim.
-
-**Recomendacao revisada: publicar apenas como PREVIEW PRIVADO** (os dois tiers, so safetensors bf16 + tokenizer + card, sem ONNX), pelos mesmos passos da secao 4. **Nao publicar como publico** enquanto: (i) o comportamento de campos inexistentes em schema novo nao for melhorado ou, no minimo, a IDE nao garantir que o schema vai no contexto e valida antes de executar; (ii) nao houver medida com consultas humanas. A homologacao reduz a incerteza sobre generalizacao a schemas novos, mas nao a sobre consultas reais.
-
-Verificacao em 2026-10-24: `verify_card_numbers.py` OK nos dois tiers; `pytest scripts/publish`: 60 passam; `stage_hf_package.py --tier both --write-manifest` (dry-run, sem rede) regenerou os dois `upload_manifest.json`.
+```
+python scripts/publish/verify_card_numbers.py
+python -m pytest scripts/publish
+python scripts/publish/stage_hf_package.py --tier both --write-manifest
+python scripts/publish/stage_hf_package.py --tier both --stage --clean
+python scripts/publish/upload_to_hf.py --tier nano       # so imprime
+python scripts/publish/upload_to_hf.py --tier small
+# somente com a sua aprovacao e a sua credencial:
+python scripts/publish/upload_to_hf.py --tier nano --i-have-user-approval [--user-is-logged-in]
+```
