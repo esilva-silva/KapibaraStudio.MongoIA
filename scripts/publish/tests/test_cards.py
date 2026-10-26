@@ -81,7 +81,7 @@ def test_required_labels_and_sober_language(key):
     text = vcn.TIERS[key].card.read_text(encoding="utf-8")
     assert vcn.REQUIRED_EN in text
     assert vcn.REQUIRED_PT in text
-    assert "PREVIEW / experimental" in text and "private preview" in text
+    assert "PREVIEW / experimental" in text and "public preview" in text
     # a homologacao sintetica: heading + rotulo obrigatorio, e nenhum TBD sobrando
     assert re.search(r"### Out-of-distribution validation \(homologation v1\)\s+\*\*" + re.escape(vcn.REQUIRED_HOM_EN), text)
     assert vcn.REQUIRED_HOM_PT in text

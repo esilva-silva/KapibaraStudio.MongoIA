@@ -21,7 +21,7 @@ import upload_to_hf as up
 TEMPLATE = shp.TEMPLATE_EXAMPLE.read_text(encoding="utf-8")
 
 
-def make_card(extra_tags: str = "", status: str = "PREVIEW / experimental, private preview", license_: str = "apache-2.0") -> str:
+def make_card(extra_tags: str = "", status: str = "PREVIEW / experimental, public preview", license_: str = "apache-2.0") -> str:
     example = TEMPLATE.replace("__REPO_ID__", "esilva/KapiCoder-Mongo-Nano")
     return f"""---
 license: {license_}
@@ -287,7 +287,7 @@ def test_card_front_matter_problems_are_errors(tree):
     readme.write_text(make_card(status="ready"), encoding="utf-8")
     assert any("PREVIEW" in e for e in shp.run_checks(plan_for(tree), do_hash=False).errors)
     readme.write_text(make_card(status="PREVIEW / experimental"), encoding="utf-8")
-    assert any("private preview" in e for e in shp.run_checks(plan_for(tree), do_hash=False).errors)
+    assert any("public preview" in e for e in shp.run_checks(plan_for(tree), do_hash=False).errors)
     readme.write_text(make_card(extra_tags="- onnx\n"), encoding="utf-8")
     assert any("onnx" in e for e in shp.run_checks(plan_for(tree), do_hash=False).errors)
     readme.write_text(CARD.replace("- autocomplete\n", ""), encoding="utf-8")

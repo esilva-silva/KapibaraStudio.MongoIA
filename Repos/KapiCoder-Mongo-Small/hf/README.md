@@ -82,7 +82,7 @@ model-index:
 
 # KapiCoder-Mongo-Small (1.5B)
 
-> **Status: PREVIEW / experimental, private preview.** Published for inspection and feedback, not for production use.
+> **Status: PREVIEW / experimental, public preview.** Published for inspection and feedback, not for production use.
 > **Internal evaluation on synthetic data; no blind human-written set.** Read [Limitations and risks](#limitations-and-risks) before using it.
 
 KapiCoder-Mongo-Small is a small code-completion model (about 1.5 B parameters) fine-tuned from
@@ -343,7 +343,7 @@ Related model: [KapiCoder-Mongo-Nano](https://huggingface.co/esilva/KapiCoder-Mo
 
 ## Resumo em português (pt-BR)
 
-**Status: PREVIEW / experimental, preview privado.** KapiCoder-Mongo-Small é um modelo pequeno (cerca de 1,5 B de parâmetros) ajustado a partir do `Qwen/Qwen2.5-Coder-1.5B`
+**Status: PREVIEW / experimental, preview público.** KapiCoder-Mongo-Small é um modelo pequeno (cerca de 1,5 B de parâmetros) ajustado a partir do `Qwen/Qwen2.5-Coder-1.5B`
 para **completar consultas MongoDB no cursor** (preenchimento no meio, FIM) no editor Kapibara Studio. Esta é a versão **v3** dos pesos.
 
 - **O que é:** autocomplete. Sugere texto; **nunca executa consultas**. Não é chat nem agente, e não valida o que sugere.

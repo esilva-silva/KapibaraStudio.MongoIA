@@ -19,7 +19,7 @@ tags:
 
 # KapiCoder-Mongo-Nano-ONNX (0.5B)
 
-> **Status: PREVIEW / experimental, private preview, not qualified.** ONNX builds of [`esilva/KapiCoder-Mongo-Nano`](https://huggingface.co/esilva/KapiCoder-Mongo-Nano) (version v3, tag `v0.1.0-preview`)
+> **Status: PREVIEW / experimental, public preview, not qualified.** ONNX builds of [`esilva/KapiCoder-Mongo-Nano`](https://huggingface.co/esilva/KapiCoder-Mongo-Nano) (version v3, tag `v0.1.0-preview`)
 > for `onnxruntime-genai`, made for the *Kapibara Studio* editor. Read the model card of the safetensors repository first: the model, its limits and its evaluation are described there.
 > **This repository has no evaluation of its own**: the numbers in the main card were measured on the bf16 safetensors weights, not on these builds.
 
@@ -52,7 +52,7 @@ Each folder holds `model.onnx` (with `model.onnx.data` when the weights are exte
 
 ## Resumo em português (pt-BR)
 
-**Status: PREVIEW / experimental, preview privado, não qualificado.** Builds ONNX do `esilva/KapiCoder-Mongo-Nano` (versão v3) para o `onnxruntime-genai`, feitos para o editor Kapibara Studio.
+**Status: PREVIEW / experimental, preview público, não qualificado.** Builds ONNX do `esilva/KapiCoder-Mongo-Nano` (versão v3) para o `onnxruntime-genai`, feitos para o editor Kapibara Studio.
 Este repositório não tem avaliação própria: os números do card principal vêm dos pesos safetensors bf16. Pastas autocontidas por variante: `cpu-int4/`, `cpu-int8/`, `dml-fp16/`.
 Os arquivos `kapibarastudio-model.json` e `kapicoder_manifest.json` (metadado `kapi`) servem ao Kapibara Studio; outros usos podem ignorá-los. O ORT GenAI 0.15.2 tem um problema de EOS (repete o último token se a aplicação ler `GetSequence(0)[^1]`), que afeta também a IDE.
 Licença Apache-2.0 com aviso de modificação (derivado do Qwen2.5-Coder-0.5B, sem endosso da equipe Qwen).

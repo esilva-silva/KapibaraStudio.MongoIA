@@ -201,7 +201,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     private = not args.public
     stage_dir = args.stage_dir or (DEFAULT_STAGE_BASE if root == ROOT else root / "cache" / "hf_stage") / (args.tier if args.target == "main" else f"{args.tier}-onnx")
     message = args.message or f"Add v3 {'weights' if args.target == 'main' else 'ONNX builds'} ({args.tag})"
-    tag_message = f"{args.tag}: private preview, internal synthetic evaluation only"
+    tag_message = f"{args.tag}: public preview, internal synthetic evaluation only"
     expected = expected_files(manifest)
 
     print(f"tier: {args.tier}   alvo: {args.target}   repo: {repo_id}   visibilidade: {'privada' if private else 'PUBLICA'}   tag: {args.tag}")

@@ -584,7 +584,7 @@ def check_card(plan: Plan) -> None:
             plan.errors.append(f"README.md: tags ausentes: {sorted(need - set(fm.get('tags') or []))}")
         if "onnx" in (fm.get("tags") or []):
             plan.errors.append("README.md: tag `onnx` no repositorio principal (so safetensors)")
-        for must in ("PREVIEW", "private preview"):
+        for must in ("PREVIEW", "public preview"):
             if must not in text:
                 plan.errors.append(f"README.md: falta o status {must!r}")
         pkg = TEMPLATE_EXAMPLE.read_text(encoding="utf-8").replace("__REPO_ID__", plan.spec["repo"])

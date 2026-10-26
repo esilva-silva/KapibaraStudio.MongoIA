@@ -42,7 +42,7 @@ REQUIRED_PHRASES = (
     REQUIRED_HOM_EN,
     REQUIRED_HOM_PT,
     "PREVIEW / experimental",
-    "private preview",
+    "public preview",
     "### Out-of-distribution validation",
     "Do not trust field names unless the schema is in the context",
     "Validate field names before running",
