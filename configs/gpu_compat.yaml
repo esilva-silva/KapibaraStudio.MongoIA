@@ -1,0 +1,526 @@
+# gpu_compat.yaml - tabela de decisao GPU -> variante de autocomplete do Kapibara Studio (legivel por maquina)
+# Consumida por scripts/hwmap/detect_gpus.py. Documento humano: docs/mapa-compatibilidade-gpu.md (leia §0 para a convencao de evidencia).
+#
+# Evidencia (campo `evidence`): F = fato com fonte (URL em `sources` abaixo, acessado em 2026-10-26);
+#   M = medido por nos neste PC (arquivo citado); E = estimativa/hipotese (logica na nota). NUNCA tratar E como F.
+#   IMPORTANTE: TODAS as faixas de device_id abaixo sao E (conferidas de memoria/pci-ids, nao por uma fonte citada aqui),
+#   exceto os dois ids medidos neste PC (0x747E RX 7800 XT e 0x164E iGPU Raphael, via Win32_VideoController = M).
+#   Quando o device_id nao casar, o nome (name_regex) casa; quando nada casa, a regra `unknown_*` manda fazer micro-benchmark.
+#
+# Variantes (nomes canonicos; pacotes de reports/export/onnx_export_t0_t1.md):
+#   t1-dml-fp16 (~3,0 GB, VRAM de processo medida 5.133 MB)  | t0-dml-fp16 (~0,96 GB, VRAM de processo medida 2.933 MB)
+#   t0-cpu-int4 (~0,39 GB)                                    | t1-cpu-int8 (~2,6 GB)
+# Regras de campo:
+#   gpu_variant: auto_vram -> t1-dml-fp16 se VRAM dedicada >= thresholds.t1_min_vram_mb; senao t0-dml-fp16 se >= thresholds.t0_min_vram_mb; senao CPU.
+#                t0-dml-fp16 / t1-dml-fp16 -> fixo (iGPU: so se a regra E indicar que ganha da CPU; sempre com needs_microbench)
+#                cpu -> a GPU e ignorada para autocomplete
+#   needs_microbench: true -> a variante GPU so e aceita depois do micro-benchmark de primeira execucao (docs §6); antes disso usa-se `fallback`.
+#   supported: true | false | unknown  (false = fora da politica de suporte; unknown = so o micro-benchmark decide)
+schema_version: 1
+generated: "2026-10-26"
+measured_reference:
+  gpu: "AMD Radeon RX 7800 XT 16 GB, 624 GB/s (PCI 1002:747E)"
+  igpu: "AMD Radeon Graphics 2 CU RDNA2, Ryzen 9 7900 (PCI 1002:164E)"
+  evidence: "M reports/export/onnx_export_t0_t1.md §4-§5, reports/export/prefix_cache_ttft.md; llama.cpp Vulkan 7B Q5_K_M medido pelo usuario (pp 1.395 vs 27 t/s; tg 90 vs 2,5 t/s)"
+
+thresholds:
+  # --- VRAM dedicada minima (MB, valor reportado pelo DXGI; uma placa de "6 GB" reporta ~6.144) ---
+  t1_min_vram_mb: 5900      # [M+E] processo T1 dml-fp16 mediu 5.133 MB dedicados (onnx_export_t0_t1.md §2); pedido original era 4 GB: 4 GB NAO comporta T1 (decisao do usuario D1)
+  t0_min_vram_mb: 3500      # [M+E] processo T0 dml-fp16 mediu 2.933 MB; margem ~0,5 GB para driver/janela
+  # --- CPU ---
+  cpu_t1_int8_min_physical_cores: 12   # [M+E] Ryzen 9 7900 (12C/24T) faz T1 int8 697/1192 ms (ja reprova o gate 500/650); T0 int4 escala 4thr 731 -> 8thr 406 -> 12thr 291 -> 24thr 229 ms (onnx_export_t0_t1.md §4); T1 ~2,4x mais lento => <12 nucleos ultrapassa ~1,0-1,5 s
+  cpu_t1_int8_min_ram_gb: 16           # [M+E] T1 int8 pico de RAM 3,0 GB + IDE + SO; 16 GB e o piso confortavel
+  cpu_t0_min_ram_gb: 8                 # [E] T0 int4 pico 1,53 GB
+  cpu_default_variant: t0-cpu-int4     # [M] autocomplete: T0 int4 285/480 ms; T1 int8 so como opcao de chat/qualidade (ver docs §5)
+  cpu_optional_variant: t1-cpu-int8
+# Micro-benchmark de primeira execucao: criterios de aceite (docs §6). Valores [E] ate a fase 2 de medicao.
+microbench:
+  prompt_tokens: 270       # [M] mediana do val: 260; media 272
+  decode_tokens: 32
+  accept_ttft_ms_p50_max: 350      # [E] gate informativo: T0 CPU medido = 285 ms; GPU deve ganhar de forma clara
+  accept_ttft_vs_cpu_ratio_max: 0.7   # [E] GPU so e aceita se TTFT <= 0,7 x TTFT da CPU medida no mesmo teste
+  accept_decode_tok_s_min: 25      # [E] autocomplete de 32 tokens em <= ~1,3 s
+  t1_accept_ttft_ms_p50_max: 250   # [M] T1 DML na 7800 XT = 148/170 ms (gate 170/200); folga ~1,5x
+  t1_accept_decode_tok_s_min: 40   # [M] 104 tok/s na 7800 XT; gate 90
+  budget_seconds: 10
+  cache_key: "adapter(vendor,device,subsys,revision)+driver_version+genai_version+package_hash+windows_build"
+
+sources:
+  S1: {url: "https://learn.microsoft.com/en-us/windows/ai/directml/dml-intro", accessed: "2026-10-26", fact: "DirectML esta em 'sustained engineering'; suportado por todo hardware DX12; introduzido no Windows 10 1903"}
+  S2: {url: "https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html", accessed: "2026-10-26", fact: "Requisito: GPU DX12 - NVIDIA Kepler (GTX 600)+, AMD GCN 1a ger. (HD 7000)+, Intel Haswell HD+, Qualcomm Adreno 600+; device_id = ordem de IDXGIFactory::EnumAdapters"}
+  S3: {url: "https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/supported-execution-providers", accessed: "2026-10-26", fact: "Windows ML inclui CPU e DirectML (legacy); sob demanda (Win11 24H2/26100+): MIGraphX (AMD RDNA3+, 'nao suportado para GenAI hoje'), NvTensorRtRtx (RTX 30xx+, driver >= 32.0.15.5585, CUDA 12.5), OpenVINO, QNN, VitisAI, WebGPU (experimental, DX12; ~Intel 11a ger./NVIDIA Turing+)"}
+  S4: {url: "https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/run-genai-onnx-models", accessed: "2026-10-26", fact: "ORT GenAI para Windows ML e 0.x preview, sujeito a mudancas"}
+  S5: {url: "https://docs.nvidia.com/cuda/pascal-tuning-guide/index.html", accessed: "2026-10-26", fact: "GP100: FP16 2x FP32; GP104 (e familia GP10x de consumo): FP16 a 1/64 do FP32; GP104 tem INT8 dp4a (__dp4a)"}
+  S6: {url: "https://www.anandtech.com/show/10325/the-nvidia-geforce-gtx-1080-and-1070-founders-edition-review/5", accessed: "2026-10-26", fact: "FP16 no GP104 'bom para compatibilidade e pouco mais'"}
+  S7: {url: "https://docs.nvidia.com/cuda/cuda-features-archive/index.html", accessed: "2026-10-26", fact: "CUDA 13.0 removeu compilacao offline/bibliotecas para Maxwell, Pascal e Volta (CC < 7.5); CUDA 12.x ainda compila"}
+  S8: {url: "https://guru3d.com/story/nvidia-releases-geforce-58266-security-driver-for-maxwell-and-pascal-gpus/", accessed: "2026-10-26", fact: "Maxwell/Pascal/Volta em driver R580 'security-only' (relato de imprensa; confirmar no site da NVIDIA)"}
+  S9: {url: "https://www.pcgameshardware.de/Grafikkarten-Grafikkarte-97980/News/AMD-Radeon-Adrenalin-Edition-26-5-2-Polaris-Vega-Treiber-1536146/", accessed: "2026-10-26", fact: "Polaris e Vega estao em driver 'legacy' separado desde 2023, com atualizacoes raras (relato de imprensa)"}
+  S10: {url: "https://sisoftware.co.uk/?p=2108", accessed: "2026-10-26", fact: "Navi 10 (RX 5700 XT) reporta FP16/half a 2x do FP32 (benchmark GPGPU)"}
+  S11: {url: "https://www.intel.com/content/www/us/en/developer/articles/guide/windows-ml-support.html", accessed: "2026-10-26", fact: "Intel + Windows ML: CPU Tiger Lake+, iGPU Alder Lake (12a ger.)+, NPU Core Ultra, Arc dedicada A310+ (8 GB recomendado) e B580+ (10 GB recomendado); nao menciona Iris Xe/UHD por nome"}
+
+# Ordem importa: a PRIMEIRA regra cujo vendor casar E (device_id em alguma faixa OU name_regex casar) vence.
+# Mais especificas antes das genericas. Cada regra de dgpu usa os thresholds acima.
+rules:
+  # =============================== software / sem DX12 ===============================
+  - id: software-basic-render
+    vendor_id: 0x1414
+    family: "Microsoft Basic Render Driver / WARP"
+    kind: software
+    match: {name_regex: "Basic Render|WARP|Microsoft"}
+    supported: false
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["F S1: DirectML exige hardware DX12; adaptador de software e CPU emulada"]
+    notes: "Ignorar sempre. Sem driver de GPU instalado."
+
+  # =============================== NVIDIA (0x10DE) ===============================
+  - id: nv-pre-pascal
+    vendor_id: 0x10DE
+    family: "NVIDIA pre-GTX 1000 (Fermi/Kepler/Maxwell: GTX 400-900, GT 7xx, GTX 750)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x0640, 0x13FF], [0x1400, 0x17FF]], name_regex: "GTX (4[0-9]{2}|5[0-9]{2}|6[0-9]{2}|7[0-9]{2}|9[0-9]{2})\\b|GT (6|7|9)[0-9]{2}"}
+    supported: false
+    dx12: "Kepler+ roda DML (F S2) mas sem FP16 acelerado; Maxwell 'security-only' (F S8)"
+    fp16: {native: "no", note: "FP16 sem ganho (Maxwell)"}
+    int8: {dp4a: false, matrix: none}
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E politica: abaixo da fronteira GTX 1000 definida pelo produto", "F S2 (DML roda em Kepler+)", "F S8"]
+    notes: "Fora da politica de suporte. Usuario avancado pode forcar via override (--force-gpu) por conta propria."
+
+  - id: nv-pascal
+    vendor_id: 0x10DE
+    family: "NVIDIA GTX 10 (Pascal GP10x) + MX150/MX250 + GT 1030"
+    kind: dgpu
+    match: {device_id_ranges: [[0x1B00, 0x1D8F]], name_regex: "GTX 10[0-9]{2}|GT 1030|GTX TITAN X|TITAN Xp|MX1[5-9]0|MX2[0-9]0|P[0-9]{3,4}\\b"}
+    supported: unknown
+    dx12: "FL 12_1"
+    fp16: {native: "limited", rate: "1/64 do FP32 nas GP10x de consumo (F S5, S6)"}
+    int8: {dp4a: true, matrix: none, note: "dp4a existe (F S5) mas o DML nao necessariamente o usa [E]"}
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["F S5 FP16 1/64", "E o DML pode converter FP16 para FP32 em shader (aceitavel) OU executar FP16 lento (prefill de 270 tok seria de segundos): sem medida", "PENDENTE fase 2: t0/t1 dml-fp16 x dml-fp32/int8 em Pascal"]
+    notes: "Maior risco do mapa. T1 fp16 prefill = ~0,8 TFLOP; se o FP16 correr a 1/64 (~70 GFLOPS na GTX 1060) leva >10 s. Nunca aceitar sem micro-benchmark."
+
+  - id: nv-turing-gtx16
+    vendor_id: 0x10DE
+    family: "NVIDIA GTX 16 (Turing TU116/TU117, sem Tensor Cores)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x1F82, 0x1F82], [0x1F91, 0x1F9F], [0x1FA0, 0x1FFF], [0x2182, 0x21FF]], name_regex: "GTX 16[0-9]{2}"}
+    supported: true
+    dx12: "FL 12_1"
+    fp16: {native: "yes", rate: "2x FP32 (shaders FP16 dedicados) [E]"}
+    int8: {dp4a: true, matrix: none}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E: Turing tem FP16 de taxa dupla; sem Tensor Cores nos TU116/117", "E banda 112-288 GB/s (1650 GDDR5 128 GB/s; 1660 Super 336 GB/s)"]
+    notes: "GTX 1650 de 4 GB => T0 (VRAM < t1_min). GTX 1660/Super/Ti de 6 GB => T1 no limite (5.900 MB); o micro-benchmark confirma."
+
+  - id: nv-turing-rtx20
+    vendor_id: 0x10DE
+    family: "NVIDIA RTX 20 (Turing TU10x, Tensor Cores gen 2)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x1E00, 0x1F81], [0x2080, 0x21FF]], name_regex: "RTX 20[0-9]{2}|TITAN RTX"}
+    supported: true
+    dx12: "FL 12_1"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "Tensor Cores (INT8/FP16)"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E por analogia (GPUs com FP16 nativo e >= 6 GB seguem o comportamento medido da 7800 XT em ordem de grandeza)"]
+    notes: "RTX 2060 6 GB e o limite inferior de T1 por VRAM."
+
+  - id: nv-ampere
+    vendor_id: 0x10DE
+    family: "NVIDIA RTX 30 (Ampere) + A-series"
+    kind: dgpu
+    match: {device_id_ranges: [[0x2200, 0x25FF]], name_regex: "RTX 30[0-9]{2}|RTX A[0-9]{3,4}"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "Tensor Cores gen 3"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["E: banda 112-936 GB/s; RTX 3050 6 GB (96 GB/s no laptop/OEM 6GB 168) e o ponto fraco", "F S3: RTX 30+ e o piso do NvTensorRtRtx EP"]
+    notes: "RTX 3050 6 GB: T1 elegivel por VRAM mas banda baixa (96-168 GB/s) - micro-benchmark decide T1 x T0 (regra de banda, docs §3)."
+
+  - id: nv-ada
+    vendor_id: 0x10DE
+    family: "NVIDIA RTX 40 (Ada)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x2600, 0x28FF]], name_regex: "RTX 40[0-9]{2}|RTX [0-9]{4} Ada"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "Tensor Cores gen 4 (FP8)"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["E: banda 272 (4060) - 1008 GB/s; RTX 4060 8 GB fica acima do t1_min"]
+
+  - id: nv-blackwell
+    vendor_id: 0x10DE
+    family: "NVIDIA RTX 50 (Blackwell)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x2900, 0x2FFF]], name_regex: "RTX 50[0-9]{2}|RTX PRO [0-9]{4}"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "Tensor Cores gen 5 (FP4/FP8)"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E: sem medida; risco de driver/DML recente nao testado; micro-benchmark na primeira execucao"]
+    needs_microbench: true
+
+  - id: nv-unknown
+    vendor_id: 0x10DE
+    family: "NVIDIA nao classificada (laptop 'Max-Q', Quadro, nome novo)"
+    kind: dgpu
+    match: {name_regex: ".*"}
+    supported: unknown
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E regra de contingencia: device_id fora das faixas"]
+
+  # =============================== AMD (0x1002) ===============================
+  # --- medidas neste PC (M) vem primeiro ---
+  - id: amd-rdna3-7800xt-measured
+    vendor_id: 0x1002
+    family: "AMD RX 7800 XT (RDNA3, Navi 32) - MEDIDA neste PC"
+    kind: dgpu
+    match: {device_id_ranges: [[0x747E, 0x747E]], name_regex: "RX 7800 XT"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes", rate: "2x (packed)"}
+    int8: {dp4a: true, matrix: "WMMA (AI accelerators)"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["M reports/export/onnx_export_t0_t1.md: T1 dml-fp16 TTFT 148/170 ms, 104 tok/s; T0 109/124 ms", "M PNPDeviceID PCI\\VEN_1002&DEV_747E (Win32_VideoController)"]
+    notes: "Referencia de calibracao do mapa."
+
+  - id: amd-igpu-raphael-2cu-measured
+    vendor_id: 0x1002
+    family: "AMD iGPU Raphael/Granite Ridge (Radeon Graphics 2 CU RDNA2) - MEDIDA neste PC"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x164E, 0x164E]]}
+    supported: true
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: none}
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["M llama.cpp Vulkan 7B Q5_K_M: iGPU pp 27 t/s e tg 2,5 t/s contra 7800 XT pp 1.395 e tg 90 (~50x mais lenta)", "E extrapolacao T0: ~0,5 s+ de prefill para 270 tokens (> T0 CPU 285 ms)", "M PNPDeviceID PCI\\VEN_1002&DEV_164E"]
+    notes: "Piso medido de iGPU. Mesma classe: Radeon 610M (2 CU). Nunca escolher; ignorar quando houver dGPU."
+
+  - id: amd-rdna4
+    vendor_id: 0x1002
+    family: "AMD RX 9000 (RDNA4: RX 9070/9060)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x7500, 0x75FF]], name_regex: "RX 90[0-9]{2}"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "WMMA gen 2 (FP8/INT8 esparso)"}
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E sem medida; mesma API DX12/DML da RDNA3, driver recente"]
+
+  - id: amd-rdna3
+    vendor_id: 0x1002
+    family: "AMD RX 7000 (RDNA3)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x7440, 0x749F]], name_regex: "RX 7[0-9]{3}"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes", rate: "2x (packed)"}
+    int8: {dp4a: true, matrix: "WMMA"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["M 7800 XT mede T1 148/170 ms", "E RX 7600 (8 GB, 288 GB/s) esperado ~2x mais lento no T1 (banda 288 vs 624); ainda dentro da classe 'boa'"]
+
+  - id: amd-rdna2
+    vendor_id: 0x1002
+    family: "AMD RX 6000 (RDNA2)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x73A0, 0x743F]], name_regex: "RX 6[0-9]{3}"}
+    supported: true
+    dx12: "FL 12_1/12_2"
+    fp16: {native: "yes", rate: "2x (packed)"}
+    int8: {dp4a: true, matrix: none, note: "sem WMMA; INT8 via dot4"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: alta
+    evidence: ["E mesma geracao da iGPU 680M/660M; RX 6500 XT (4 GB, 144 GB/s) => T0; RX 6600/6600 XT/6650 XT (8 GB, 224-280 GB/s) => T1"]
+    notes: "RX 6400/6500 XT (4 GB): T0 DML fp16. Homologar RX 6000 e prioridade do roteiro."
+
+  - id: amd-rdna1
+    vendor_id: 0x1002
+    family: "AMD RX 5000 (RDNA1: Navi 10/12/14)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x7310, 0x734F], [0x7360, 0x736F]], name_regex: "RX 5[567]00"}
+    supported: true
+    dx12: "FL 12_1"
+    fp16: {native: "yes", rate: "2x (F S10 para Navi 10)"}
+    int8: {dp4a: "unknown", matrix: none, note: "dot4 INT8 em Navi 10 nao confirmado [E]"}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["F S10 FP16 2x no Navi 10", "E sem medida; RX 5500 XT 4 GB => T0; RX 5600 XT/5700/5700 XT 6-8 GB => T1"]
+
+  - id: amd-vega
+    vendor_id: 0x1002
+    family: "AMD RX Vega 56/64, Radeon VII, Radeon Pro Vega (Vega 10/20)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x6860, 0x687F], [0x66A0, 0x66AF]], name_regex: "Vega (56|64)|Radeon VII|Radeon Pro Vega"}
+    supported: true
+    dx12: "FL 12_1"
+    fp16: {native: "yes", rate: "2x (Rapid Packed Math)"}
+    int8: {dp4a: "limited", matrix: none}
+    gpu_variant: auto_vram
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E Vega 10/20 tem RPM (FP16 2x); banda alta (HBM2 410-1024 GB/s)", "F S9 driver 'legacy' (Polaris/Vega) com atualizacoes raras: risco de bugs de DX12 nao corrigidos"]
+    notes: "Candidata forte a T1 (Vega 56 8 GB, 410 GB/s; Radeon VII 16 GB, 1 TB/s). Driver legacy e o risco."
+
+  - id: amd-polaris
+    vendor_id: 0x1002
+    family: "AMD Polaris (RX 400/500, GCN4) - ABAIXO da fronteira Vega"
+    kind: dgpu
+    match: {device_id_ranges: [[0x67C0, 0x67FF], [0x6980, 0x699F]], name_regex: "RX (4[4-9]0|5[4-9]0)\\b"}
+    supported: unknown
+    dx12: "FL 12_0"
+    fp16: {native: "limited", note: "sem Rapid Packed Math; FP16 sem ganho [E]"}
+    int8: {dp4a: false, matrix: none}
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E GCN4 sem packed FP16; DML roda (F S2) mas desempenho de FP16 desconhecido", "F S9 driver legacy"]
+    notes: "RX 580 8 GB e popular: manter 'unknown' ate homologacao; o micro-benchmark decide GPU x CPU."
+
+  - id: amd-gcn-old
+    vendor_id: 0x1002
+    family: "AMD pre-Polaris (GCN1-3, TeraScale: HD 5000-7000, R5-R9 200/300, Fury)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x6600, 0x66FF], [0x6700, 0x67BF], [0x6800, 0x685F], [0x6880, 0x697F]], name_regex: "HD [5-7][0-9]{3}|R[5-9] [23][0-9]{2}"}
+    supported: false
+    fp16: {native: "no"}
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E politica; F S2: DML tecnicamente aceita GCN 1a ger.+ mas sem FP16 e com drivers abandonados"]
+
+  # --- iGPUs AMD: o DXGI devolve 'AMD Radeon(TM) Graphics' generico => casar por device_id ---
+  - id: amd-igpu-strix-halo
+    vendor_id: 0x1002
+    family: "AMD iGPU Radeon 8050S/8060S (Strix Halo, 32-40 CU RDNA3.5)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x1586, 0x1586]], name_regex: "80[56]0S"}
+    supported: true
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "WMMA"}
+    gpu_variant: t1-dml-fp16
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E ~40 CU e LPDDR5X-8000 256-bit = ~256 GB/s (~ RTX 4060/RX 6600 em banda); T1 provavel mas sem medida", "E VRAM 'dedicada' e carve-out configuravel (pode ser 0,5-96 GB): usar RAM total, nao o campo DXGI"]
+    ignore_vram_threshold: true
+
+  - id: amd-igpu-rdna3-large
+    vendor_id: 0x1002
+    family: "AMD iGPU 780M/760M (Phoenix/Hawk Point) e 890M/880M (Strix Point/Krackan: RDNA3/3.5, 8-16 CU)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x15BF, 0x15BF], [0x15C8, 0x15C8], [0x150E, 0x150E], [0x1114, 0x1114]], name_regex: "(7[68]0M|8[89]0M|8[46]0M)"}
+    supported: true
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "WMMA (RDNA3)"}
+    gpu_variant: t0-dml-fp16
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E 12 CU RDNA3 @ ~2,7 GHz = ~8 TFLOPS FP32 de pico, ~8x a iGPU de 2 CU medida (piso M) => prefill T0 estimado ~100-150 ms vs CPU 285 ms (7900) - fica melhor que CPU de notebook", "E banda DDR5/LPDDR5 5600-7500 = 90-120 GB/s compartilhada: T1 decode ~25-35 tok/s limitado por banda; T1 NAO recomendado ate medir", "PENDENTE fase 2"]
+    notes: "Candidata a ganhar da CPU. 760M/860M/840M (8-4 CU) ficam no limite - micro-benchmark decide."
+
+  - id: amd-igpu-rdna2-large
+    vendor_id: 0x1002
+    family: "AMD iGPU Radeon 680M/660M (Rembrandt/Barcelo-R, 6-12 CU RDNA2)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x1681, 0x1681]], name_regex: "6[68]0M"}
+    supported: true
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: none}
+    gpu_variant: t0-dml-fp16
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E 12 CU (680M) = ~6,8 TFLOPS pico; 6 CU (660M) = ~3,4 TFLOPS: 660M no limite de vencer a CPU", "E DDR5-4800/LPDDR5-6400 (75-100 GB/s)"]
+
+  - id: amd-igpu-vega-and-small
+    vendor_id: 0x1002
+    family: "AMD iGPU Vega 3-11 (Raven/Picasso/Renoir/Cezanne/Lucienne/Barcelo/Mendocino/Van Gogh) e Radeon 610M/Graphics 2 CU"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x15D8, 0x15DD], [0x15E7, 0x15E7], [0x1636, 0x1638], [0x163F, 0x163F], [0x164C, 0x164D], [0x1506, 0x1506], [0x1304, 0x131F]], name_regex: "Vega [0-9]+|Radeon\\(TM\\) Vega|610M"}
+    supported: true
+    fp16: {native: "yes (Vega: RPM; Cezanne+)"}
+    int8: {dp4a: "limited", matrix: none}
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["M piso: 2 CU RDNA2 ~50x mais lenta que a 7800 XT e mais lenta que a CPU", "E Vega 8 (8 CU GCN5 @ 2,1 GHz = ~2,2 TFLOPS) ~2x o piso de 2 CU: ainda pior que CPU de 6+ nucleos; DDR4 38-51 GB/s", "F S9 driver legacy"]
+    notes: "Radeon Graphics de Cezanne tem 7 CU (Ryzen 5 5600G: 7; 5700G: 8). Mesmo assim, CPU."
+
+  - id: amd-unknown-igpu
+    vendor_id: 0x1002
+    family: "AMD iGPU/APU nao classificada"
+    kind: igpu
+    integrated: true
+    match: {name_regex: "^AMD Radeon\\(TM\\) Graphics$|Radeon\\(TM\\) Graphics"}
+    supported: unknown
+    gpu_variant: cpu
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E contingencia: padrao CPU; micro-benchmark opcional da iGPU so se for notebook sem dGPU"]
+
+  - id: amd-unknown
+    vendor_id: 0x1002
+    family: "AMD nao classificada"
+    kind: dgpu
+    match: {name_regex: ".*"}
+    supported: unknown
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E contingencia"]
+
+  # =============================== Intel (0x8086) ===============================
+  - id: intel-arc-battlemage
+    vendor_id: 0x8086
+    family: "Intel Arc B-series (Battlemage: B570/B580...)"
+    kind: dgpu
+    match: {device_id_ranges: [[0xE200, 0xE2FF]], name_regex: "Arc\\(TM\\) B[0-9]{3}"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "XMX"}
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["F S11: Intel lista Arc B580+ (10 GB recomendado) para Windows ML", "E B580 12 GB, 456 GB/s: classe da RX 6700/7600 XT; DML em Arc recente sem medida nossa"]
+
+  - id: intel-arc-alchemist
+    vendor_id: 0x8086
+    family: "Intel Arc A-series (Alchemist: A310-A770, Pro A-series)"
+    kind: dgpu
+    match: {device_id_ranges: [[0x5690, 0x56BF]], name_regex: "Arc\\(TM\\) (Pro )?A[0-9]{2,3}"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "XMX"}
+    gpu_variant: auto_vram
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["F S11: Arc A310+ (8 GB recomendado)", "E A770 16 GB 560 GB/s / A750 8 GB 512 GB/s / A380 6 GB 186 GB/s; historico de drivers DX12 irregular => micro-benchmark obrigatorio"]
+
+  - id: intel-igpu-arc-coreultra
+    vendor_id: 0x8086
+    family: "Intel Arc iGPU de Core Ultra (Meteor Lake Xe-LPG 'Arc Graphics', Arrow Lake-H 140T, Lunar Lake 130V/140V)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x7D40, 0x7D6F], [0x64A0, 0x64AF], [0x6420, 0x642F], [0xB080, 0xB0FF]], name_regex: "Arc\\(TM\\) (Graphics|1[0-9]{2}[VT]( GPU)?)"}
+    supported: true
+    dx12: "FL 12_2"
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: "XMX (Lunar Lake) / dp4a (Meteor Lake)"}
+    gpu_variant: t0-dml-fp16
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["F S11: iGPU Alder Lake+ listada para Windows ML", "E 7-8 Xe cores (~4-4,6 TFLOPS FP32) ~4x a iGPU de 2 CU; LPDDR5X/DDR5 90-135 GB/s; prefill T0 estimado ~200-300 ms ~ CPU de notebook => empate: micro-benchmark decide"]
+    notes: "Arrow Lake desktop (Arc Graphics 4 Xe cores) cai no mesmo casamento por nome; e mais fraca (~2 TFLOPS) - confianca baixa."
+
+  - id: intel-igpu-irisxe
+    vendor_id: 0x8086
+    family: "Intel Iris Xe (Gen12 Xe-LP 80-96 EU: Tiger Lake/Alder Lake-P/Raptor Lake-P)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x9A49, 0x9A49], [0x46A6, 0x46A6], [0x46A8, 0x46AA], [0xA7A0, 0xA7A1], [0x4626, 0x4628]], name_regex: "Iris\\(R\\) Xe"}
+    supported: true
+    fp16: {native: "yes"}
+    int8: {dp4a: true, matrix: none}
+    gpu_variant: cpu
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E 96 EU @ 1,3 GHz = ~2 TFLOPS FP32, similar a 2x a iGPU de 2 CU (piso M); DDR4/LPDDR4x 51-68 GB/s: prefill T0 estimado 300-500 ms ~ T0 CPU de notebook 4-8 nucleos (>= 400-700 ms [E]): empate possivel", "padrao CPU; GPU so se o micro-benchmark vencer por 30%"]
+    candidate_variant: t0-dml-fp16
+
+  - id: intel-igpu-gen9-gen12-small
+    vendor_id: 0x8086
+    family: "Intel UHD/HD Graphics Gen9-Gen11 e UHD Xe-LP pequeno (24-32 EU: HD 5xx/6xx, UHD 6xx/730/750/770)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x1900, 0x193F], [0x5900, 0x591F], [0x3E00, 0x3EFF], [0x9B00, 0x9BFF], [0x5A00, 0x5A8F], [0x8A00, 0x8AFF], [0x4E00, 0x4E7F], [0x4C80, 0x4C9F], [0x4680, 0x469F], [0xA780, 0xA7FF], [0x9A40, 0x9A48], [0x9A4A, 0x9AFF]], name_regex: "UHD Graphics|HD Graphics|Iris\\(R\\) (Plus|Pro) Graphics"}
+    supported: true
+    fp16: {native: "yes (Gen9+, 2x) [E]"}
+    int8: {dp4a: "Gen11+ [E]", matrix: none}
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["E 24-32 EU (~0,4-0,8 TFLOPS) <= piso medido (2 CU RDNA2 ~1,1 TFLOPS) => mais lenta que CPU", "F S2 DML roda em Haswell+, mas sem ganho"]
+    notes: "UHD 630 (24 EU) e UHD 770 (32 EU): CPU sempre."
+
+  - id: intel-pre-gen9
+    vendor_id: 0x8086
+    family: "Intel pre-Gen9 (HD 2000-4600, Gen6-Gen8; sem DX12 pleno)"
+    kind: igpu
+    integrated: true
+    match: {device_id_ranges: [[0x0100, 0x0FFF], [0x1600, 0x16FF]], name_regex: "HD Graphics (2000|3000|4000|4200|4400|4600|5000)\\b"}
+    supported: false
+    gpu_variant: cpu
+    fallback: t0-cpu-int4
+    confidence: media
+    evidence: ["F S2: DML Haswell+ (Gen7.5) tecnicamente; E politica: Gen6/7 sem DX12; Haswell/Broadwell sem FP16 util"]
+
+  - id: intel-unknown
+    vendor_id: 0x8086
+    family: "Intel nao classificada"
+    kind: igpu
+    match: {name_regex: ".*"}
+    supported: unknown
+    gpu_variant: cpu
+    needs_microbench: true
+    fallback: t0-cpu-int4
+    confidence: baixa
+    evidence: ["E contingencia"]
+
+# Outros vendors (Qualcomm Adreno 0x5143, Apple/Parallels, VMs 0x1AF4/0x15AD): sem regra => `unknown_vendor`.
+unknown_vendor:
+  supported: unknown
+  gpu_variant: cpu
+  needs_microbench: false
+  fallback: t0-cpu-int4
+  confidence: baixa
+  evidence: ["E: nao homologado; Adreno/QNN e T3 (fora desta versao)"]
