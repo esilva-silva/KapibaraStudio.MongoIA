@@ -38,6 +38,13 @@ class PreparedDownloadTests(unittest.TestCase):
             manifest.write_text(json.dumps(data), encoding='utf-8')
             expected = mod.sha256(manifest)
             self.assertTrue(mod.verify_prepared(package, source, expected, True)['passed'])
+            for alias in ('parent_source_provenance', 'source_provenance'):
+                aliased = {alias: data['source'], 'files': entries}
+                manifest.write_text(json.dumps(aliased), encoding='utf-8')
+                self.assertTrue(mod.verify_prepared(package, source, mod.sha256(manifest), True)['passed'])
+                aliased[alias] = {**data['source'], 'revision': 'b' * 40}
+                manifest.write_text(json.dumps(aliased), encoding='utf-8')
+                with self.assertRaises(ValueError): mod.verify_prepared(package, source, mod.sha256(manifest))
             data['source']['files'] = list(reversed(source_entries))
             data['source']['files'] = [{**entry, 'sha256': entry['sha256'].upper()} for entry in data['source']['files']]
             manifest.write_text(json.dumps(data), encoding='utf-8')

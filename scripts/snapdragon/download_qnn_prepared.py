@@ -52,7 +52,10 @@ def verify_prepared(package, source, expected_manifest_sha256, require_original_
     result = verify(package, 'export_manifest.json')
     if not result['passed']:
         raise ValueError('Prepared package integrity mismatch')
-    prepared_source = manifest['source']
+    prepared_source = (manifest.get('source') or manifest.get('parent_source_provenance')
+                       or manifest.get('source_provenance'))
+    if not isinstance(prepared_source, dict):
+        raise ValueError('Prepared source provenance missing')
     file_inventory(prepared_source['files'])
     raw = source_provenance(source)
     if (prepared_source.get('repo_id') != raw.get('repo_id') or

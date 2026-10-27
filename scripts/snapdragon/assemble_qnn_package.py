@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 from compile_qnn_context import context_files, sha
 from verify_manifest import verify
 from export_gpu import source_provenance
+from download_qnn_prepared import file_inventory
 
 TOKEN_FILES = ('tokenizer.json', 'tokenizer_config.json', 'vocab.json', 'merges.txt',
                'generation_config.json', 'special_tokens_map.json', 'added_tokens.json', 'chat_template.jinja', 'LICENSE', 'NOTICE', 'NOTICE.md')
@@ -35,6 +36,12 @@ def external_files(model, root):
     return files
 
 
+def validate_source_identity(expected, actual):
+    if (expected.get('revision') != actual.get('revision') or expected.get('repo_id') != actual.get('repo_id')
+            or file_inventory(expected.get('files')) != file_inventory(actual.get('files'))):
+        raise ValueError('Tokenizer snapshot source identity or hashes do not match prepared model')
+
+
 def assemble(prepared, compiled, source_tokenizer, out_dir):
     prepared = Path(prepared).resolve(strict=True); compiled = Path(compiled).resolve(strict=True)
     source_tokenizer = Path(source_tokenizer).resolve(strict=True); output = Path(out_dir).resolve()
@@ -44,13 +51,8 @@ def assemble(prepared, compiled, source_tokenizer, out_dir):
     if not verification['passed']: raise ValueError('Prepared manifest verification failed')
     source_prov = source_provenance(source_tokenizer)
     prepared_manifest = json.loads((prepared / 'export_manifest.json').read_text(encoding='utf-8'))
-    expected_source = prepared_manifest.get('source') or {}
-    if expected_source.get('revision') != source_prov.get('revision') or expected_source.get('repo_id') != source_prov.get('repo_id'):
-        raise ValueError('Tokenizer snapshot identity does not match prepared model')
-    expected_files = {entry['path']: entry['sha256'] for entry in expected_source.get('files', [])}
-    actual_files = {entry['path']: entry['sha256'] for entry in source_prov.get('files', [])}
-    if not expected_files or expected_files != actual_files:
-        raise ValueError('Tokenizer snapshot source hashes do not match prepared model')
+    expected_source = prepared_manifest.get('source') or prepared_manifest.get('parent_source_provenance') or {}
+    validate_source_identity(expected_source, source_prov)
     if not (source_tokenizer / 'tokenizer.json').is_file(): raise ValueError('Original tokenizer.json missing')
     report_path = compiled / 'compile-report.json'
     report = json.loads(report_path.read_text(encoding='utf-8'))
@@ -110,6 +112,9 @@ def assemble(prepared, compiled, source_tokenizer, out_dir):
              for p in sorted(output.rglob('*')) if p.is_file() and p.name != 'export_manifest.json']
     manifest = {'schema':'kapi-qnn-mixed-package-v1', 'status':'compiled_not_inference_validated',
         'prepared_manifest_sha256':sha(prepared/'export_manifest.json'), 'compile_report_sha256':sha(report_path),
+        'derivation_parent_manifest_sha256':prepared_manifest.get('parent_manifest_sha256'),
+        'derivation_metadata_dimensions_changed':prepared_manifest.get('metadata_dimensions_changed'),
+        'derivation_window':prepared_manifest.get('window'),
         'source_provenance':source_prov, 'cpu_stages':['embeddings','lm_head'], 'qnn_stages':['context','iterator'],
         'files':files}
     (output/'export_manifest.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')

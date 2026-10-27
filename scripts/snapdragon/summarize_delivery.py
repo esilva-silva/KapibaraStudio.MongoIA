@@ -81,6 +81,58 @@ def read_dataset(root, config):
     return audit,ids
 
 
+def window32_files_ready(root):
+    directory = root / 'reports/snapdragon'
+    names = ('nano-npu-compiled-window32-200.json', 'nano-npu-window32-vs-bf16.json',
+             'nano-npu-window32-200-stage-summary.json', 'nano-npu-window32-boundary-2048.json')
+    return all((directory / name).is_file() for name in names)
+
+
+def assess_window32(comparison, run, stage, boundary, corpus, ids, run_sha, boundary_hash):
+    try:
+        if validate_comparisons({'window32': comparison}) != corpus:
+            return False
+        if not successful_run(run, corpus, 'QNNExecutionProvider', ids) or not generation_protocol_ok(run):
+            return False
+        if stage.get('status') != 'verified' or stage.get('report_sha256') != run_sha:
+            return False
+        if not boundary_ok(boundary, boundary_hash):
+            return False
+        if (boundary.get('provider_evidence') or {}).get('requested') != 'QNNExecutionProvider':
+            return False
+        return True
+    except (KeyError, ValueError, TypeError):
+        return False
+
+
+def private_release_ok(config, transfer, source_verification, smoke, evaluated_run):
+    spec = config.get('npu_exports', {}).get('nano') or {}
+    try:
+        local_manifest = Path(spec['local_path']) / 'export_manifest.json'
+        release_hash = sha(local_manifest)
+        downloaded = Path(source_verification['directory']).resolve()
+        smoke_rows = smoke.get('items') or []
+        if not (spec.get('private') is True and transfer.get('private') is True
+                and transfer.get('status') == 'verified' and transfer.get('repo_id') == spec['repo_id']
+                and transfer.get('commit') == spec['revision'] and transfer.get('subfolder') == spec['subfolder']
+                and transfer.get('manifest_sha256') == spec['manifest_sha256'] == release_hash
+                and source_verification.get('passed') is True and source_verification.get('source_identity_verified') is True
+                and source_verification.get('original_tokenizer_required') is True
+                and source_verification.get('manifest_sha256') == release_hash
+                and smoke.get('status') == 'completed' and Path(smoke['model']).resolve() == downloaded
+                and (smoke.get('provider_evidence') or {}).get('requested') == 'QNNExecutionProvider'
+                and (smoke.get('provider_evidence') or {}).get('verified') is True
+                and len(smoke_rows) == 1 and smoke_rows[0].get('generated_tokens') == 32 and not smoke_rows[0].get('error')):
+            return False
+        release = json.loads(local_manifest.read_text(encoding='utf-8-sig'))
+        evaluated = json.loads((Path(evaluated_run['model']) / 'export_manifest.json').read_text(encoding='utf-8-sig'))
+        original = {x['path']: (x['sha256'], x['bytes']) for x in evaluated['files']}
+        published = {x['path']: (x['sha256'], x['bytes']) for x in release['files']}
+        return bool(original) and all(published.get(k) == v for k, v in original.items())
+    except (KeyError, TypeError, OSError, ValueError):
+        return False
+
+
 def summarize(root):
     root=Path(root).resolve(strict=True)
     config_path=root/'configs/snapdragon.json';config=json.loads(config_path.read_text(encoding='utf-8-sig'))
@@ -117,6 +169,41 @@ def summarize(root):
     delivery['nano_npu']={'status':'validated_200_boundary_pending' if npu_ok else 'not_validated',
         'baseline':comparisons['nano_npu']['baseline'],'candidate':comparisons['nano_npu']['candidate'],
         'stage_profile_status':stage.get('status'),'prefill_window':64,'cache_tokens':2048,'boundary_2016_plus_32':'pending'}
+    if window32_files_ready(root):
+        names={'nano_npu32_comparison':'nano-npu-window32-vs-bf16.json',
+               'nano_npu32_run':'nano-npu-compiled-window32-200.json',
+               'nano_npu32_stage_profile':'nano-npu-window32-200-stage-summary.json',
+               'nano_npu32_boundary':'nano-npu-window32-boundary-2048.json'}
+        try:
+            newer={}
+            for key,name in names.items(): newer[key],sources[key]=read(root,name)
+            passed=assess_window32(newer['nano_npu32_comparison'],newer['nano_npu32_run'],
+                newer['nano_npu32_stage_profile'],newer['nano_npu32_boundary'],corpus,eval_ids,
+                sources['nano_npu32_run']['sha256'],boundary_hash)
+            comparison=newer['nano_npu32_comparison']
+            for key,name in {'nano_npu_private_transfer':'nano-npu-private-transfer-result.json',
+                             'nano_npu_private_source':'nano-npu-private-source-verification.json',
+                             'nano_npu_private_smoke':'nano-npu-private-download-smoke.json'}.items():
+                newer[key],sources[key]=read(root,name)
+            release_ok=private_release_ok(config,newer['nano_npu_private_transfer'],newer['nano_npu_private_source'],
+                                          newer['nano_npu_private_smoke'],newer['nano_npu32_run'])
+            passed=passed and release_ok
+            delivery['nano_npu']={'status':'validated_200_boundary_passed' if passed else 'not_validated',
+                'baseline':comparison.get('baseline'),'candidate':comparison.get('candidate'),
+                'stage_profile_status':newer['nano_npu32_stage_profile'].get('status'),
+                'prefill_window':32,'cache_tokens':2048,
+                'boundary_2016_plus_32':boundary_ok(newer['nano_npu32_boundary'],boundary_hash),
+                'package':{'path':'C:/dev/models/KapiCoder-Mongo-Nano-QNN-Compiled/mixed-htp-window32-v1',
+                           'publication':'private_verified' if release_ok else 'not_validated',
+                           'release':config.get('npu_exports', {}).get('nano'),
+                           'evaluated_package':newer['nano_npu32_run'].get('model'),
+                           'release_identity_verified':release_ok}}
+            compile_path=root/'reports/snapdragon/nano-qnn-htp-compile-window32.json'
+            if compile_path.is_file():
+                sources['nano_npu32_compile']={'path':str(compile_path),'sha256':sha(compile_path)}
+        except (OSError,ValueError,KeyError,TypeError) as exc:
+            delivery['nano_npu']={'status':'not_validated','prefill_window':32,
+                'error':'Invalid complete window32 evidence: '+str(exc), 'publication':'not_published'}
     delivery['small_npu']={'status':'pending_remote_preparation'}
     failure=data['small_gpu_single_failure']
     failed_rows=[row for row in failure.get('items',[]) if row.get('error')]
@@ -126,7 +213,7 @@ def summarize(root):
         'scope':'proxy evaluation; not IDE qualified', 'corpus_sha256':corpus, 'dataset_audit':dataset,
         'samples':{'calibration_expected':config['samples']['calibration_count'],'evaluation_expected':config['samples']['evaluation_count']},
         'raw_models':config['models'],'published_exports':config.get('published_exports',{}),
-        'experimental_exports':config.get('experimental_exports',{}),'delivery':delivery,'sources':sources}
+        'experimental_exports':config.get('experimental_exports',{}),'npu_exports':config.get('npu_exports',{}),'delivery':delivery,'sources':sources}
 
 
 def main():
