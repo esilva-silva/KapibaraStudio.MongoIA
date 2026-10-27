@@ -9,6 +9,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+if importlib.util.find_spec("torch") is None:
+    raise unittest.SkipTest("Checkpoint tensor fixtures require the remote Torch environment; notebook tools are intentionally Torch-free")
+
 os.environ["HIP_VISIBLE_DEVICES"] = "-1"
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import torch
