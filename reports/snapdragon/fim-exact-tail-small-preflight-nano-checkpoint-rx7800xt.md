@@ -1,0 +1,15 @@
+# Preflight Small e checkpoint Nano — FIM exact tail
+
+Registro de evidências existentes em 2026-10-27T07:13:34.425033+00:00. Esta etapa leu apenas relatórios e metadados; não executou modelos, GPU, quantização ou inferências e não incluiu pesos nem dados brutos.
+
+O preflight Small passou pelo RunConfig instalado, descriptor Hf somente de metadados, DataConfig/create_dataloader, get_calibration_dataset e prepare_dataset/collate instalados. O parâmetro compartilhado `task` foi exercitado. Foram preservados 256 registros e 30 blocos (29 × 2048 + 1881), totalizando 61.273 tokens, máscaras 1 e nenhum padding. O hash do stream antes/depois foi `07f7dec2ffed64e72f7d015bfd86bbce5d16f0297538c6fffd079fe9183da362`. O ledger reservado permaneceu intocado no momento do preflight. A ativação standalone preservou os 256 IDs/máscaras, comprimentos 8–549, sem wrapper, padding ou truncamento; o Reader Small ainda não foi validado.
+
+A tentativa GPU Small v1 falhou na escrita de progresso em stdout cp1252: `UnicodeEncodeError` ao codificar U+2588. O estágio GPTQ não concluiu. A receita v2 prepara saída, cache e ledger distintos, preservando a tentativa v1; este registro não afirma início nem conclusão da reexecução.
+
+A tentativa GPU Nano v3 concluiu CaptureSplitInfo e GptqModel; o estágio GPTQ registrou 309,266 s e o workflow retornou resultado não vazio. As capturas reais na entrada da quantização e após prepare_dataset confirmaram os mesmos 30 blocos, 61.273 tokens, máscaras e hash integral. Essas durações são observações da tentativa, sem qualificação de desempenho.
+
+A auditoria corrigida do checkpoint Nano passou: 798 tensores (507 int32, 241 float16 e 50 float32), sem valores não finitos nos tensores flutuantes. Foram verificados 456 prompts (256 calibração + 200 avaliação), sem divergências de IDs em relação à fonte ou aos IDs armazenados. O tokenizer serializado tem bytes diferentes da fonte; a evidência é de paridade de IDs nos prompts verificados. As declarações são GPTQ 4 bits e lm_head dinâmico de 8 bits; a auditoria não prova independentemente o empacotamento nem qualidade. A primeira inspeção, preservada, havia falhado na etapa de amostras com `Missing or escaping checkpoint file: calibration.jsonl`; a inspeção corrigida concluiu essa verificação.
+
+O script `preflight_gptq_workflow_projected.py` e seu relatório Small são UTF-8 sem BOM, com LF e zero CRLF. O SHA do script executado coincide com o registrado no relatório (`ce40e1507fe848ba5bb42ec7a980b1fcc8a59327df8f039016c2120aa4d6b1cf`). Os hashes e caminhos das fontes estão no [relatório sucinto](./fim-exact-tail-small-preflight-nano-checkpoint-rx7800xt.json); o [preflight Small completo](./small-fim-exact-tail-gptq-real-preflight-rx7800xt-v1.json) conserva a evidência detalhada. As evidências antigas não foram normalizadas nem sobrescritas.
+
+Continuam separados a validação do Reader Small, o resultado de Small v2 e a qualificação posterior de Nano por preparação de ativações/inferência/avaliação. Finitude dos tensores e paridade dos IDs não estabelecem qualidade do modelo.
