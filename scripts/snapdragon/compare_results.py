@@ -66,8 +66,11 @@ def main():
     corpus = [json.loads(line) for line in args.corpus.read_text(encoding="utf-8").splitlines() if line.strip()]
     if len({row["id"] for row in corpus}) != len(corpus):
         raise ValueError("Duplicate corpus IDs")
-    baseline = summarize(json.loads(args.baseline.read_text(encoding="utf-8")), corpus, tok)
-    candidate = summarize(json.loads(args.candidate.read_text(encoding="utf-8")), corpus, tok)
+    corpus_hash = hashlib.sha256(args.corpus.read_bytes()).hexdigest()
+    reports = [json.loads(path.read_text(encoding="utf-8")) for path in (args.baseline, args.candidate)]
+    if any(report.get("corpus_sha256") != corpus_hash for report in reports):
+        raise ValueError("Both reports must record the SHA-256 of this exact corpus")
+    baseline, candidate = [summarize(report, corpus, tok) for report in reports]
     result = {"schema": "kapi-snapdragon-comparison-v1", "qualified": False, "proxy": True,
               "corpus_sha256": hashlib.sha256(args.corpus.read_bytes()).hexdigest(),
               "baseline": baseline, "candidate": candidate,

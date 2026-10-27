@@ -111,7 +111,13 @@ try {
         using var process = Process.GetCurrentProcess();
         row["memory"] = new { rss_bytes = process.WorkingSet64, peak_rss_bytes = process.PeakWorkingSet64 };
         rows.Add(row);
-        if (rows.Count % 10 == 0) Console.Error.WriteLine($"Processed {rows.Count}/{corpusLines.Length} requests");
+        if (rows.Count % 10 == 0) {
+            Console.Error.WriteLine($"Processed {rows.Count}/{corpusLines.Length} requests");
+            report["status"] = "running";
+            report["processed"] = rows.Count;
+            report["total"] = corpusLines.Length;
+            File.WriteAllText(Path.GetFullPath(options["out"]) + ".progress.json", JsonSerializer.Serialize(report));
+        }
     }
 } catch (Exception ex) { report["error"] = ex.ToString(); exitCode = 1; }
 var profileFiles = Directory.GetFiles(Path.GetDirectoryName(profilePrefix)!, Path.GetFileName(profilePrefix) + "*.json");

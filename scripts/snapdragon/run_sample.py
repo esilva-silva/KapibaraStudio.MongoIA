@@ -83,11 +83,11 @@ class HFRunner:
         self.device = device
         self.tok = AutoTokenizer.from_pretrained(model, local_files_only=True, trust_remote_code=False)
         self.model = AutoModelForCausalLM.from_pretrained(model, local_files_only=True, trust_remote_code=False,
-                                                        torch_dtype=torch.float32 if device == 'cpu' else torch.float16).to(device).eval()
+                                                        torch_dtype=torch.float32 if device == 'cpu' else torch.bfloat16).to(device).eval()
         self.stops = stop_ids(lambda text: self.tok.encode(text, add_special_tokens=False))
         self.evidence = {'requested': device, 'effective': str(next(self.model.parameters()).device),
                          'torch_hip': torch.version.hip, 'scope': 'model tensor device', 'gpu': gpu,
-                         'expected_gpu': expected_gpu}
+                         'expected_gpu': expected_gpu, 'dtype': str(next(self.model.parameters()).dtype)}
 
     def sync(self):
         if self.device.startswith('cuda'):
@@ -250,6 +250,11 @@ def run(model, corpus, backend, out, device='cpu', config=None, expected_gpu=Non
                 failed = True
             row['memory'] = memory()
             report['items'].append(row)
+            if len(report['items']) % 10 == 0:
+                progress = {**report, 'status': 'running', 'processed': len(report['items']), 'total': len(items)}
+                checkpoint = out.with_name(out.name + '.progress.json')
+                checkpoint.write_text(json.dumps(progress, ensure_ascii=False), encoding='utf-8')
+                print(f"Processed {len(report['items'])}/{len(items)} requests", flush=True)
         if hasattr(runner, 'close'):
             runner.close()
     except Exception as exc:
