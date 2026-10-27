@@ -171,10 +171,21 @@ def calibration_policy_evidence(spec, required, root):
                 and receipt.get('stream_token_ids_sha256') == '07f7dec2ffed64e72f7d015bfd86bbce5d16f0297538c6fffd079fe9183da362'):
             return False, 'Actual GPTQ preprocessor full-stream receipt is incomplete', evidence
         job = reports['gptq_completion_report']; effective = job.get('effective_gptq_calibration') or {}
-        if not (job.get('status') == 'completed' and effective.get('batches') == 30
+        normalized_complete = job.get('status') == 'completed'
+        producer_complete = (job.get('status') == 'workflow_returned_artifact_validation_pending'
+            and job.get('workflow_result_nonempty') is True
+            and any(stage.get('pass') == 'GptqModel' and stage.get('status') == 'completed' for stage in job.get('stages', [])))
+        if not ((normalized_complete or producer_complete) and effective.get('batches') == 30
                 and effective.get('min_tokens') == 1881 and effective.get('max_tokens') == 2048):
             return False, 'GPTQ completion/effective batch evidence is incomplete', evidence
-        return True, 'Actual activation trace, preprocessor receipt and effective GPTQ job counts match', evidence
+        for scope in ('quantize_entry', 'after_prepare_dataset'):
+            observed = (job.get('runtime_calibration_audit') or {}).get(scope) or {}
+            if not (observed.get('matched') is True and observed.get('batch_count') == 30
+                    and observed.get('token_count') == 61273
+                    and observed.get('stream_token_ids_sha256') == receipt['stream_token_ids_sha256']
+                    and [batch.get('tokens') for batch in observed.get('batches', [])] == [2048] * 29 + [1881]):
+                return False, 'GPTQ downstream token audit missing or incomplete: ' + scope, evidence
+        return True, 'Actual activation trace, preprocessor receipt and both downstream GPTQ token audits match', evidence
     except (KeyError, OSError, ValueError, TypeError) as exc:
         return False, 'Required calibration evidence missing or invalid: ' + str(exc), evidence
 
@@ -187,7 +198,7 @@ def apply_calibration_policy_gate(delivery, config, root):
         key = model + '_npu'; variant = delivery[key]
         passed, reason, evidence = calibration_policy_evidence(config.get('npu_exports', {}).get(model) or {}, required, root)
         variant['calibration_policy_gate'] = {'required': required, 'passed': passed, 'reason': reason,
-            'evidence': evidence, 'gptq_receipt_scope': 'Actual preprocessor output before DataLoader; completion report separately establishes effective batch counts, not downstream token hashes'}
+            'evidence': evidence, 'gptq_receipt_scope': 'Preprocessor receipt plus actual quantize_entry and after_prepare_dataset hashes/counts in the GPTQ completion report'}
         if not passed:
             variant['historical_status'] = variant['status']
             variant['status'] = 'calibration_revision_pending'

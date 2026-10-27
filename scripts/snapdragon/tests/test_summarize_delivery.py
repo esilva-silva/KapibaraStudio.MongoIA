@@ -32,10 +32,25 @@ class SummaryTests(unittest.TestCase):
                 'batch_size': 1, 'shuffle': False, 'batches': [{'tokens': n} for n in [2048] * 29 + [1881]],
                 'stream_token_ids_sha256': '07f7dec2ffed64e72f7d015bfd86bbce5d16f0297538c6fffd079fe9183da362'}
             job = {'status': 'completed', 'effective_gptq_calibration': {'batches': 30, 'min_tokens': 1881, 'max_tokens': 2048}}
+            observed = {'matched': True, 'batch_count': 30, 'token_count': 61273,
+                        'stream_token_ids_sha256': receipt['stream_token_ids_sha256'], 'batches': receipt['batches']}
+            job['runtime_calibration_audit'] = {'quantize_entry': observed, 'after_prepare_dataset': observed}
             spec = {'calibration_policy': 'fim-exact-tail-v1'}
             for key, report in [('activation_calibration_trace', trace), ('gptq_runtime_receipt', receipt), ('gptq_completion_report', job)]:
                 spec[key] = key + '.json'; (root / spec[key]).write_text(json.dumps(report))
             self.assertTrue(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+            job.update(status='workflow_returned_artifact_validation_pending', workflow_result_nonempty=True,
+                       stages=[{'pass': 'GptqModel', 'status': 'completed'}])
+            (root / spec['gptq_completion_report']).write_text(json.dumps(job))
+            self.assertTrue(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+            job['status'] = 'running'
+            (root / spec['gptq_completion_report']).write_text(json.dumps(job))
+            self.assertFalse(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+            job['status'] = 'workflow_returned_artifact_validation_pending'
+            del job['runtime_calibration_audit']['after_prepare_dataset']
+            (root / spec['gptq_completion_report']).write_text(json.dumps(job))
+            self.assertFalse(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+            job['runtime_calibration_audit']['after_prepare_dataset'] = observed
             job['effective_gptq_calibration']['batches'] = 29
             (root / spec['gptq_completion_report']).write_text(json.dumps(job))
             self.assertFalse(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
