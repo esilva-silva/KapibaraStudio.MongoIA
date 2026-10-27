@@ -30,7 +30,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn('disable_cpu_ep_fallback', overlay['session_options'])
         self.assertEqual(overlay['session_options']['existing'], 1)
         for index, stage in enumerate(overlay['pipeline']):
-            self.assertEqual(stage['session_options'].get('disable_cpu_ep_fallback', False), index == 0)
+            self.assertEqual(stage['session_options'].get('disable_cpu_ep_fallback'), '1' if index == 0 else None)
             self.assertEqual(stage['session_options']['enable_profiling'], f'profile-{index}')
         self.assertEqual(overlay['pipeline'][0]['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
         self.assertNotIn('disable_cpu_ep_fallback', original['model']['decoder']['pipeline'][0]['session_options'])
@@ -47,15 +47,15 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn('session_options', group)
         self.assertNotIn('disable_cpu_ep_fallback', group['embeddings']['session_options'])
         self.assertNotIn('disable_cpu_ep_fallback', group['lm_head']['session_options'])
-        self.assertTrue(group['context']['session_options']['disable_cpu_ep_fallback'])
-        self.assertTrue(group['iterator']['session_options']['disable_cpu_ep_fallback'])
+        self.assertEqual(group['context']['session_options']['disable_cpu_ep_fallback'], '1')
+        self.assertEqual(group['iterator']['session_options']['disable_cpu_ep_fallback'], '1')
         self.assertEqual(group['context']['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
         broken = json.loads(json.dumps(original)); broken['model']['decoder']['pipeline'][0]['context']['session_options'] = {}
         with self.assertRaises(ValueError): runner.genai_session_overlay(broken, None, 'qnn')
 
     def test_monolithic_qnn_disables_fallback(self):
         result = runner.genai_session_overlay({'model': {'decoder': {}}}, None, 'qnn')
-        self.assertTrue(result['model']['decoder']['session_options']['disable_cpu_ep_fallback'])
+        self.assertEqual(result['model']['decoder']['session_options']['disable_cpu_ep_fallback'], '1')
 
     def test_qnn_rejects_non_htp_backend(self):
         with self.assertRaises(ValueError): runner.validate_qnn_options({'backend_type': 'cpu'}, 'QnnHtp.dll')

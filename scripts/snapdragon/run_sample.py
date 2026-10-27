@@ -196,7 +196,7 @@ def genai_session_overlay(original, profile_prefix, backend):
     if backend == 'qnn' and mixed and 'qnn' in stage_providers({'session_options': session}):
         raise ValueError('Mixed pipeline decoder default must not be QNN')
     if backend == 'qnn' and not mixed:
-        session['disable_cpu_ep_fallback'] = True
+        session['disable_cpu_ep_fallback'] = '1'
     if profile_prefix:
         session['enable_profiling'] = str(profile_prefix)
     overlay = {'session_options': session}
@@ -214,7 +214,7 @@ def genai_session_overlay(original, profile_prefix, backend):
             options = stage.setdefault('session_options', {})
             if backend == 'qnn' and is_qnn:
                 qnn_count += 1
-                options['disable_cpu_ep_fallback'] = True
+                options['disable_cpu_ep_fallback'] = '1'
                 if profile_prefix:
                     for entry in options.get('provider_options', []):
                         for provider, provider_options in entry.items():

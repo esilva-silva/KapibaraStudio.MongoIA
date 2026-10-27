@@ -94,9 +94,12 @@ def smoke_model(path):
     onnx.save(model, str(path))
 
 
-def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=False):
+def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=False, free_dimensions=None, affinity_htp=False):
     import onnxruntime as ort
     import onnxruntime_qnn as qnn
+    free_dimensions = free_dimensions or {}
+    if any(not isinstance(name, str) or not name or type(value) is not int or value <= 0 for name, value in free_dimensions.items()):
+        raise ValueError('Free dimensions require nonempty names and positive integer sizes')
     output = Path(out_dir).resolve()
     if output.exists(): raise ValueError('Output directory must not exist')
     if smoke and models: raise ValueError('Smoke and model inputs are mutually exclusive')
@@ -108,9 +111,14 @@ def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=
     output.mkdir(parents=True)
     if smoke:
         model = output / 'smoke.onnx'; smoke_model(model); models = [model]
+    affinity_path = None
+    if affinity_htp:
+        affinity_path = output / 'op-affinity.json'
+        affinity_path.write_text(json.dumps({'op_type': {'GroupQueryAttention': 'HTP'}}, indent=2) + '\n', encoding='utf-8')
     ep_name = qnn.get_ep_name()
     ort.register_execution_provider_library(ep_name, qnn.get_library_path())
     sessions = []
+    completed = False
     try:
         devices = [d for d in ort.get_ep_devices() if d.ep_name == ep_name and d.device.type == ort.OrtHardwareDeviceType.NPU]
         if not devices: raise RuntimeError('No QNN NPU device detected')
@@ -123,7 +131,10 @@ def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=
                 'ep.share_ep_contexts': '1' if weight_sharing else '0',
                 'ep.stop_share_ep_contexts': '1' if weight_sharing and index == len(models)-1 else '0'}.items():
                 options.add_session_config_entry(key, value)
+            for name, value in free_dimensions.items():
+                options.add_free_dimension_override_by_name(name, value)
             ep_options = {'backend_path': qnn.get_qnn_htp_path()}
+            if affinity_path: ep_options['op_affinity'] = str(affinity_path)
             if weight_sharing: ep_options['enable_htp_weight_sharing'] = '1'
             options.add_provider_for_devices(devices, ep_options)
             sessions.append(ort.InferenceSession(str(model), sess_options=options))
@@ -137,8 +148,9 @@ def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=
                   'cpu_fallback_disabled': True, 'device_type': 'NPU', 'device_count': len(devices),
                   'backend_path': str(qnn.get_qnn_htp_path()),
                   'versions': {name: version(name) for name in ('onnxruntime', 'onnxruntime-qnn', 'onnx')},
-                  'source_script_sha256': sha(__file__),
-                  'input_manifest_sha256': sha(manifest) if manifest else None}
+                  'source_script_sha256': sha(__file__), 'free_dimension_overrides': free_dimensions,
+                  'input_manifest_sha256': sha(manifest) if manifest else None,
+                  'op_affinity': {'path': str(affinity_path), 'sha256': sha(affinity_path), 'config': {'op_type': {'GroupQueryAttention': 'HTP'}}} if affinity_path else None}
         if smoke:
             import numpy as np
             options = ort.SessionOptions(); options.enable_profiling = True
@@ -164,10 +176,21 @@ def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=
                 if not any(e['path'] == file.name for e in report['artifacts']):
                     report['artifacts'].append({'path': file.name, 'bytes': file.stat().st_size, 'sha256': sha(file)})
         (output / 'compile-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+        completed = True
         return report
+    except Exception as exc:
+        failure = {'status': 'failed', 'error': f'{type(exc).__name__}: {exc}',
+                   'cpu_fallback_disabled': True, 'free_dimension_overrides': free_dimensions,
+                   'models': [str(p) for p in models], 'source_script_sha256': sha(__file__),
+                   'op_affinity': {'path': str(affinity_path), 'sha256': sha(affinity_path), 'config': {'op_type': {'GroupQueryAttention': 'HTP'}}} if affinity_path else None}
+        (output / 'compile-report.json').write_text(json.dumps(failure, indent=2) + '\n', encoding='utf-8')
+        raise
     finally:
         sessions.clear()
-        ort.unregister_execution_provider_library(ep_name)
+        # A failed shared-context construction may retain backend state. Let the
+        # one-shot compiler process release it at exit instead of unloading a live EP.
+        if completed:
+            ort.unregister_execution_provider_library(ep_name)
 
 
 def main():
@@ -175,8 +198,12 @@ def main():
     p.add_argument('--model', action='append', default=[]); p.add_argument('--manifest')
     p.add_argument('--out-dir', required=True); p.add_argument('--smoke', action='store_true')
     p.add_argument('--weight-sharing', action='store_true')
+    p.add_argument('--affinity-htp', action='store_true', help='Pin GroupQueryAttention to HTP')
+    p.add_argument('--free-dim', action='append', default=[], metavar='NAME=SIZE')
     a = p.parse_args()
-    try: print(json.dumps(compile_context(a.model, a.out_dir, a.manifest, a.smoke, a.weight_sharing), indent=2))
+    try:
+        dims = {name: int(value) for name, value in (item.rsplit('=', 1) for item in a.free_dim)}
+        print(json.dumps(compile_context(a.model, a.out_dir, a.manifest, a.smoke, a.weight_sharing, dims, a.affinity_htp), indent=2))
     except Exception as exc: p.exit(1, f'QNN compile failed: {type(exc).__name__}: {exc}\n')
 
 
