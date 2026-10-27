@@ -29,3 +29,9 @@ O Esilva-pc confirmou RX 7800 XT com 16 GB de VRAM no índice ROCm 0 e iGPU no �
 ## Small: controle CPU adicional
 
 O primeiro pedido do Small gera 32 tokens de ID 0 (`!`) tanto no export FP16 original quanto na cópia com RMSNorm decomposto, usando .NET/WinML ORT 1.24. O controle Python/ORT 1.31 também reproduz o problema. A cópia decomposta na Adreno gera repetição incorreta. Assim, a falha não está isolada ao provider DirectML e nenhum desses pacotes Small foi aprovado. A varredura completa dos pesos FP16 não encontrou NaN/Inf nem intervalos externos inválidos; amostras comparadas aos tensores BF16 coincidem com o cast esperado. O próximo diagnóstico busca valores não finitos nas ativações. Relatórios: `small-fp16-cpu-control.json`, `small-rmsnorm-cpu-control.json`, `small-python-cpu-control.json`, `small-gpu-rmsnorm-control.json`, `small-weight-audit.json`.
+
+## Entrega experimental Nano
+
+O pacote foi publicado e todos os arquivos foram baixados e verificados por SHA-256 em [commit HF b173484e97e24978d521a2723fa300f3f1d26224](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/b173484e97e24978d521a2723fa300f3f1d26224/dml-fp16-rmsnorm). Um controle real na Adreno usando a cópia baixada produziu os mesmos 32 tokens do primeiro caso da avaliação completa. A branch principal permanece preservada.
+
+Na referência Nano BF16, 163 casos terminaram por EOS e 37 pelo limite. Na Adreno, 164 terminaram por `runtime_done_without_token` e 36 pelo limite. O runtime GenAI não acrescentou o token de parada nesses 164 casos; portanto o relatório não inventa um ID EOS observado. Nenhuma das 200 gerações apresentou exceção. A referência Small BF16 terminou 160 casos por EOS e 40 pelo limite.

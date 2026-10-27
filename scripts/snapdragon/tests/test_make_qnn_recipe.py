@@ -33,11 +33,29 @@ class RecipeTest(unittest.TestCase):
     def test_prepare_has_local_calibration_cpu_and_no_compiler(self):
         config = recipe.generate(self.source, self.cal, self.root, self.root / 'out', 'prepare')
         self.assertNotIn('cb', config['passes'])
+        self.assertEqual(config['target'], 'qnn_system')
+        self.assertEqual(config['systems']['qnn_system']['accelerators'][0]['execution_providers'], ['QNNExecutionProvider'])
+        self.assertEqual(config['data_configs'][0]['pre_process_data_config']['max_samples'], 128)
+        self.assertEqual(config['data_configs'][1]['pre_process_data_config']['max_samples'], 256)
         self.assertEqual(config['passes']['sq']['calibration_providers'], ['CPUExecutionProvider'])
         self.assertEqual(config['passes']['g']['bits'], 4)
         self.assertEqual(config['passes']['st']['context_length'], 64)
         self.assertEqual(config['data_configs'][0]['pre_process_data_config']['model_name'], str(self.source))
         self.assertEqual(json.loads((self.root / 'out/calibration.jsonl').read_text(encoding='utf-8').splitlines()[0]), {'text': 'db.test.find()'})
+
+    def test_prepare_python_and_olive_qnn_selector(self):
+        import zipfile
+        config = recipe.generate(self.source, self.cal, self.root / 'fallback', self.root / 'out', 'prepare',
+                                 prepare_python=self.root / 'qnn-env')
+        self.assertEqual(config['systems']['qnn_system']['python_environment_path'], str((self.root / 'qnn-env').resolve()))
+        wheel_dir = SCRIPTS.parents[1] / 'tmp/olive-source'
+        wheels = list(wheel_dir.glob('olive_ai-0.13.0-*.whl'))
+        if not wheels:
+            self.skipTest('Olive 0.13 wheel unavailable')
+        with zipfile.ZipFile(wheels[0]) as wheel:
+            source = wheel.read('olive/passes/onnx/quantization.py').decode()
+        self.assertIn('self.accelerator_spec.execution_provider == ExecutionProvider.QNNExecutionProvider', source)
+        self.assertIn('from onnxruntime.quantization.execution_providers.qnn import get_qnn_qdq_config as get_qdq_config', source)
 
     def composite(self, origin='/build/output'):
         artifact = self.root / 'artifact'

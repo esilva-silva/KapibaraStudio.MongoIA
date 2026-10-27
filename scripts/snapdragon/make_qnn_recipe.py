@@ -74,7 +74,7 @@ def rebase_composite(model, artifact_root, original_artifact_root=None):
     return model
 
 
-def generate(source, calibration, qnn_python, out_dir, phase, input_model_config=None, soc_model=None, gptq_device='cuda', artifact_root=None, original_artifact_root=None):
+def generate(source, calibration, qnn_python, out_dir, phase, input_model_config=None, soc_model=None, gptq_device='cuda', artifact_root=None, original_artifact_root=None, prepare_python=None):
     source = Path(source).resolve()
     provenance = source_provenance(source)
     expected = json.loads(PROVENANCE.read_text(encoding='utf-8'))
@@ -126,8 +126,10 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
         for old, new in [('block_size', 'int4_block_size'), ('accuracy_level', 'int4_accuracy_level'), ('op_types_to_quantize', 'int4_op_types_to_quantize')]:
             mb[new] = mb.pop(old)
         mb['search'] = {'max_length': 2048}
-        config.pop('target', None)
-        config['systems'] = {}
+        # The target accelerator selects the QNN-specific QDQ config; calibration
+        # itself still executes on CPU through calibration_providers above.
+        if prepare_python:
+            config['systems']['qnn_system']['python_environment_path'] = str(Path(prepare_python).resolve())
     else:
         config['input_model'] = model_config
         config['data_configs'] = []
@@ -141,6 +143,9 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
     config_path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     manifest = {'source': provenance, 'recipe': expected, 'calibration_sha256': sha256(calibration),
                 'phase': phase, 'gptq_device': gptq_device, 'calibration_provider': 'CPUExecutionProvider',
+                'target_execution_provider': 'QNNExecutionProvider',
+                'calibration_limits': {'gptq': {'strategy': 'join', 'max_samples': 128, 'max_seq_len': 2048},
+                                       'activation': {'strategy': 'line-by-line', 'max_samples': 256, 'max_seq_len': 2048}},
                 'changes': ['local calibration', 'CPU activation calibration', 'ModelBuilder Olive 0.13 option names', 'search.max_length 2048 (not validated as model capacity)', 'split preparation and compilation'],
                 'status': 'generated_not_executed', 'context_validation': 'pending: inspect KV shapes and genai_config; run generation', 'config': str(config_path)}
     (out_dir / f'{phase}-manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
@@ -155,13 +160,14 @@ def main():
     p.add_argument('--out-dir', required=True)
     p.add_argument('--phase', required=True, choices=('prepare', 'compile'))
     p.add_argument('--input-model-config')
+    p.add_argument('--prepare-python', help='QNN-capable PythonEnvironment directory for prepare (defaults to --qnn-python)')
     p.add_argument('--artifact-root', help='Transferred Olive output directory (required for compile)')
     p.add_argument('--original-artifact-root', help='Original absolute output root, for cross-host rebasing')
     p.add_argument('--soc-model')
     p.add_argument('--gptq-device', choices=('cuda', 'cpu'), default='cuda')
     a = p.parse_args()
     try:
-        generate(a.source, a.calibration, a.qnn_python, a.out_dir, a.phase, a.input_model_config, a.soc_model, a.gptq_device, a.artifact_root, a.original_artifact_root)
+        generate(a.source, a.calibration, a.qnn_python, a.out_dir, a.phase, a.input_model_config, a.soc_model, a.gptq_device, a.artifact_root, a.original_artifact_root, a.prepare_python)
     except (ValueError, OSError, KeyError) as exc:
         p.exit(1, f'Recipe generation failed: {exc}\n')
 
