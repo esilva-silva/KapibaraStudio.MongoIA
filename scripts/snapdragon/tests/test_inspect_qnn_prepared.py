@@ -21,27 +21,27 @@ def value(name, dtype, shape):
     return onnx.helper.make_tensor_value_info(name, dtype, shape)
 
 
-def fixture(window):
+def fixture(window, hidden_size=896, layers=2, head_size=64):
     T = onnx.TensorProto
     dynamic = ["batch_size", "sequence_length"]
     embedding = "embedding_activation_q"
     hidden = "final_hidden_activation_q"
     components = {
         "embeddings": {"inputs": [value("input_ids", T.INT64, dynamic)],
-                       "outputs": [value(embedding, T.UINT16, dynamic + [896])]},
-        "lm_head": {"inputs": [value(hidden, T.UINT16, dynamic + [896])],
+                       "outputs": [value(embedding, T.UINT16, dynamic + [hidden_size])]},
+        "lm_head": {"inputs": [value(hidden, T.UINT16, dynamic + [hidden_size])],
                     "outputs": [value("logits", T.FLOAT, dynamic + [151936])]}}
     for name, length in (("context", window), ("iterator", 1)):
-        inputs = [value(embedding, T.UINT16, [1, length, 896]),
+        inputs = [value(embedding, T.UINT16, [1, length, hidden_size]),
                   value("past_seq_len", T.INT32, [1, 1]), value("total_seq_len", T.INT32, [])]
-        outputs = [value(hidden, T.UINT16, [1, length, 896])]
-        for layer in range(2):
+        outputs = [value(hidden, T.UINT16, [1, length, hidden_size])]
+        for layer in range(layers):
             for kind in ("key", "value"):
-                inputs.append(value(f"past_key_values.{layer}.{kind}", T.FLOAT, [1, 2, "past_sequence_length", 64]))
-                outputs.append(value(f"present.{layer}.{kind}", T.FLOAT, [1, 2, "past_sequence_length", 64]))
+                inputs.append(value(f"past_key_values.{layer}.{kind}", T.FLOAT, [1, 2, "past_sequence_length", head_size]))
+                outputs.append(value(f"present.{layer}.{kind}", T.FLOAT, [1, 2, "past_sequence_length", head_size]))
         components[name] = {"inputs": inputs, "outputs": outputs}
     genai = {"model": {"vocab_size": 151936, "decoder": {
-        "num_hidden_layers": 2, "num_key_value_heads": 2, "head_size": 64, "hidden_size": 896,
+        "num_hidden_layers": layers, "num_key_value_heads": 2, "head_size": head_size, "hidden_size": hidden_size,
         "sliding_window": {"window_size": window},
         "inputs": {"past_sequence_length": "past_seq_len", "total_sequence_length": "total_seq_len",
                    "past_key_names": "past_key_values.%d.key", "past_value_names": "past_key_values.%d.value"},
@@ -120,6 +120,62 @@ class ExpectedWindowTests(unittest.TestCase):
                 inspector.main(args)
             self.assertEqual(error.exception.code, 2)
             inspect.assert_not_called()
+
+
+class SmallHeadSizeTests(unittest.TestCase):
+    def test_small28_layers_and1536_hidden_accept128_heads_for_both_windows(self):
+        for window in (32, 64):
+            with self.subTest(window=window):
+                components, genai = fixture(window, hidden_size=1536, layers=28, head_size=128)
+                self.assertEqual(len(components["context"]["inputs"]), 59)
+                self.assertEqual(len(components["context"]["outputs"]), 57)
+                self.assertEqual(inspector.validate_interfaces(describe_components(components), genai, window, 128), [])
+
+    def test_nano_default_does_not_auto_accept_small_head_metadata(self):
+        components, genai = fixture(64, hidden_size=1536, layers=28, head_size=128)
+        with self.assertRaisesRegex(ValueError, "head size mismatch"):
+            inspector.validate_interfaces(describe_components(components), genai)
+
+    def test_wrong_head_metadata_is_rejected_even_when_graph_uses128(self):
+        components, genai = fixture(32, hidden_size=1536, layers=28, head_size=128)
+        genai["model"]["decoder"]["head_size"] = 64
+        with self.assertRaisesRegex(ValueError, "head size mismatch"):
+            inspector.validate_interfaces(describe_components(components), genai, 32, 128)
+
+    def test_last_layer_wrong_kv_shape_is_rejected_with_valid128_metadata(self):
+        components, genai = fixture(32, hidden_size=1536, layers=28, head_size=128)
+        target = next(v for v in components["iterator"]["outputs"] if v.name == "present.27.value")
+        target.type.tensor_type.shape.dim[3].dim_value = 64
+        failures = inspector.validate_interfaces(describe_components(components), genai, 32, 128)
+        self.assertTrue(any("iterator invalid KV: present.27.value" in failure for failure in failures))
+
+    def test_missing_final_small_layer_is_rejected(self):
+        components, genai = fixture(32, hidden_size=1536, layers=28, head_size=128)
+        components["context"]["inputs"] = [v for v in components["context"]["inputs"] if v.name != "past_key_values.27.key"]
+        failures = inspector.validate_interfaces(describe_components(components), genai, 32, 128)
+        self.assertIn("context incomplete or unexpected KV names", failures)
+
+    def test_hidden_dimension_is_independent_of_head_dimension(self):
+        components, genai = fixture(32, hidden_size=1536, layers=28, head_size=128)
+        components["context"]["inputs"][0].type.tensor_type.shape.dim[2].dim_value = 896
+        failures = inspector.validate_interfaces(describe_components(components), genai, 32, 128)
+        self.assertIn("context embeddings boundary mismatch", failures)
+
+    def test_invalid_head_sizes_fail_before_inspecting_interfaces(self):
+        _, genai = fixture(32, hidden_size=1536, layers=28, head_size=128)
+        for expected in (0, 32, 256, True, 128.0):
+            with self.subTest(expected=expected), self.assertRaises(ValueError):
+                inspector.validate_expected_head_size(genai, expected)
+
+    def test_cli_forwards_small_head_size_without_changing_default_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            args = ["--artifact-dir", str(root / "artifact"), "--source", str(root / "source"),
+                    "--samples", str(root / "samples"), "--out", str(root / "report.json"), "--expected-head-size", "128"]
+            result = {"passed": True, "transfer_ready": True, "components": {}, "failures": []}
+            with patch.object(inspector, "inspect", return_value=result) as call:
+                self.assertEqual(inspector.main(args), 0)
+                call.assert_called_once_with(root / "artifact", root / "source", root / "samples", 64, False, 128)
 
 
 class TokenizerByteParityTests(unittest.TestCase):
@@ -201,7 +257,7 @@ class TokenizerByteParityTests(unittest.TestCase):
         for flags, window, strict in (([], 64, False), (["--expected-window", "32", "--require-original-tokenizer"], 32, True)):
             with self.subTest(flags=flags), patch.object(inspector, "inspect", return_value=result) as call:
                 self.assertEqual(inspector.main(base + flags), 0)
-                call.assert_called_once_with(self.artifact, self.source, self.root / "samples", window, strict)
+                call.assert_called_once_with(self.artifact, self.source, self.root / "samples", window, strict, 64)
                 self.assertTrue(json.loads((self.root / "report.json").read_text())["passed"])
 
 
