@@ -1,8 +1,44 @@
 """Isolated Olive GPTQ job on an explicitly selected RX GPU; no QNN activation pass here."""
-import argparse,functools,hashlib,importlib.machinery,importlib.metadata,json,sys,time,traceback,types
+import argparse,functools,hashlib,importlib.machinery,importlib.metadata,json,struct,sys,time,traceback,types
 from pathlib import Path
 
-def run(config_path,report_path):
+def validate_calibration_batches(dataset, ledger):
+    if (ledger.get('policy') != 'kapi_gptq_join_tail_v1' or ledger.get('selected_rows') != 256
+            or ledger.get('all_prompt_tokens_covered') is not True or ledger.get('batch_size') != 1
+            or ledger.get('padding') != 'none' or ledger.get('add_special_tokens') is not False
+            or ledger.get('shuffle') is not False):
+        raise ValueError('Invalid GPTQ calibration ledger policy')
+    batches=ledger.get('batches') or []
+    if len(dataset)!=30 or len(batches)!=30 or [x.get('tokens') for x in batches] != [2048]*29+[1881]:
+        raise ValueError('Expected 29 full blocks and one 1881-token tail')
+    token_stream=hashlib.sha256(); observed=[]
+    for index,(item,expected) in enumerate(zip(dataset,batches)):
+        def flatten(key):
+            value=item[key]
+            if hasattr(value,'detach'): value=value.detach().cpu()
+            rows=value.tolist() if hasattr(value,'tolist') else value
+            if not isinstance(rows,list) or len(rows)!=1 or not isinstance(rows[0],list):
+                raise ValueError('Expected a single batch dimension')
+            if any(type(x) is not int for x in rows[0]): raise ValueError('Expected integer IDs and masks')
+            return rows[0]
+        ids=flatten('input_ids');mask=flatten('attention_mask')
+        if len(ids)!=expected['tokens'] or mask != [1]*len(ids):
+            raise ValueError('Batch token length or attention mask mismatch at '+str(index))
+        encoded=b''.join(struct.pack('<q',x) for x in ids)
+        digest=hashlib.sha256(encoded).hexdigest()
+        if expected.get('index')!=index or digest!=expected.get('token_ids_sha256'):
+            raise ValueError('Batch token hash mismatch at '+str(index))
+        token_stream.update(encoded)
+        mask_hash=hashlib.sha256(b''.join(struct.pack('<q',x) for x in mask)).hexdigest()
+        observed.append({'index':index,'tokens':len(ids),'token_ids_sha256':digest,'attention_mask_sha256':mask_hash})
+    stream_hash=token_stream.hexdigest()
+    if stream_hash!=ledger.get('stream_token_ids_sha256') or sum(x['tokens'] for x in observed)!=ledger.get('consumed_tokens'):
+        raise ValueError('Calibration stream hash or count mismatch')
+    return {'matched':True,'batch_count':len(observed),'token_count':sum(x['tokens'] for x in observed),
+            'stream_token_ids_sha256':stream_hash,'batches':observed}
+
+
+def run(config_path,report_path,calibration_preflight=None):
     import torch
     from run_sample import verify_gpu
     import torch_fwht
@@ -42,10 +78,26 @@ def run(config_path,report_path):
         from gptqmodel.quantization.rotation import hadamard_utils
         from gptqmodel.utils import BACKEND
         hadamard_utils.fast_hadamard_transform=adapter
+        ledger=None
+        if calibration_preflight:
+            ledger_path=Path(calibration_preflight).resolve(strict=True)
+            ledger=json.loads(ledger_path.read_text(encoding='utf-8'))
+            report['runtime_calibration_audit']={'preflight_sha256':hashlib.sha256(ledger_path.read_bytes()).hexdigest()}
+            original_prepare=BaseGPTQModel.prepare_dataset
+            @functools.wraps(original_prepare)
+            def prepare_dataset(model,*args,**kwargs):
+                result=original_prepare(model,*args,**kwargs)
+                report['runtime_calibration_audit']['after_prepare_dataset']=validate_calibration_batches(result,ledger)
+                save()
+                return result
+            BaseGPTQModel.prepare_dataset=prepare_dataset
         original_quantize=BaseGPTQModel.quantize
         @functools.wraps(original_quantize)
         def quantize(model,dataset,*args,**kwargs):
             kwargs['backend']=BACKEND.TORCH
+            if ledger is not None:
+                report['runtime_calibration_audit']['quantize_entry']=validate_calibration_batches(dataset,ledger)
+                save()
             lengths=[int(item['input_ids'].shape[-1]) for item in dataset]
             report['effective_gptq_calibration']={'batches':len(dataset),'min_tokens':min(lengths),'max_tokens':max(lengths),'backend':'Torch','device':str(model.quantize_config.device),'rotation':model.quantize_config.rotation}
             report['status']='quantizing';save()
@@ -65,6 +117,9 @@ def run(config_path,report_path):
         report['status']='running';save()
         from olive.workflows import run as olive_run
         result=olive_run(config,tempdir=str(config_path.parent/'tmp'))
+        if ledger is not None and not all(report['runtime_calibration_audit'].get(scope,{}).get('matched') is True
+                                          for scope in ('quantize_entry','after_prepare_dataset')):
+            raise RuntimeError('Both runtime calibration audit hooks must complete')
         report['workflow_result_nonempty']=bool(result)
         report['status']='workflow_returned_artifact_validation_pending' if result else 'failed'
         report['peak_gpu_bytes']=torch.cuda.max_memory_allocated()
@@ -74,5 +129,5 @@ def run(config_path,report_path):
     save();return report
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--report',type=Path,required=True);a=p.parse_args()
-    r=run(a.config.resolve(),a.report.resolve());print(json.dumps(r,indent=2));raise SystemExit(1 if r['status']=='failed' else 0)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--report',type=Path,required=True);p.add_argument('--calibration-preflight',type=Path);a=p.parse_args()
+    r=run(a.config.resolve(),a.report.resolve(),a.calibration_preflight);print(json.dumps(r,indent=2));raise SystemExit(1 if r['status']=='failed' else 0)
