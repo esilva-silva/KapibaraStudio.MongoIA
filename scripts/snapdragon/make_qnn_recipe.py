@@ -114,7 +114,9 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
     if phase == 'prepare':
         config['input_model']['model_path'] = str(source)
         for data in config['data_configs']:
-            data['task'] = 'text-generation'
+            # Olive 0.13 DataConfig ignores a top-level task. Select the component explicitly.
+            data.pop('task', None)
+            data['pre_process_data_config']['type'] = 'text_generation_huggingface_pre_process'
             data['pre_process_data_config']['model_name'] = str(source)
             data['load_dataset_config'] = {'data_name': 'json', 'data_files': str(data_path), 'split': 'train'}
             data['pre_process_data_config']['max_seq_len'] = 2048

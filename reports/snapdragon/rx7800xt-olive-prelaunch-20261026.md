@@ -1,0 +1,13 @@
+# Pré-execução Olive Nano na RX7800XT
+
+O controle curto Small PyTorch FP16 na RX (amostra fim-legal.cobalt_leg.billing-000714-stage-000279) começa no token1666, com logits e todos os estados inspecionados finitos. Os340initializersONNX,1.547.908.608elementos flutuantes, não contêm NaN/Inf e têm máximo absoluto354. A geraçãoFP16 de32tokens é plausível e difere dosIDsBF16 no final; não é aceite de qualidade. Nenhum arquivo publicado foi alterado. Essa prova não reproduziu32zeros no PyTorch, mas não localiza sozinha o defeito do caminhoONNX. Fonte: small-fp16-rx7800xt-control.json.
+
+O ambiente experimental ganhou somente datasets4.4.1, Optimum2.0.0 e GenAI0.18.0 para a preparação; pip check passou. Torch2.10.0ROCm e Transformers4.57.6 permanecem fixados e o venv original não foi modificado. Versões completas em olive-prepare-environment-rx7800xt.json. Nenhuma alteração de dependências da IDE.
+
+O preflight real mostrou que DataConfig do Olive0.13 ignora task no nível superior. A receita agora seleciona explicitamente o componente text_generation_huggingface_pre_process. O preflightCPU produziu29blocos joined de2048tokens a partir dos256prompts (limite128) e256lotes line-by-line preenchidos para2048tokens. Os tempos0,921s/0,407s são somente pré-processamento, NÃO custo da quantização de ativações. Fonte: nano-olive-calibration-preflight-rx7800xt.json. A máscara preserva o comprimento real do prompt; não se alteraram os hashes da amostra comum.
+
+A receita completa preserva alvoQNN e providerCPU da calibração de ativações. Discovery QNN neste host ainda não foi aprovado. Por isso a primeira execução usa gptq-only.json, derivado com somente CaptureSplitInfo/GptqModel, host local e deviceGPU explícito; não executa OnnxStaticQuantization, não gera QDQgenérico como se fosseQNN e não compilaHTP. run_olive_fwht.py integra o adaptador validado dentro do próprio processoOlive, forçaBACKEND.TORCH, fixaRXporidentidade e registra estágios, lotes efetivos e picoVRAM. Usa o lockGPU do projeto original. Saída separada: C:/IA/models/KapiSnapdragonArtifacts/nano-qnn-prepare-rx7800xt.
+
+A quantização completa é necessária para produzir o intermediário; scripts e microtestes não o substituem. Esta nota antecede a execução e não afirma resultado ou pacoteW4A16funcional. Etapas posteriores: validar artefatoGPTQ, export/ModelBuilder, QDQespecíficoQNN e calibraçãoCPU, splits/staticshapes/contexto, transferência e compilação no notebook comfallbackdesabilitado. Não assumir capacidadeKV2048 apenas pelo search.max_length, nem soc_model60.
+
+A suíte de scripts após o ajuste passou50testes e ignorou um teste que requer wheel-fonteOlive local não presente. Os9testes numéricosFWHT foram executados, não ignorados. Logs: tmp/rx-prepare-prelaunch-tests.log.

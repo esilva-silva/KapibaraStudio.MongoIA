@@ -35,6 +35,8 @@ class RecipeTest(unittest.TestCase):
         self.assertNotIn('cb', config['passes'])
         self.assertEqual(config['target'], 'qnn_system')
         self.assertEqual(config['systems']['qnn_system']['accelerators'][0]['execution_providers'], ['QNNExecutionProvider'])
+        self.assertNotIn('task', config['data_configs'][0])
+        self.assertEqual(config['data_configs'][0]['pre_process_data_config']['type'], 'text_generation_huggingface_pre_process')
         self.assertEqual(config['data_configs'][0]['pre_process_data_config']['max_samples'], 128)
         self.assertEqual(config['data_configs'][1]['pre_process_data_config']['max_samples'], 256)
         self.assertEqual(config['passes']['sq']['calibration_providers'], ['CPUExecutionProvider'])
