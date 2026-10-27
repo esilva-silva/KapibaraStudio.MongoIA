@@ -268,3 +268,23 @@ env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_pr
 # Download público do Small.
 env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Small-ONNX --revision c03ba2339ba263a3881134d0acd3ee24e1a80717 --subfolder htp-fim-exact-v1 --source C:/dev/models/KapiCoder-Mongo-Small/4ba57bc1f56a5b3cbe486dd314321ce4cdb2cae6 --manifest-sha256 e82e3cc5f6bcd0ffc3b31d5a4ed76cf3fb122726537d68b48742cde8dcc15ebb --require-original-tokenizer
 ```
+
+
+## Datasets completos de treino e validação v3
+
+[GitHub Release datasets-training-validation-v3-20261027](https://github.com/esilva-silva/KapibaraStudio.MongoIA/releases/tag/datasets-training-validation-v3-20261027) contém os dois ZIPs, dois manifestos por arquivo e `SHA256SUMS`. Nano: 290994356 bytes, SHA-256 `18e982fe50f0b9411103e3037146d07041031df83b9b5d724ed6c02d176f1256`; Small: 379770292 bytes, SHA-256 `cd58da442edc1cabbf7956c35445b5e5a4635bdbc68d950bc95d39e1a8ac4d17`.
+
+Os cinco assets foram baixados no Esilva-ARM para `C:/dev/datasets/KapiCoder-Mongo-v3/20261027`, com hashes conferidos contra os recibos remotos, digests GitHub e SHA256SUMS. Os 46 arquivos Nano e 52 Small foram verificados por tamanho/SHA-256 e extraídos em pastas próprias:
+
+- Nano: `C:/dev/datasets/KapiCoder-Mongo-v3/20261027/nano/data/student/v3/t0`.
+- Small: `C:/dev/datasets/KapiCoder-Mongo-v3/20261027/small/data/student/v3/t1`.
+
+Os manifestos informam 238453 exemplos de treino Nano e 309571 Small. Os pacotes incluem validação, seleção, IDs de splits, configurações/proveniência e atribuições. Não contêm pesos, ambientes ou um corpus completo de teste. Esta transferência não executa treinamento nem altera a amostra fixa de 256+200 usada nos benchmarks Snapdragon.
+
+Os recibos estão em `reports/datasets/training-validation-v3-{esilva-arm-download,esilva-arm-extraction,publication,public-access}-20261027.json`. Para repetir a conferência e extração, baixe os cinco assets em uma pasta inédita, confira SHA256SUMS e execute:
+
+```powershell
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/data/verify_training_archives.py --directory <pasta-nova-com-os-assets> --report <novo-recibo.json>
+```
+
+O verificador exige destinos novos, confere o inventário e todos os hashes, recusa caminhos inseguros/links e não executa arquivos do pacote.
