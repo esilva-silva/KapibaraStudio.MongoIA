@@ -131,7 +131,23 @@ Para a fase CPU, iniciar processo com HIP_VISIBLE_DEVICES=-1, HF_HUB_OFFLINE=1 e
 
 Transferir todos os dados externos referenciados, inclusive transformer.onnx.data compartilhado entre context/iterator, Composite, genai_config e tokenizer. Compilar HTP apenas context/iterator; embeddings/head separados podem usar CPU. Fallback desabilitado nessas sessões não prova pipeline100%NPU. Validar shapes, IDs, geração atravessando blocos64 e capacidade2048, além de profiling real no Snapdragon.
 
-## Nano QNN preparado para transferência
+## Nano NPU preferido: FIM exato e cauda GPTQ preservada
+
+A revisão `fim-exact-tail-v1` é a referência atual do Nano. Pacote promovido local: `C:/dev/models/KapiCoder-Mongo-Nano-QNN-Compiled/validated-fim-exact-v1`; pacote avaliado: `mixed-htp-fim-exact-v1`; contextos compilados: `fim-exact-v1-contexts`, todos sob `C:/dev/models/KapiCoder-Mongo-Nano-QNN-Compiled/`.
+
+A nova calibração comprovou os 256 prompts FIM originais, sem special tokens ou padding artificial. GPTQ consumiu os 61273 tokens em 30 blocos (29×2048 + cauda de 1881), com hashes coincidentes em `quantize_entry` e `after_prepare_dataset`. Os arquivos originais do tokenizer e `generation_config.json` foram preservados. A preparação está no repositório privado `esilva/KapiCoder-Mongo-Snapdragon-Transfer`, commit `58717bfab63ffc6b241e0713dc065e246c22896b`, prefixo `nano/qnn-fim-exact-v5-prepared`, manifesto SHA-256 `79f6567de10e2e4a6dfd4786888a155d264089d65c841447d4e7203f09ef35cb`.
+
+O Nano corrigido passou 200/200 casos e o boundary de 2016+32 na NPU, mantendo janela 32, contexto 2048 e greedy até 32 tokens. Match textual: 39% contra 40% BF16; prefixo aceito médio: 2,46 contra 2,585. TTFT mediano: 190,184 ms; p95: 303,207 ms; decode mediano: 57,613 tokens/s; pico RSS: 946950144 bytes (aproximadamente 0,882 GiB). Evidências em `reports/snapdragon/`: `nano-npu-fim-exact-200.json`, `nano-npu-fim-exact-vs-bf16.json`, `nano-npu-fim-exact-stage-summary.json`, `nano-npu-fim-exact-boundary-2048.json` e `nano-qnn-fim-exact-compile.json`.
+
+Context/iterator executam QNN HTP com zero kernels CPU; embeddings/lm_head permanecem CPU. Sondas físicas próprias estão em `reports/snapdragon/nano-fim-exact-htp-context-probe/report.json` e `nano-fim-exact-htp-iterator-probe/report.json`; seus tempos sintéticos não são latências de geração. O resultado continua proxy, `qualified:false`, sem execução do JavaScript ou homologação da IDE. Nano CPU int4 continua padrão.
+
+```powershell
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py --model C:/dev/models/KapiCoder-Mongo-Nano-QNN-Compiled/validated-fim-exact-v1 --corpus data/calib/snapdragon-20261026/evaluation.jsonl --backend qnn --out reports/snapdragon/nano-npu-fim-exact-repeat.json
+```
+
+A transferência privada final foi verificada no commit `a42805ec7740e84dd392e316eab3486dd4e130d7`, prefixo `nano/htp-fim-exact-v1`, manifesto SHA-256 `0720f8859521628fc43aea38d73c5cc6d7e32156e1bcb98c9ecff3199ecf4abe`; download, origem original e smoke NPU passaram. `configs/snapdragon.json` já contém os pins verificados: use `npu_exports.nano.repo_id`, `revision`, `subfolder` e `manifest_sha256` para o download final, com `download_qnn_prepared.py --source <snapshot-original> --require-original-tokenizer`. Não reutilize os pins do pacote legado abaixo como se fossem da revisão corrigida. A receita completa está em `docs/snapdragon-qnn.md`.
+
+## Histórico legado: Nano QNN preparado
 
 A preparação completa está no commit imutável Hugging Face `39a55f1c17411d8d2cfa0167095bff5250f7c98e`, prefixo `qnn-prepared`, branch `experimental/snapdragon-qnn-rx7800xt-20261027`. É uma publicação intermediária para compilação HTP no Snapdragon, com qualified=false. Nano CPU int4 continua como padrão da IDE. O download público dos 31 arquivos foi verificado por tamanho e SHA-256.
 
@@ -142,11 +158,11 @@ python scripts/snapdragon/verify_manifest.py <diretorio-novo>/qnn-prepared
 
 `prepare_qnn_transfer.py` preserva a fonte, copia todos os dados externos, normaliza o Composite relativo e verifica atribuições contra o snapshot fixado. `inspect_qnn_prepared.py` audita grafos, valores numéricos, interfaces e IDs sem criar sessões. A cópia passou os quatro checkers e os 456 prompts. Erros de hardlinks e caminhos do source estão preservados em relatório separado.
 
-O runner reserva geração após o padding estático sem truncar: 361 tokens com janela 64 viram 384 e exigem orçamento mínimo de 416. No pacote preparado executado em CPU, `max_length` é esse mínimo (padding + 32). No QNN compilado, o cache mantém `max_length=2048` fixo e o loop limita manualmente a geração a 32 tokens. O controle `probe_qnn_static_cpu.py --model <pacote> --out <relatorio>` confirmou 32 tokens na CPU. A janela 64 não aceita o limite de 2016 tokens de entrada mais 32 de saída: o padding já ocupa 2048. O teste desse limite na NPU aguarda a variante de janela 32.
+O runner reserva geração após o padding estático sem truncar: 361 tokens com janela 64 viram 384 e exigem orçamento mínimo de 416. No pacote preparado executado em CPU, `max_length` é esse mínimo (padding + 32). No QNN compilado, o cache mantém `max_length=2048` fixo e o loop limita manualmente a geração a 32 tokens. O controle `probe_qnn_static_cpu.py --model <pacote> --out <relatorio>` confirmou 32 tokens na CPU. A janela 64 não aceita o limite de 2016 tokens de entrada mais 32 de saída: o padding já ocupa 2048. A revisão corrigida de janela 32 descrita acima já passou esse limite na NPU.
 
-## Nano NPU preferido: janela 32 validada localmente
+## Histórico legado: Nano NPU janela 32
 
-O pacote local preferido é `C:/dev/models/KapiCoder-Mongo-Nano-QNN-Compiled/validated-window32-v2`. Completou 200/200 casos em processo único e o boundary de 2016 tokens de entrada mais 32 de saída na NPU, com janela 32 e contexto 2048. Match textual: 39,5%; prefixo aceito médio: 2,495 tokens (referência BF16: 40% e 2,585). TTFT mediano: 188,522 ms; p95: 294,36 ms; decode mediano: 57,615 tokens/s; pico RSS: 946941952 bytes (aproximadamente 0,882 GiB).
+O pacote legado é `C:/dev/models/KapiCoder-Mongo-Nano-QNN-Compiled/validated-window32-v2`; sua calibração não atende ao aceite final `fim-exact-tail-v1`. Completou 200/200 casos em processo único e o boundary de 2016 tokens de entrada mais 32 de saída na NPU, com janela 32 e contexto 2048. Match textual: 39,5%; prefixo aceito médio: 2,495 tokens (referência BF16: 40% e 2,585). TTFT mediano: 188,522 ms; p95: 294,36 ms; decode mediano: 57,615 tokens/s; pico RSS: 946941952 bytes (aproximadamente 0,882 GiB).
 
 Evidências: `reports/snapdragon/nano-npu-compiled-window32-200.json`, `nano-npu-window32-vs-bf16.json`, `nano-npu-window32-200-stage-summary.json` e `nano-npu-window32-boundary-2048.json`. A cópia validada inclui relatórios, corpus, perfis, relatório de compilação e lock ARM64 em `validation/`, com manifesto completo e `VALIDATION.md`. O relatório de compilação registra versões do compilador; o lock registra dependências pretendidas de inferência, sem afirmar as versões efetivamente carregadas pelo processo.
 
@@ -166,9 +182,9 @@ A janela 64 é histórica: passou 200 casos com 39,5% de match, 2,495 tokens de 
 
 ## Derivação e transferência da janela 32
 
-`derive_static_window.py` usa StaticLLM sobre uma cópia do SplitModel, sem repetir GPTQ ou calibração. `prepare_qnn_transfer.py --preserve-tokenizer-source` preserva os arquivos originais do tokenizer, com proveniência conferida. Audite a derivação com `inspect_qnn_prepared.py --expected-window 32 --require-original-tokenizer`. A cópia preparada v2 passou 456 IDs e o controle CPU 2016+32; a cópia compilada local preferida acima passou também a amostra e o boundary na NPU.
+`derive_static_window.py` usa StaticLLM sobre uma cópia do SplitModel, sem repetir GPTQ ou calibração. `prepare_qnn_transfer.py --preserve-tokenizer-source` preserva os arquivos originais do tokenizer, com proveniência conferida. Audite a derivação com `inspect_qnn_prepared.py --expected-window 32 --require-original-tokenizer`. A cópia preparada v2 passou 456 IDs e o controle CPU 2016+32; a cópia compilada legada acima passou também a amostra e o boundary na NPU.
 
-Foi criado o repositório **privado** [esilva/KapiCoder-Mongo-Snapdragon-Transfer](https://huggingface.co/esilva/KapiCoder-Mongo-Snapdragon-Transfer) como alternativa segura para transferência. O pacote Nano HTP janela32 foi transferido e baixado novamente com todos os 33 arquivos conferidos, no commit imutável `b5ce1fa141278362abbd9178113be4b8c1ecacb3`, prefixo `nano/htp-window32`; manifesto SHA-256 `c66043115b5f319d88e7bb1bfa6d35651cca1b58caf5238e614912e690a6d325`. O repositório permaneceu privado durante a operação. O resultado está em `reports/snapdragon/nano-npu-private-transfer-result.json`. A publicação em Hugging Face público continua opcional e pendente de aprovação específica após a rejeição automática; isso não bloqueia o Nano janela 32 local validado. Os pacotes anteriores permanecem preservados.
+Foi criado o repositório **privado** [esilva/KapiCoder-Mongo-Snapdragon-Transfer](https://huggingface.co/esilva/KapiCoder-Mongo-Snapdragon-Transfer) como alternativa segura para transferência. O pacote Nano HTP janela 32 foi transferido e baixado novamente com todos os 33 arquivos conferidos, no commit imutável `b5ce1fa141278362abbd9178113be4b8c1ecacb3`, prefixo `nano/htp-window32`; manifesto SHA-256 `c66043115b5f319d88e7bb1bfa6d35651cca1b58caf5238e614912e690a6d325`. O repositório permaneceu privado durante a operação. O resultado está em `reports/snapdragon/nano-npu-private-transfer-result.json`. A publicação em Hugging Face público continua opcional e pendente de aprovação específica após a rejeição automática; isso não bloqueia o Nano janela 32 local validado. Os pacotes anteriores permanecem preservados.
 
 Para baixar um próximo pacote QNN preparado com verificação da revisão imutável, do manifesto e de todos os arquivos de origem, use:
 
@@ -176,9 +192,9 @@ Para baixar um próximo pacote QNN preparado com verificação da revisão imut�
 env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Nano-ONNX --revision 39a55f1c17411d8d2cfa0167095bff5250f7c98e --subfolder qnn-prepared --source C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --manifest-sha256 7c757d18321779c2b8b29c0d8a366aee30dff38fe7a3ec023742bb90ad0a39f6
 ```
 
-O comando acima reproduz o pacote intermediário de janela 64. O destino padrão é `C:/dev/models/<repo>/<commit>/qnn-prepared`. Para a futura janela 32, troque a revisão e o hash pelos valores efetivamente publicados e acrescente `--require-original-tokenizer`. O verificador não alega ter validado IDs de prompts; essa verificação ocorre na execução dos exemplos.
+O comando acima reproduz o pacote intermediário de janela 64. O destino padrão é `C:/dev/models/<repo>/<commit>/qnn-prepared`. Para outra revisão, use seus pins efetivos e acrescente `--require-original-tokenizer`. O verificador não alega ter validado IDs de prompts; essa verificação ocorre na execução dos exemplos.
 
-A comparação consolidada atual está em `reports/snapdragon/delivery-summary-20261027.json`. Para regenerá-la após conferir as evidências, escolhendo uma saída nova:
+A comparação consolidada atual está em `reports/snapdragon/delivery-summary-nano-fim-exact-20261027.json`, com três das quatro variantes validadas. Para regenerá-la após conferir as evidências, escolhendo uma saída nova:
 
 ```powershell
 env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/summarize_delivery.py --root C:/dev/KapibaraStudio.MongoIA --out reports/snapdragon/delivery-summary-repeat.json
@@ -187,7 +203,7 @@ env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/summarize_deliv
 O resumo verifica os arquivos reais de calibração e avaliação, separação de grupos, ordem dos IDs, protocolos, perfis e revisões das publicações. Ele mantém a conclusão geral falsa enquanto as variantes NPU tiverem requisitos pendentes.
 
 
-Download do Nano NPU final, com a conta Hugging Face autenticada que tem acesso ao repositório privado:
+Download do Nano NPU legado, com a conta Hugging Face autenticada que tem acesso ao repositório privado:
 
 ```powershell
 env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Snapdragon-Transfer --revision b5ce1fa141278362abbd9178113be4b8c1ecacb3 --subfolder nano/htp-window32 --source C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --manifest-sha256 c66043115b5f319d88e7bb1bfa6d35651cca1b58caf5238e614912e690a6d325 --require-original-tokenizer
@@ -195,4 +211,4 @@ env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_pr
 
 ## Estado da revisão de calibração NPU
 
-Os pacotes NPU e números acima são evidências históricas da revisão já testada. A auditoria encontrou inserção literal de `None`/EOS no pré-processamento de ativações e descarte da cauda no JOIN GPTQ. A entrega NPU final agora exige `fim-exact-tail-v1`, com todos os tokens dos256 prompts no GPTQ e IDs/máscaras FIM exatos na calibração de ativações. Os preflights locais passaram; os novos jobs e testes reais ainda estão pendentes. As variantes GPU FP16 não mudaram. Consulte `docs/snapdragon-qnn.md` e `reports/snapdragon/fim-exact-tail-local-preflight-20261027.json`.
+Os resultados NPU legados foram preservados, mas não servem ao aceite final: a auditoria encontrou `None`/EOS na calibração de ativações e perda da cauda JOIN GPTQ. O Nano corrigido acima já tem calibração e inferência reais; o Small segue em calibração CPU remota, na última observação com 91/256 entradas. A meta das quatro variantes continua pendente. As variantes GPU FP16 não mudaram.
