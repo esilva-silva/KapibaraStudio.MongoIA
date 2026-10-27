@@ -74,7 +74,9 @@ class TransferTests(unittest.TestCase):
 
     def test_preserves_original_tokenizer_and_adds_auxiliary_resources(self):
         provenance = json.loads(self.provenance.read_text())
-        for name in ('tokenizer.json', 'tokenizer_config.json', 'merges.txt', 'vocab.json', 'chat_template.jinja'):
+        names = ('tokenizer.json', 'tokenizer_config.json', 'merges.txt', 'vocab.json', 'chat_template.jinja',
+                 'added_tokens.json', 'special_tokens_map.json', 'generation_config.json')
+        for name in names:
             data = ('pinned tokenizer '+name).encode(); (self.snapshot/name).write_bytes(data)
             provenance['source']['files'].append({'path': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
         (self.snapshot/'config.json').write_text('original model config')
@@ -83,12 +85,12 @@ class TransferTests(unittest.TestCase):
         self.provenance.write_text(json.dumps(provenance))
         output = self.root/'out'; prepare(self.source, output, self.provenance, [], self.snapshot, True)
         model = json.loads((output/'model_config.json').read_text())['config']
-        for name in ('tokenizer.json', 'tokenizer_config.json', 'merges.txt', 'vocab.json', 'chat_template.jinja'):
+        for name in names:
             self.assertEqual((output/name).read_bytes(), (self.snapshot/name).read_bytes())
             for attributes in [model['model_attributes']] + [item['config']['model_attributes'] for item in model['model_components']]:
                 self.assertEqual(attributes['additional_files'].count(name), 1)
         self.assertEqual((output/'config.json').read_text(), 'derived 2048 config')
-        self.assertEqual((output/'generation_config.json').read_text(), '{}')
+        self.assertEqual((output/'generation_config.json').read_bytes(), (self.snapshot/'generation_config.json').read_bytes())
 
     def test_tokenizer_hash_mismatch_refuses_before_output(self):
         provenance = json.loads(self.provenance.read_text())
@@ -99,6 +101,25 @@ class TransferTests(unittest.TestCase):
         (self.snapshot/'tokenizer.json').write_bytes(b'bad')
         with self.assertRaises(ValueError): prepare(self.source, self.root/'out', self.provenance, [], self.snapshot, True)
         self.assertFalse((self.root/'out').exists())
+
+    def test_generation_config_must_match_provenance_when_present(self):
+        provenance = json.loads(self.provenance.read_text())
+        for name in ('tokenizer.json', 'tokenizer_config.json', 'generation_config.json'):
+            data = name.encode(); (self.snapshot/name).write_bytes(data)
+            provenance['source']['files'].append({'path': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+        self.provenance.write_text(json.dumps(provenance))
+        (self.snapshot/'generation_config.json').write_bytes(b'changed')
+        with self.assertRaises(ValueError): prepare(self.source, self.root/'out', self.provenance, [], self.snapshot, True)
+        self.assertFalse((self.root/'out').exists())
+
+    def test_absent_optional_generation_config_preserves_derived_file(self):
+        provenance = json.loads(self.provenance.read_text())
+        for name in ('tokenizer.json', 'tokenizer_config.json'):
+            data = name.encode(); (self.snapshot/name).write_bytes(data)
+            provenance['source']['files'].append({'path': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+        self.provenance.write_text(json.dumps(provenance))
+        output = self.root/'out'; prepare(self.source, output, self.provenance, [], self.snapshot, True)
+        self.assertEqual((output/'generation_config.json').read_bytes(), (self.source/'generation_config.json').read_bytes())
 
 
 if __name__ == '__main__': unittest.main()

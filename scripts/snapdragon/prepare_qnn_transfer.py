@@ -5,6 +5,7 @@ import hashlib
 import json
 import shutil
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from export_gpu import TOKEN_FILES
 
 
 def digest(path):
@@ -60,7 +61,7 @@ def prepare(source, destination, provenance, reports, source_snapshot, preserve_
             name = old.name
             candidate = source_file(source, name)
             if digest(old) != digest(candidate): raise ValueError('resource differs: ' + name)
-            mapped.append(name)
+            if name not in mapped: mapped.append(name)
             files.add(name)
         attributes['additional_files'] = mapped
     normalize_files(config.get('model_attributes', {}))
@@ -106,9 +107,8 @@ def prepare(source, destination, provenance, reports, source_snapshot, preserve_
     tokenizer = {}
     if preserve_tokenizer_source:
         required = ('tokenizer.json', 'tokenizer_config.json')
-        optional = ('merges.txt', 'vocab.json', 'added_tokens.json', 'special_tokens_map.json', 'chat_template.jinja')
-        for name in required + optional:
-            if name in optional and not (snapshot/name).exists(): continue
+        for name in TOKEN_FILES:
+            if name not in required and not (snapshot/name).exists(): continue
             matches = [item for item in provenance_data['source']['files'] if item.get('path') == name]
             if len(matches) != 1: raise ValueError('missing or duplicate tokenizer provenance: ' + name)
             path = source_file(snapshot, name)
