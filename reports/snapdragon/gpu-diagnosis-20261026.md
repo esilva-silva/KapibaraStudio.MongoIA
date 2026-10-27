@@ -35,3 +35,13 @@ O primeiro pedido do Small gera 32 tokens de ID 0 (`!`) tanto no export FP16 ori
 O pacote foi publicado e todos os arquivos foram baixados e verificados por SHA-256 em [commit HF b173484e97e24978d521a2723fa300f3f1d26224](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/b173484e97e24978d521a2723fa300f3f1d26224/dml-fp16-rmsnorm). Um controle real na Adreno usando a cópia baixada produziu os mesmos 32 tokens do primeiro caso da avaliação completa. A branch principal permanece preservada.
 
 Na referência Nano BF16, 163 casos terminaram por EOS e 37 pelo limite. Na Adreno, 164 terminaram por `runtime_done_without_token` e 36 pelo limite. O runtime GenAI não acrescentou o token de parada nesses 164 casos; portanto o relatório não inventa um ID EOS observado. Nenhuma das 200 gerações apresentou exceção. A referência Small BF16 terminou 160 casos por EOS e 40 pelo limite.
+
+## Atualização 27/10: atenção CPU e embedding Adreno
+
+A sonda ONNX CPU do Small localizou a primeira não-finitude no GQA da camada 0: 21.248 valores inválidos; todos os logits ficaram inválidos. Promover apenas o cálculo da atenção a FP32 em uma cópia restaurou os 32 tokens de código plausível na CPU. Isso não resolveu a Adreno.
+
+A comparação dos intermediários DirectML localizou uma divergência anterior à atenção, na leitura do embedding transposto. Dos 554.496 elementos do prefill, 542.420 diferiram dos pesos esperados. No primeiro token, os 1.536 elementos coincidem exatamente com índices reduzidos módulo 2^27 elementos FP16 (256 MiB); os demais tokens apresentam discrepâncias adicionais. Essa observação não identifica uma causa geral no driver. As operações primitivas de quadrado e redução foram consistentes com o embedding já divergente.
+
+Dividir o Gather em duas views externas de 768 dimensões ocultas e concatenar suas saídas corrigiu o controle Small na Adreno. Os 32 IDs coincidiram com o controle CPU com atenção FP32. A matriz original do lm_head e os valores FP16 permanecem intactos; a mudança só reorganiza o lookup. TTFT do controle: 3,53 s; decode: 1,49 tokens/s. Esse controle ainda não constitui validação completa do Small.
+
+O embedding Nano também supera por pouco o tamanho observado; será reavaliado com chunks de 448 dimensões. O pacote Nano publicado anteriormente permanece experimental e seus números de 200 exemplos não se transferem automaticamente ao novo grafo. Pacotes novos em `models/.../experimental/rmsnorm-split-fp16-v1` têm manifestos próprios e aguardam avaliação completa.
