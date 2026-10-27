@@ -1,0 +1,88 @@
+# Nano/Small no Snapdragon
+
+Este fluxo usa os pesos publicados, sem novo treino. A preparação pesada é destinada ao Esilva-pc; inferência e medições finais são feitas no ESILVA-ARM. Configuração: `configs/snapdragon.json`. Nunca reutilize um export de outra geração apenas pelo nome do diretório.
+
+## Ambiente e snapshots
+
+Os ambientes isolados ficam em `env/.venv-snapdragon-tools` (preparação de amostras/testes) e `env/.venv-snapdragon-arm64` (ORT/QNN/GenAI). As dependências instaladas estão fixadas em `env/snapdragon-tools.lock.txt` e `env/snapdragon-arm64.lock.txt`. Use o Python da arquitetura correspondente. Não instale os dois locks no mesmo ambiente.
+
+```powershell
+python -m venv env/.venv-snapdragon-tools
+env/.venv-snapdragon-tools/Scripts/python.exe -m pip install -r env/snapdragon-tools.lock.txt
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_models.py --config configs/snapdragon.json
+```
+
+`--root` muda o destino no Esilva-pc. Os snapshots ficam em `<root>/<nome>/<commit-HF>/`, acompanhados de `source_manifest.json`. O download é retomável. Para conferir um snapshot ou pacote transferido:
+
+```powershell
+python scripts/snapdragon/verify_manifest.py <diretorio> --out reports/snapdragon/verification.json
+```
+
+## Amostra comum
+
+```powershell
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/prepare_samples.py --config configs/snapdragon.json --tokenizer C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --out data/calib/snapdragon-20261026
+```
+
+São 256 exemplos de calibração e 200 de avaliação, com schemas e grupos separados. O manifesto registra geradores, configuração, tokenizer e hashes dos arquivos. Os dois snapshots publicados possuem `tokenizer.json` idêntico; confirme os IDs também no runtime. Esta amostra sintética não substitui a homologação completa. Nenhuma consulta MongoDB é executada pela preparação ou pelo executor.
+
+## Export e execução
+
+No Esilva-pc, use um Python que já tenha o builder GenAI e suas dependências, com o snapshot fixado disponível:
+
+```powershell
+python scripts/snapdragon/export_gpu.py --source <snapshot> --out <pacote-fp16-dml>
+python scripts/snapdragon/run_sample.py --model <snapshot> --corpus <evaluation.jsonl> --backend hf --device cuda:0 --out <baseline.json>
+```
+
+`cuda:0` é também a interface PyTorch do ROCm; confirme `torch.version.hip` e a GPU real. Exports usam saída vazia e não sobrescrevem pacotes existentes. Transfira pacote, avaliação, manifesto e baseline juntos, depois confira os hashes no notebook. O pacote de exportação registra a revisão de origem.
+
+O wheel Python `onnxruntime-genai==0.18.0` instalado para Windows ARM64 oferece QNN, mas reporta `is_dml_available() == False`; não serve como executor DirectML. A distribuição DirectML/WinML deve ser validada separadamente. O executor Python falha explicitamente se o provider solicitado estiver ausente.
+
+O executor .NET nativo ARM64 usa GenAI.WinML 0.18.0 e dependências fixadas em `tools/SnapdragonRunner/packages.lock.json`. Execute no notebook:
+
+```powershell
+dotnet restore tools/SnapdragonRunner/SnapdragonRunner.csproj --locked-mode
+dotnet build tools/SnapdragonRunner/SnapdragonRunner.csproj -c Release --no-restore
+tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --backend dml --model <pacote-fp16-dml> --corpus data/calib/snapdragon-20261026/evaluation.jsonl --out reports/snapdragon/nano-gpu.json
+```
+
+O runner registra profiling por operador, incluindo eventos CPU, e só marca evidência de GPU quando observa kernels DirectML. Para a sonda independente de hardware:
+
+```powershell
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/make_gpu_smoke.py --out reports/snapdragon/gpu-smoke.onnx
+tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --backend dml-smoke --model reports/snapdragon/gpu-smoke.onnx --out reports/snapdragon/gpu-probe.json
+```
+
+As sondas de hardware GPU e NPU passaram em 26/10/2026 neste notebook (`reports/snapdragon/gpu-probe.json` e `qnn-probe.json`), com fallback CPU desabilitado. Esses resultados não são testes dos modelos completos.
+
+```powershell
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/qnn_probe.py --config configs/snapdragon.json --smoke --out reports/snapdragon/qnn-probe.json
+python scripts/snapdragon/run_sample.py --model <pacote> --corpus <evaluation.jsonl> --backend dml --out <gpu.json>
+python scripts/snapdragon/run_sample.py --model <pacote-qnn> --corpus <evaluation.jsonl> --backend qnn --out <npu.json>
+```
+
+Receita, limitações de ROCm e diagnóstico HTP: `docs/snapdragon-qnn.md`. Um grafo pequeno aprovado no HTP não aprova o LLM. Não trocar apenas o provider de um ONNX FP16 e tratá-lo como pacote QNN W4A16.
+
+## Comparação e aceite
+
+```powershell
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/compare_results.py --corpus <evaluation.jsonl> --baseline <baseline.json> --candidate <gpu-ou-npu.json> --tokenizer <snapshot>/tokenizer.json --out reports/snapdragon/comparison.json
+env/.venv-snapdragon-tools/Scripts/python.exe -m pytest scripts/snapdragon/tests -q
+```
+
+O comparador exige a execução completa da mesma amostra e recusa falhas, IDs faltantes e duplicados. Registra prefixo aceito, match textual, TTFT p50/p95 e velocidade. Resultados fora da IDE continuam `proxy: true`, `qualified: false`. Disponibilidade/configuração de um provider não prova atribuição dos nós: guarde evidências de profiling/HTP e registre fallback. Primeiro Nano GPU, depois Nano NPU, repetindo as provas para Small. Gates de integração na IDE não são avaliados nesta etapa.
+
+## Preparação remota isolada
+
+```powershell
+python scripts/snapdragon/make_transfer_bundle.py --out tmp/snapdragon-transfer/snapdragon-inputs.zip
+```
+
+O bundle contém apenas scripts/configurações e a amostra sintética, com manifesto SHA-256. Extraia em um diretório próprio no Esilva-pc e confira `bundle_manifest.json` com `verify_manifest.py --manifest bundle_manifest.json`. O driver usa o lock de GPU do projeto existente:
+
+```powershell
+<python-rocm> scripts/snapdragon/remote_prepare.py --config configs/snapdragon.json --project-root C:/IA/models/KapibaraStudio.MongoIA --models-root C:/IA/models/KapiPublishedSnapshots --out-root C:/IA/models/KapiSnapdragonArtifacts --corpus data/calib/snapdragon-20261026/evaluation.jsonl --models nano small
+```
+
+As exportações e referências são sequenciais. A receita QNN separa preparação e compilação; antes de executar o processo completo, rode `probe_gptq.py` no ROCm e consulte `docs/snapdragon-qnn.md`. Os scripts não configuram compartilhamento de rede nem publicam pesos. A transferência dos pacotes requer um canal de arquivos acessível entre os hosts.
