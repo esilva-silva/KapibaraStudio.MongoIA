@@ -1,9 +1,32 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
+import json
 scripts=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('delivery',scripts/'summarize_delivery.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 class SummaryTests(unittest.TestCase):
+    def test_completion_requires_small_and_private_artifact_identity(self):
+        delivery = {}
+        for name in ('nano', 'small'):
+            delivery[name + '_gpu'] = {'status': 'validated_200', 'boundary_2016_plus_32': True}
+            delivery[name + '_npu'] = {'status': 'validated_200_boundary_passed', 'package': {'release_identity_verified': True}}
+        self.assertTrue(mod.delivery_complete(delivery))
+        delivery['small_npu'] = {'status': 'pending_remote_preparation'}
+        self.assertFalse(mod.delivery_complete(delivery))
+        delivery['small_npu'] = {'status': 'validated_200_boundary_passed', 'package': {'release_identity_verified': False}}
+        self.assertFalse(mod.delivery_complete(delivery))
+
+    def test_missing_small_pending_and_invalid_presence_not_validated(self):
+        with tempfile.TemporaryDirectory(dir=scripts) as directory:
+            root = Path(directory)
+            report_dir = root / 'reports/snapdragon'; report_dir.mkdir(parents=True)
+            result, _ = mod.summarize_npu32(root, {}, 'small', 'a' * 64, [], None)
+            self.assertEqual(result['status'], 'pending_remote_preparation')
+            (report_dir / 'small-npu-window32-vs-bf16.json').write_text('{invalid')
+            result, _ = mod.summarize_npu32(root, {}, 'small', 'a' * 64, [], None)
+            self.assertEqual(result['status'], 'not_validated')
+
     def test_comparison_hash_mismatch_rejected(self):
         def item(h):return {'qualified':False,'proxy':True,'corpus_sha256':h*64,'baseline':{'n':200},'candidate':{'n':200}}
         with self.assertRaises(ValueError):mod.validate_comparisons({'a':item('a'),'b':item('b')})
