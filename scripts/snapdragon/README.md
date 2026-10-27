@@ -86,3 +86,18 @@ O bundle contém apenas scripts/configurações e a amostra sintética, com mani
 ```
 
 As exportações e referências são sequenciais. A receita QNN separa preparação e compilação; antes de executar o processo completo, rode `probe_gptq.py` no ROCm e consulte `docs/snapdragon-qnn.md`. Os scripts não configuram compartilhamento de rede nem publicam pesos. A transferência dos pacotes requer um canal de arquivos acessível entre os hosts.
+
+
+## Pacote experimental Nano validado neste notebook
+
+O pacote corrigido está em [Hugging Face, commit b173484e97e24978d521a2723fa300f3f1d26224](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/b173484e97e24978d521a2723fa300f3f1d26224/dml-fp16-rmsnorm). A transformação de RMSNorm preserva pesos FP16 e exige `ORT_DISABLE_ALL`, persistido na configuração. O pacote inclui manifesto e comparação; `nano-publication-result.json` registra a verificação de todos os arquivos no commit imutável.
+
+Na Adreno X1-45, 200 exemplos completaram sem exceções, com match textual de 39,5% contra 40% da referência BF16; TTFT mediano 1,254 s e decode mediano 3,45 tokens/s. Pico RSS 7,24 GiB. Operações auxiliares em CPU foram observadas. Resultados são proxy sintético, sem execução de JavaScript ou qualificação na IDE. O export original não produz resultados corretos neste notebook.
+
+```powershell
+# Download do artefato exato; autenticação pública não é necessária.
+env/.venv-snapdragon-tools/Scripts/python.exe -c "from huggingface_hub import snapshot_download; snapshot_download('esilva/KapiCoder-Mongo-Nano-ONNX',revision='b173484e97e24978d521a2723fa300f3f1d26224',allow_patterns=['dml-fp16-rmsnorm/*'],local_dir='C:/dev/models/Nano-Adreno-tested')"
+tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --backend dml --model C:/dev/models/Nano-Adreno-tested/dml-fp16-rmsnorm --corpus data/calib/snapdragon-20261026/evaluation.jsonl --out reports/snapdragon/nano-gpu-repeat.json
+```
+
+Small FP16 e os dois LLMs QNN ainda não foram aprovados. Consulte `reports/snapdragon/gpu-diagnosis-20261026.md` antes de reutilizar outros pacotes.
