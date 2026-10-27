@@ -30,7 +30,7 @@ class JoinTailTests(unittest.TestCase):
         tokenizer.no_truncation = lambda: None
         tokenizer.no_padding = lambda: None
         fake_tokenizers = SimpleNamespace(Tokenizer=SimpleNamespace(from_file=lambda _: tokenizer))
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as directory:
             root = Path(directory); (root / 'tokenizer.json').write_text('{}')
             with patch.dict(sys.modules, {'tokenizers': fake_tokenizers}):
                 actual = mod.kapi_gptq_join_tail_v1(rows, root, root / 'audit.json', ledger['stream_token_ids_sha256'],
