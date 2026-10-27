@@ -95,3 +95,11 @@ A reconstrução de dados em `reports/snapdragon/gptq-calibration-token-summary-
 A calibração de ativações QNN é uma fase distinta. No Nano, o trace registra `calibration_inputs_seen=256` e `calibration_status=input_complete`; no Small ela continua em execução. O campo genérico `status=completed` do helper QNN, sozinho, só indica que a configuração foi criada e não comprova que as 256 entradas terminaram. A auditoria final exige a contagem e o estado de consumo dessa fase, além dos testes do modelo compilado.
 
 A quantização atual não foi refeita por essa auditoria. Uma política futura que preserve a cauda do JOIN alterará os dados efetivos do GPTQ e exigirá novos pesos quantizados, calibração de ativações e avaliação. O relatório detalhado por ID e bloco está em `gptq-calibration-token-attribution-rx7800xt.json`.
+
+## Revisão FIM exata em preparação
+
+A auditoria adicional encontrou uma falha real na configuração legada de calibração de ativações: `add_special_tokens=true` com `bos_token=None` acrescenta o texto literal `None` e um EOS ao prompt. Os testes de geração dos artefatos legados continuam registrados, mas suas variantes NPU aguardam uma revisão de calibração antes de serem consideradas a entrega final. Os exports GPU FP16 permanecem os mesmos.
+
+A revisão `fim-exact-tail-v1` está sendo preparada em diretórios novos, preservando o histórico. `gptq_join_tail_v1.py` retém o bloco final de 1881 tokens e cobre os 256 prompts nos 30 blocos, sem adicionar dados ou padding. `prepare_fim_calibration.py` desativa special tokens e padding artificial na calibração de ativações, com batch1 e teto2048. O preflight local dos dois modelos confirmou os IDs e as máscaras originais de todos os 256 prompts, com comprimentos reais de8 a549 tokens; isso não comprova ainda execução do leitor Olive ou calibração do modelo.
+
+O template isolado `qnn_cpu_sitecustomize.py` aceita `KAPI_QNN_FIM_PREFLIGHT=<preflight.json>` junto com `KAPI_QNN_PREP_TRACE_DIR` para conferir os IDs e as máscaras reais de cada lote antes da calibração. A política exata rejeita stride incompatível e exige256 correspondências completas. Nenhum arquivo do ambiente em uso deve ser trocado durante o job legado. Serão necessários novos GPTQ, ranges, compilação e avaliações para promover as variantes NPU corrigidas; não há novo treinamento.

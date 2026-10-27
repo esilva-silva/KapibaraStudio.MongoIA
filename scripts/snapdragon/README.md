@@ -192,3 +192,7 @@ Download do Nano NPU final, com a conta Hugging Face autenticada que tem acesso 
 ```powershell
 env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Snapdragon-Transfer --revision b5ce1fa141278362abbd9178113be4b8c1ecacb3 --subfolder nano/htp-window32 --source C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --manifest-sha256 c66043115b5f319d88e7bb1bfa6d35651cca1b58caf5238e614912e690a6d325 --require-original-tokenizer
 ```
+
+## Estado da revisão de calibração NPU
+
+Os pacotes NPU e números acima são evidências históricas da revisão já testada. A auditoria encontrou inserção literal de `None`/EOS no pré-processamento de ativações e descarte da cauda no JOIN GPTQ. A entrega NPU final agora exige `fim-exact-tail-v1`, com todos os tokens dos256 prompts no GPTQ e IDs/máscaras FIM exatos na calibração de ativações. Os preflights locais passaram; os novos jobs e testes reais ainda estão pendentes. As variantes GPU FP16 não mudaram. Consulte `docs/snapdragon-qnn.md` e `reports/snapdragon/fim-exact-tail-local-preflight-20261027.json`.

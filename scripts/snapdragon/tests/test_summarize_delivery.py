@@ -6,6 +6,43 @@ import json
 scripts=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('delivery',scripts/'summarize_delivery.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 class SummaryTests(unittest.TestCase):
+    def test_required_policy_preserves_history_and_cannot_pass_by_label(self):
+        with tempfile.TemporaryDirectory(dir=scripts) as directory:
+            root = Path(directory)
+            delivery = {name + '_npu': {'status': 'validated_200_boundary_passed', 'candidate': {'n': 200}}
+                        for name in ('nano', 'small')}
+            delivery['nano_gpu'] = {'status': 'validated_200'}
+            config = {'required_npu_calibration_policy': 'fim-exact-tail-v1',
+                      'npu_exports': {'nano': {'calibration_policy': 'legacy'}, 'small': {'calibration_policy': 'fim-exact-tail-v1'}}}
+            mod.apply_calibration_policy_gate(delivery, config, root)
+            self.assertEqual(delivery['nano_npu']['status'], 'calibration_revision_pending')
+            self.assertEqual(delivery['small_npu']['status'], 'calibration_revision_pending')
+            self.assertEqual(delivery['nano_npu']['historical_status'], 'validated_200_boundary_passed')
+            self.assertEqual(delivery['nano_npu']['candidate']['n'], 200)
+            self.assertEqual(delivery['nano_gpu']['status'], 'validated_200')
+            self.assertFalse(mod.delivery_complete(delivery))
+
+    def test_exact_policy_requires_activation_and_effective_gptq_completion(self):
+        with tempfile.TemporaryDirectory(dir=scripts) as directory:
+            root = Path(directory)
+            trace = {'calibration_status': 'input_complete', 'fim_preflight': {'all_match': True, 'fim_complete': True,
+                'matched': 256, 'policy': {'add_special_tokens': False, 'pad_to_max_len': False, 'batch_size': 1}}}
+            receipt = {'policy': 'kapi_gptq_join_tail_v1', 'all_prompt_tokens_covered': True, 'selected_rows': 256,
+                'joined_tokens': 61273, 'consumed_tokens': 61273, 'add_special_tokens': False, 'padding': 'none',
+                'batch_size': 1, 'shuffle': False, 'batches': [{'tokens': n} for n in [2048] * 29 + [1881]],
+                'stream_token_ids_sha256': '07f7dec2ffed64e72f7d015bfd86bbce5d16f0297538c6fffd079fe9183da362'}
+            job = {'status': 'completed', 'effective_gptq_calibration': {'batches': 30, 'min_tokens': 1881, 'max_tokens': 2048}}
+            spec = {'calibration_policy': 'fim-exact-tail-v1'}
+            for key, report in [('activation_calibration_trace', trace), ('gptq_runtime_receipt', receipt), ('gptq_completion_report', job)]:
+                spec[key] = key + '.json'; (root / spec[key]).write_text(json.dumps(report))
+            self.assertTrue(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+            job['effective_gptq_calibration']['batches'] = 29
+            (root / spec['gptq_completion_report']).write_text(json.dumps(job))
+            self.assertFalse(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+            trace['fim_preflight']['policy']['add_special_tokens'] = True
+            (root / spec['activation_calibration_trace']).write_text(json.dumps(trace))
+            self.assertFalse(mod.calibration_policy_evidence(spec, 'fim-exact-tail-v1', root)[0])
+
     def test_completion_requires_small_and_private_artifact_identity(self):
         delivery = {}
         for name in ('nano', 'small'):

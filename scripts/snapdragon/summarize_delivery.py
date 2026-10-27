@@ -143,6 +143,56 @@ def delivery_complete(delivery):
                for name in ('nano', 'small'))
 
 
+def calibration_policy_evidence(spec, required, root):
+    """Validate explicit actual-calibration receipts; a policy label is insufficient."""
+    if spec.get('calibration_policy') != required:
+        return False, 'Published calibration policy differs from required policy', {}
+    evidence = {}
+    try:
+        reports = {}
+        for key in ('activation_calibration_trace', 'gptq_runtime_receipt', 'gptq_completion_report'):
+            path = Path(spec[key])
+            if not path.is_absolute():
+                path = root / path
+            reports[key] = json.loads(path.read_text(encoding='utf-8-sig'))
+            evidence[key] = {'path': str(path), 'sha256': sha(path)}
+        trace = reports['activation_calibration_trace']
+        fim = trace.get('fim_preflight') or {}; policy = fim.get('policy') or {}
+        if not (fim.get('all_match') is True and fim.get('fim_complete') is True and fim.get('matched') == 256
+                and policy.get('add_special_tokens') is False and policy.get('pad_to_max_len') is False
+                and policy.get('batch_size') == 1 and trace.get('calibration_status') == 'input_complete'):
+            return False, 'Actual activation FIM coverage/policy is incomplete', evidence
+        receipt = reports['gptq_runtime_receipt']; batches = receipt.get('batches') or []
+        if not (receipt.get('policy') == 'kapi_gptq_join_tail_v1' and receipt.get('all_prompt_tokens_covered') is True
+                and receipt.get('selected_rows') == 256 and receipt.get('joined_tokens') == receipt.get('consumed_tokens') == 61273
+                and receipt.get('add_special_tokens') is False and receipt.get('padding') == 'none'
+                and receipt.get('batch_size') == 1 and receipt.get('shuffle') is False
+                and [batch.get('tokens') for batch in batches] == [2048] * 29 + [1881]
+                and receipt.get('stream_token_ids_sha256') == '07f7dec2ffed64e72f7d015bfd86bbce5d16f0297538c6fffd079fe9183da362'):
+            return False, 'Actual GPTQ preprocessor full-stream receipt is incomplete', evidence
+        job = reports['gptq_completion_report']; effective = job.get('effective_gptq_calibration') or {}
+        if not (job.get('status') == 'completed' and effective.get('batches') == 30
+                and effective.get('min_tokens') == 1881 and effective.get('max_tokens') == 2048):
+            return False, 'GPTQ completion/effective batch evidence is incomplete', evidence
+        return True, 'Actual activation trace, preprocessor receipt and effective GPTQ job counts match', evidence
+    except (KeyError, OSError, ValueError, TypeError) as exc:
+        return False, 'Required calibration evidence missing or invalid: ' + str(exc), evidence
+
+
+def apply_calibration_policy_gate(delivery, config, root):
+    required = config.get('required_npu_calibration_policy')
+    if not required:
+        return
+    for model in ('nano', 'small'):
+        key = model + '_npu'; variant = delivery[key]
+        passed, reason, evidence = calibration_policy_evidence(config.get('npu_exports', {}).get(model) or {}, required, root)
+        variant['calibration_policy_gate'] = {'required': required, 'passed': passed, 'reason': reason,
+            'evidence': evidence, 'gptq_receipt_scope': 'Actual preprocessor output before DataLoader; completion report separately establishes effective batch counts, not downstream token hashes'}
+        if not passed:
+            variant['historical_status'] = variant['status']
+            variant['status'] = 'calibration_revision_pending'
+
+
 def summarize_npu32(root, config, model, corpus, ids, boundary_hash):
     names = {'comparison': f'{model}-npu-window32-vs-bf16.json',
              'run': f'{model}-npu-compiled-window32-200.json',
@@ -287,6 +337,7 @@ def summarize(root):
             if current.get('status') == 'validated_200_boundary_passed':
                 current['status'] = 'not_validated'
                 current['calibration_error'] = 'Activation calibration trace is incomplete or invalid'
+    apply_calibration_policy_gate(delivery, config, root)
     completion = delivery_complete(delivery)
     failure=data['small_gpu_single_failure']
     failed_rows=[row for row in failure.get('items',[]) if row.get('error')]
