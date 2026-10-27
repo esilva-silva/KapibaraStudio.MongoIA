@@ -167,3 +167,19 @@ Use `inspect_qnn_prepared.py --expected-window 32` para essa derivação; o padr
 Para preservar os arquivos do tokenizer do snapshot em uma nova cópia local, use `prepare_qnn_transfer.py --preserve-tokenizer-source`. O flag confere a proveniência e copia tokenizer.json/config mais auxiliares disponíveis; não substitui config.json do modelo derivado. Audite com `inspect_qnn_prepared.py --expected-window 32 --require-original-tokenizer`.
 
 A cópia local v2 foi aprovada nesse gate, mantendo 456 IDs e o controle2016+32 na CPU. Seu plano de publicação substitui o v1: `reports/snapdragon/nano-qnn-window32-original-tokenizer-publication-plan-rx7800xt.json`. A publicação continua pendente de aprovação específica após a rejeição automática; os pacotes anteriores permanecem preservados.
+
+Para baixar um próximo pacote QNN preparado com verificação da revisão imutável, do manifesto e de todos os arquivos de origem, use:
+
+```powershell
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Nano-ONNX --revision 39a55f1c17411d8d2cfa0167095bff5250f7c98e --subfolder qnn-prepared --source C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --manifest-sha256 7c757d18321779c2b8b29c0d8a366aee30dff38fe7a3ec023742bb90ad0a39f6
+```
+
+O comando acima reproduz o pacote intermediário de janela 64. O destino padrão é `C:/dev/models/<repo>/<commit>/qnn-prepared`. Para a futura janela 32, troque a revisão e o hash pelos valores efetivamente publicados e acrescente `--require-original-tokenizer`. O verificador não alega ter validado IDs de prompts; essa verificação ocorre na execução dos exemplos.
+
+A comparação consolidada atual está em `reports/snapdragon/delivery-summary-20261027.json`. Para regenerá-la após conferir as evidências, escolhendo uma saída nova:
+
+```powershell
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/summarize_delivery.py --root C:/dev/KapibaraStudio.MongoIA --out reports/snapdragon/delivery-summary-repeat.json
+```
+
+O resumo verifica os arquivos reais de calibração e avaliação, separação de grupos, ordem dos IDs, protocolos, perfis e revisões das publicações. Ele mantém a conclusão geral falsa enquanto as variantes NPU tiverem requisitos pendentes.
