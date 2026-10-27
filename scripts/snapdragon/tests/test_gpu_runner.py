@@ -22,6 +22,26 @@ with patch.dict(sys.modules, {'run_sample': runner}):
     remote = load('remote_prepare')
 
 class RunnerTests(unittest.TestCase):
+    def test_qnn_overlay_preserves_two_stages_and_disables_fallback(self):
+        original = {'model': {'decoder': {'session_options': {'existing': 1}, 'pipeline': [
+            {'session_options': {'provider_options': [{'qnn': {'enable_htp_weight_sharing': '1'}}]}},
+            {'session_options': {'custom': 'keep'}}]}}}
+        overlay = runner.genai_session_overlay(original, 'profile', 'qnn')['model']['decoder']
+        self.assertTrue(overlay['session_options']['disable_cpu_ep_fallback'])
+        self.assertEqual(overlay['session_options']['existing'], 1)
+        for index, stage in enumerate(overlay['pipeline']):
+            self.assertTrue(stage['session_options']['disable_cpu_ep_fallback'])
+            self.assertEqual(stage['session_options']['enable_profiling'], f'profile-{index}')
+        self.assertEqual(overlay['pipeline'][0]['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
+        self.assertNotIn('disable_cpu_ep_fallback', original['model']['decoder']['pipeline'][0]['session_options'])
+        cpu = runner.genai_session_overlay(original, None, 'cpu')['model']['decoder']
+        self.assertNotIn('disable_cpu_ep_fallback', cpu['session_options'])
+
+    def test_qnn_rejects_non_htp_backend(self):
+        with self.assertRaises(ValueError): runner.validate_qnn_options({'backend_type': 'cpu'}, 'QnnHtp.dll')
+        with self.assertRaises(ValueError): runner.validate_qnn_options({'backend_path': 'QnnGpu.dll'}, 'QnnHtp.dll')
+        runner.validate_qnn_options({'backend_path': 'QnnHtp.dll'}, 'QnnHtp.dll')
+
     def test_single_item_records_phases_and_new_convention(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

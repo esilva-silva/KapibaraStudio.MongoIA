@@ -45,3 +45,11 @@ A comparação dos intermediários DirectML localizou uma divergência anterior 
 Dividir o Gather em duas views externas de 768 dimensões ocultas e concatenar suas saídas corrigiu o controle Small na Adreno. Os 32 IDs coincidiram com o controle CPU com atenção FP32. A matriz original do lm_head e os valores FP16 permanecem intactos; a mudança só reorganiza o lookup. TTFT do controle: 3,53 s; decode: 1,49 tokens/s. Esse controle ainda não constitui validação completa do Small.
 
 O embedding Nano também supera por pouco o tamanho observado; será reavaliado com chunks de 448 dimensões. O pacote Nano publicado anteriormente permanece experimental e seus números de 200 exemplos não se transferem automaticamente ao novo grafo. Pacotes novos em `models/.../experimental/rmsnorm-split-fp16-v1` têm manifestos próprios e aguardam avaliação completa.
+
+## Nano com embedding particionado: 200 casos concluídos
+
+O novo grafo completou 200 pedidos na Adreno: match textual 39,5% contra 40% BF16; prefixo aceito 2,57 contra 2,585. TTFT mediano 1.233,47 ms, p95 1.982,48 ms, decode mediano 3,69 tokens/s e pico RSS 8,21 GiB. As 200 observações têm TTFT; 180 têm taxa de decode válida, pois o runtime pode encerrar sem acrescentar EOS e pedidos curtos não têm duas observações de token. Houve 164 encerramentos `runtime_done_without_token` e 36 pelo limite, sem exceções. Não se interpreta esse encerramento como um ID EOS observado.
+
+O pacote foi publicado e seus 19 arquivos foram verificados no [commit HF ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea/dml-fp16-rmsnorm-split). A comparação detalhada está em `nano-rmsnorm-split-vs-bf16-detailed.json`. RSS mede o processo, não VRAM ou memória exclusiva do acelerador; não é comparação de memória total entre a RX discreta e a Adreno UMA. Os tempos são observações no ambiente de trabalho, sem controle de benchmark de release.
+
+O compilador QNN ARM64 gerou um EPContext de teste e binário de 49.152 bytes, recarregou o contexto e executou a saída esperada: um kernel QNN, zero kernels CPU, fallback desabilitado. O perfil HTP registra quatro threads HVX e execução no acelerador. Esse grafo Relu QDQ pequeno não qualifica Nano ou Small NPU. Evidências: `qnn-compiled-context-smoke.json` e `qnn-compiled-context-htp-profile.csv`.

@@ -151,6 +151,35 @@ class HFRunner:
         result['generator_creation_ms'] = 0.0
         return trim_suffix(result, item)
 
+def genai_session_overlay(original, profile_prefix, backend):
+    import copy
+    decoder = original['model']['decoder']
+    session = copy.deepcopy(decoder.get('session_options') or {})
+    if backend == 'qnn':
+        session['disable_cpu_ep_fallback'] = True
+    if profile_prefix:
+        session['enable_profiling'] = str(profile_prefix)
+    overlay = {'session_options': session}
+    if 'pipeline' in decoder:
+        pipeline = copy.deepcopy(decoder['pipeline'])
+        for index, stage in enumerate(pipeline):
+            options = stage.setdefault('session_options', {})
+            if backend == 'qnn':
+                options['disable_cpu_ep_fallback'] = True
+            if profile_prefix:
+                options['enable_profiling'] = f'{profile_prefix}-{index}'
+        overlay['pipeline'] = pipeline
+    return {'model': {'decoder': overlay}}
+
+
+def validate_qnn_options(options, htp_path):
+    for key, value in (options or {}).items():
+        if key == 'backend_path' and str(value).lower() != str(htp_path).lower():
+            raise ValueError('QNN backend_path must be the HTP library')
+        if key == 'backend_type' and str(value).lower() != 'htp':
+            raise ValueError('QNN backend_type must be htp')
+
+
 class GenAIRunner:
     def __init__(self, model, backend, profile_prefix=None, qnn_options=None):
         try:
@@ -165,23 +194,33 @@ class GenAIRunner:
             import onnxruntime_qnn as qnn
             og.register_execution_provider_library(qnn.get_ep_name(), qnn.get_library_path())
             cfg.append_provider('QNN')
-            cfg.set_provider_option('QNN', 'backend_path', qnn.get_qnn_htp_path())
+            htp = qnn.get_qnn_htp_path()
+            validate_qnn_options(qnn_options, htp)
+            cfg.set_provider_option('QNN', 'backend_path', htp)
             for key, value in (qnn_options or {}).items():
-                cfg.set_provider_option('QNN', key, str(value))
-            cfg.overlay(json.dumps({'model': {'decoder': {'session_options': {'disable_cpu_ep_fallback': True}}}}))
+                if key not in ('backend_path', 'backend_type'):
+                    cfg.set_provider_option('QNN', key, str(value))
+            if profile_prefix:
+                cfg.set_provider_option('QNN', 'profiling_level', 'basic')
+                cfg.set_provider_option('QNN', 'profiling_file_path', str(profile_prefix) + '.qnn.csv')
         elif backend == 'dml':
             cfg.append_provider('dml')
         self.profile_prefix = profile_prefix
         self.backend = backend
-        if profile_prefix:
-            original = json.loads((Path(model) / 'genai_config.json').read_text(encoding='utf-8'))
-            decoder = {'session_options': {'enable_profiling': str(profile_prefix)}}
-            pipeline = original['model']['decoder'].get('pipeline')
-            if pipeline:
-                for i, stage in enumerate(pipeline):
-                    stage.setdefault('session_options', {})['enable_profiling'] = f'{profile_prefix}-{i}'
-                decoder['pipeline'] = pipeline
-            cfg.overlay(json.dumps({'model': {'decoder': decoder}}))
+        original = json.loads((Path(model) / 'genai_config.json').read_text(encoding='utf-8'))
+        if backend == 'qnn':
+            def validate_embedded(value):
+                if isinstance(value, dict):
+                    for key, child in value.items():
+                        if key.lower() == 'qnn' and isinstance(child, dict):
+                            validate_qnn_options(child, htp)
+                        validate_embedded(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        validate_embedded(child)
+            validate_embedded(original['model']['decoder'])
+        if profile_prefix or backend == 'qnn':
+            cfg.overlay(json.dumps(genai_session_overlay(original, profile_prefix, backend)))
         self.og, self.model = og, og.Model(cfg)
         self.tok = og.Tokenizer(self.model)
         self.stops = stop_ids(self.tok.encode)
@@ -207,6 +246,8 @@ class GenAIRunner:
                             counts[provider] = counts.get(provider, 0) + 1
                 except Exception as exc:
                     errors.append(str(exc))
+        qnn_csv = sorted(self.profile_prefix.parent.glob(self.profile_prefix.name + '*.csv')) if self.profile_prefix and self.backend == 'qnn' else []
+        self.evidence['qnn_profile_files'] = [str(p) for p in qnn_csv]
         requested = {'dml': 'DmlExecutionProvider', 'qnn': 'QNNExecutionProvider', 'cpu': 'CPUExecutionProvider'}[self.backend]
         self.evidence.update(effective=list(counts), verified=counts.get(requested, 0) > 0,
                              kernel_events_by_provider=counts, cpu_kernel_events=counts.get('CPUExecutionProvider', 0),

@@ -1,9 +1,12 @@
-"""Compile QNN EPContext locally; adapted from Olive 0.13 context_binary.py (MIT).
+"""Compile QNN EPContext locally; adapted from Olive 0.13 context_binary.py.
+Copyright (c) Microsoft Corporation. MIT license: configs/snapdragon/LICENSE.olive.txt.
 https://github.com/microsoft/Olive/blob/main/olive/passes/onnx/context_binary.py
 """
 import argparse
 import hashlib
 import json
+from collections import Counter
+from importlib.metadata import version
 from pathlib import Path, PurePosixPath
 
 
@@ -130,7 +133,12 @@ def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=
         for path in compiled: context_files(path)
         sessions.clear()
         report = {'status': 'compiled_not_inference_validated', 'weight_sharing': weight_sharing,
-                  'inputs': [{'path': str(p), 'sha256': sha(p)} for p in models], 'artifacts': []}
+                  'inputs': [{'path': str(p), 'sha256': sha(p)} for p in models], 'artifacts': [],
+                  'cpu_fallback_disabled': True, 'device_type': 'NPU', 'device_count': len(devices),
+                  'backend_path': str(qnn.get_qnn_htp_path()),
+                  'versions': {name: version(name) for name in ('onnxruntime', 'onnxruntime-qnn', 'onnx')},
+                  'source_script_sha256': sha(__file__),
+                  'input_manifest_sha256': sha(manifest) if manifest else None}
         if smoke:
             import numpy as np
             options = ort.SessionOptions(); options.enable_profiling = True
@@ -142,6 +150,13 @@ def compile_context(models, out_dir, manifest=None, smoke=False, weight_sharing=
             actual = session.run(None, {'x': np.array([[-1, 0, 1, 2]], dtype=np.float32)})[0]
             np.testing.assert_allclose(actual, [[0, 0, 1, 2]], atol=.11)
             report['profile'] = session.end_profiling()
+            events = json.loads(Path(report['profile']).read_text(encoding='utf-8'))
+            counts = Counter(event.get('args', {}).get('provider') for event in events if event.get('args', {}).get('provider'))
+            report['kernel_events_by_provider'] = dict(counts)
+            if not counts.get(ep_name) or counts.get('CPUExecutionProvider'):
+                raise RuntimeError('Compiled smoke lacks exclusive QNN kernel evidence')
+            report['expected'] = [[0, 0, 1, 2]]
+            report['actual'] = actual.tolist()
             del session
             report['status'] = 'smoke_inference_passed'
         for p in compiled:
