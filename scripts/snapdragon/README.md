@@ -101,3 +101,19 @@ tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --back
 ```
 
 Small FP16 e os dois LLMs QNN ainda não foram aprovados. Consulte `reports/snapdragon/gpu-diagnosis-20261026.md` antes de reutilizar outros pacotes.
+
+## Preparação RX / QNN CPU isolada (27/10/2026)
+
+Resultados GPTQ completos e limitações: `reports/snapdragon/rx7800xt-gptq-qnn-checkpoint-20261027.md`. A referência GPTQ dos200 casos é somente qualidade; não comparar latência nula com baseline v1. NanoCPUint4 permanece padrão.
+
+`run_olive_fwht.py` força backend Torch e registra a adaptação FWHT somente no processo GPU. `run_gptq_reference.py --quality-only` recarrega o artefato sem Triton, verifica RX e anula métricas de latência quando há preparação CPU concorrente. A seleção real exige mascarar a GPU antes de iniciar Python e confirmar o nome.
+
+A fase posterior usa um ambiente CPU separado: ORT1.31.1 + plugin oficial onnxruntime-qnn2.7.0, GenAI0.18.0, Olive0.13.0, ONNX1.23.2, Transformers5.3.0, Optimum2.1.0. Nenhum desses pins altera o runtime da IDE. A ponte `olive_genai18_compat.py` é estrita para0.18.0 e só adapta a chamada do ModelBuilder; a equivalência final ainda depende de geração.
+
+O template `qnn_cpu_sitecustomize.py` foi usado SOMENTE como sitecustomize.py no site-packages do venvCPU isolado. Ele registra a biblioteca oficial QNN e, quando KAPI_QNN_PREP_TRACE_DIR está definido, audita o helper QNN e os lotes efetivamente lidos. Não instalar em ambientes originais. Status completed do helper significa criação da configuração, não fim da calibração.
+
+Para a fase CPU, iniciar processo com HIP_VISIBLE_DEVICES=-1, HF_HUB_OFFLINE=1 e caches HF próprios; não reutilizar cache compartilhado sujeito à limpeza dos intermediários Olive. A receita precisa manter target=qnn_system e QNNExecutionProvider; sq.calibration_providers deve ser CPUExecutionProvider. `run_olive_qnn_prepare.py --config <receita> --report <status>` valida essas condições e exige configuração de saída real, sem aceitar apenas retorno não vazio do Olive.
+
+`make_qnn_recipe.py` fixa somente kv_cache_dim, obtido de head_dim ou hidden_size/num_attention_heads verificados, antes da calibração. Nunca congelar past_sequence_length para contornar o leitor. Modelos GPTQ serializados com load_kwargs:null precisam de `{}` na configuração de retomada. A v6 e a alteração derivada de capacidade2048 estão documentadas nos relatórios, sem modificar o snapshot ou os pesos originais.
+
+Transferir todos os dados externos referenciados, inclusive transformer.onnx.data compartilhado entre context/iterator, Composite, genai_config e tokenizer. Compilar HTP apenas context/iterator; embeddings/head separados podem usar CPU. Fallback desabilitado nessas sessões não prova pipeline100%NPU. Validar shapes, IDs, geração atravessando blocos64 e capacidade2048, além de profiling real no Snapdragon.

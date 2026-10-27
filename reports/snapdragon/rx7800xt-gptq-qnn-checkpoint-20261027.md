@@ -27,3 +27,11 @@ Ainda pendem artefatos estáticos, validação, transferência e compilação no
 54 testes passaram e 1 foi ignorado (inspeção opcional de wheel Olive ausente) no ambiente científico isolado, com GPU oculta. A tentativa inicial no Python mínimo não coletou a suíte por falta de NumPy; nenhum pacote foi instalado nele.
 
 Inspeção adicional do código oficial GenAI 0.15.2: create_model também depende de hf_details/parse_extra_options; o módulo quantized_model antigo existe, mas o patch amplo Olive precisa de validação independente para GPTQ misto. Não há evidência de que trocar o builder resolva o símbolo KV do leitor Olive. A v6 atual prossegue sem substituir ambientes. Fontes: https://github.com/microsoft/onnxruntime-genai/blob/v0.15.2/src/python/py/models/builder.py e https://github.com/microsoft/onnxruntime-genai/blob/v0.15.2/src/python/py/models/quantized_model.py .
+
+## Contrato de transferência e execução previsto
+
+Auditoria do StaticLLM Olive0.13 confirmou: context_length64 é o bloco de prefill; iterator usa sequência1 e model.context_length permanece2048. O grafo anterior à divisão tem24GQA, RoPEcos/sin[2048,32], KVfloat32[B,2,past/total,64] e split_assignments coerentes. A saída final ainda precisa ser inspecionada.
+
+StaticLLM gera context.onnx e iterator.onnx compartilhando external_data do transformer; transformer.onnx pode ser apagado enquanto transformer.onnx.data continua necessário. O pacote deve incluir TODOS os arquivos referenciados por locations, não apenas dados com nome igual ao grafo.
+
+O EPContextBinaryGenerator do Olive compila os grupos context/iterator em HTP e preserva embeddings/lm_head fora desses grupos. O desenho é híbrido: embeddings Gather4bit e lm_head MatMulNBits8bit podem executar em CPU. Desabilitar fallback nas sessões compiladas do transformer não prova todo o LLM na NPU. O compilador ARM deve receber somente os grafos dos grupos context/iterator, preservando os componentes CPU e registrando profiling por componente.

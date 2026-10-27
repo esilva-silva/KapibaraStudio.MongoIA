@@ -124,6 +124,25 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
         config['passes'] = {k: v for k, v in config['passes'].items() if k not in ('cb', 'cp')}
         config['passes']['g']['device'] = gptq_device
         config['passes']['sq']['calibration_providers'] = ['CPUExecutionProvider']
+        model_metadata = json.loads((source / 'config.json').read_text(encoding='utf-8'))
+        head_dim = model_metadata.get('head_dim')
+        if head_dim is None:
+            hidden = model_metadata.get('hidden_size')
+            heads = model_metadata.get('num_attention_heads')
+            if type(hidden) is not int or type(heads) is not int or hidden <= 0 or heads <= 0 or hidden % heads:
+                raise ValueError('Cannot prove KV head dimension from source config')
+            head_dim = hidden // heads
+        if type(head_dim) is not int or head_dim <= 0:
+            raise ValueError('KV head dimension must be a positive integer')
+        # Olive's calibration loader allocates KV tensors from concrete axes 1/3.
+        # GenAI may leave head size symbolic; fix it without freezing past length.
+        passes = {}
+        for name, settings in config['passes'].items():
+            if name == 'sq':
+                passes['kv_shape'] = {'type': 'DynamicToFixedShape', 'dim_param': ['kv_cache_dim'],
+                                      'dim_value': [head_dim], 'save_as_external_data': True}
+            passes[name] = settings
+        config['passes'] = passes
         mb = config['passes']['mb']
         for old, new in [('block_size', 'int4_block_size'), ('accuracy_level', 'int4_accuracy_level'), ('op_types_to_quantize', 'int4_op_types_to_quantize')]:
             mb[new] = mb.pop(old)
@@ -148,7 +167,7 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
                 'target_execution_provider': 'QNNExecutionProvider',
                 'calibration_limits': {'gptq': {'strategy': 'join', 'max_samples': 128, 'max_seq_len': 2048},
                                        'activation': {'strategy': 'line-by-line', 'max_samples': 256, 'max_seq_len': 2048}},
-                'changes': ['local calibration', 'CPU activation calibration', 'ModelBuilder Olive 0.13 option names', 'search.max_length 2048 (not validated as model capacity)', 'split preparation and compilation'],
+                'changes': ['local calibration', 'CPU activation calibration', 'KV head axis from verified model metadata; past sequence stays dynamic', 'ModelBuilder Olive 0.13 option names', 'search.max_length 2048 (not validated as model capacity)', 'split preparation and compilation'],
                 'status': 'generated_not_executed', 'context_validation': 'pending: inspect KV shapes and genai_config; run generation', 'config': str(config_path)}
     (out_dir / f'{phase}-manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     return config
