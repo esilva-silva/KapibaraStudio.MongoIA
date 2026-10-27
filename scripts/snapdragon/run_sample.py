@@ -9,10 +9,32 @@ import uuid
 import gc
 import hashlib
 import re
+import os
 
 CONTEXT = 2048
 LIMIT = 32
 MARKERS = ('<|fim_prefix|>', '<|fim_suffix|>', '<|fim_middle|>', '<|endoftext|>', '<|im_end|>', '<|fim_pad|>')
+
+def source_commit():
+    override = os.environ.get('KAPI_RUNNER_COMMIT')
+    if override:
+        return override
+    gitdir = Path(__file__).resolve().parents[2] / '.git'
+    try:
+        if gitdir.is_file():
+            gitdir = (gitdir.parent / gitdir.read_text().strip().split(': ', 1)[1]).resolve()
+        head = (gitdir / 'HEAD').read_text().strip()
+        if not head.startswith('ref: '):
+            return head
+        ref = head[5:]
+        if (gitdir / ref).exists():
+            return (gitdir / ref).read_text().strip()
+        for line in (gitdir / 'packed-refs').read_text().splitlines():
+            if line.endswith(' ' + ref):
+                return line.split()[0]
+    except (OSError, IndexError):
+        pass
+    return None
 
 def gpu_name_matches(actual, expected):
     normalize = lambda value: re.sub(r'[^a-z0-9]', '', value.casefold())
@@ -120,11 +142,13 @@ class HFRunner:
                 cache = result.past_key_values
                 x = torch.tensor([[token]], device=self.device)
                 mask = torch.cat((mask, torch.ones((1, 1), dtype=mask.dtype, device=self.device)), dim=1)
+        end = time.perf_counter()
         content = [t for t in tokens if t not in eos | self.stops]
         stop = 'eos' if tokens[-1] in eos else 'fim_stop' if tokens[-1] in self.stops else 'max_tokens'
         result = measurement(tokens, self.tok.decode(content, skip_special_tokens=False), start, first,
-                             time.perf_counter(), stop, len(ids))
-        result['content_tokens'] = len(content)
+                             end, stop, len(ids))
+        result['content_tokens_before_suffix_trim'] = len(content)
+        result['generator_creation_ms'] = 0.0
         return trim_suffix(result, item)
 
 class GenAIRunner:
@@ -145,7 +169,7 @@ class GenAIRunner:
             for key, value in (qnn_options or {}).items():
                 cfg.set_provider_option('QNN', key, str(value))
             cfg.overlay(json.dumps({'model': {'decoder': {'session_options': {'disable_cpu_ep_fallback': True}}}}))
-        else:
+        elif backend == 'dml':
             cfg.append_provider('dml')
         self.profile_prefix = profile_prefix
         self.backend = backend
@@ -164,7 +188,7 @@ class GenAIRunner:
         config = json.loads((Path(model) / 'genai_config.json').read_text(encoding='utf-8'))
         eos = config['model'].get('eos_token_id')
         self.eos = set(eos if isinstance(eos, list) else [eos])
-        self.evidence = {'requested': 'DmlExecutionProvider' if backend == 'dml' else 'QNNExecutionProvider', 'available': True, 'configured': backend,
+        self.evidence = {'requested': {'dml': 'DmlExecutionProvider', 'qnn': 'QNNExecutionProvider', 'cpu': 'CPUExecutionProvider'}[backend], 'available': True, 'configured': backend,
                          'effective': None, 'verified': False,
                          'reason': 'ORT GenAI Python does not expose per-node execution provider profiling here; availability and explicit configuration do not prove GPU execution'}
 
@@ -183,7 +207,7 @@ class GenAIRunner:
                             counts[provider] = counts.get(provider, 0) + 1
                 except Exception as exc:
                     errors.append(str(exc))
-        requested = 'DmlExecutionProvider' if self.backend == 'dml' else 'QNNExecutionProvider'
+        requested = {'dml': 'DmlExecutionProvider', 'qnn': 'QNNExecutionProvider', 'cpu': 'CPUExecutionProvider'}[self.backend]
         self.evidence.update(effective=list(counts), verified=counts.get(requested, 0) > 0,
                              kernel_events_by_provider=counts, cpu_kernel_events=counts.get('CPUExecutionProvider', 0),
                              profile_files=[str(p) for p in files], profile_errors=errors,
@@ -197,9 +221,10 @@ class GenAIRunner:
         check_ids(ids)
         p = self.og.GeneratorParams(self.model)
         p.set_search_options(do_sample=False, max_length=len(ids) + LIMIT, batch_size=1)
-        g = self.og.Generator(self.model, p)
-        tokens, first = [], None
         start = time.perf_counter()
+        g = self.og.Generator(self.model, p)
+        creation_ms = (time.perf_counter() - start) * 1000
+        tokens, first = [], None
         try:
             g.append_tokens(np.array(ids, dtype=np.int32))
             while not g.is_done() and len(tokens) < LIMIT:
@@ -217,7 +242,8 @@ class GenAIRunner:
         stop = 'eos' if tokens and tokens[-1] in self.eos else 'fim_stop' if tokens and tokens[-1] in self.stops else ('max_tokens' if len(tokens) == LIMIT else 'runtime_done')
         content = [t for t in tokens if t not in self.eos | self.stops]
         result = measurement(tokens, self.tok.decode(content), start, first, end, stop, len(ids))
-        result['content_tokens'] = len(content)
+        result['content_tokens_before_suffix_trim'] = len(content)
+        result['generator_creation_ms'] = creation_ms
         return trim_suffix(result, item)
 
 def measurement(tokens, text, start, first, end, stop, prompt_count):
@@ -230,30 +256,42 @@ def measurement(tokens, text, start, first, end, stop, prompt_count):
 def run(model, corpus, backend, out, device='cpu', config=None, expected_gpu=None):
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    wall_start = time.perf_counter()
     report = {'schema': 'kapi-snapdragon-sample-v1', 'backend': backend, 'model': str(model),
+              'timing_convention': 'v2: request starts before Generator construction; ends before final decode; decode rate excludes first token and includes stop-check decoding',
+              'runner_version': 2, 'source_runner_commit': source_commit(),
+              'source_runner_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'context_tokens': CONTEXT, 'max_new_tokens': LIMIT, 'greedy': True,
               'machine': platform.machine(), 'items': [], 'memory_before': memory()}
     failed = False
+    def checkpoint(phase, **fields):
+        report.update(phase=phase, wall_elapsed_s=time.perf_counter() - wall_start, **fields)
+        out.with_name(out.name + '.progress.json').write_text(json.dumps(report, ensure_ascii=False), encoding='utf-8')
+    checkpoint('validation_start')
     try:
         items = load_corpus(corpus)
         report['corpus_sha256'] = hashlib.sha256(Path(corpus).read_bytes()).hexdigest()
         recipe = json.loads(Path(config).read_text(encoding='utf-8')) if config else {}
         qnn_options = recipe.get('qnn_probe', {}).get('provider_options', {})
+        checkpoint('model_load_start', total=len(items))
+        load_start = time.perf_counter()
         runner = HFRunner(str(model), device, expected_gpu) if backend == 'hf' else GenAIRunner(model, backend, out.resolve().with_name(out.name + '.profile-' + uuid.uuid4().hex), qnn_options)
+        checkpoint('model_load_done', model_load_elapsed_s=time.perf_counter() - load_start)
         report['provider_evidence'] = runner.evidence
         for item in items:
             row = {'id': item['id'], 'reference': item.get('reference', item.get('completion', item.get('target'))), 'suffix': item.get('suffix', '')}
             try:
+                checkpoint('generator_start', current_item_id=item['id'])
                 row.update(runner.generate(item))
             except Exception as exc:
                 row['error'] = f'{type(exc).__name__}: {exc}'
                 failed = True
             row['memory'] = memory()
             report['items'].append(row)
-            if len(report['items']) % 10 == 0:
+            if len(report['items']) % 10 == 0 or len(report['items']) == len(items):
                 progress = {**report, 'status': 'running', 'processed': len(report['items']), 'total': len(items)}
-                checkpoint = out.with_name(out.name + '.progress.json')
-                checkpoint.write_text(json.dumps(progress, ensure_ascii=False), encoding='utf-8')
+                progress_path = out.with_name(out.name + '.progress.json')
+                progress_path.write_text(json.dumps(progress, ensure_ascii=False), encoding='utf-8')
                 print(f"Processed {len(report['items'])}/{len(items)} requests", flush=True)
         if hasattr(runner, 'close'):
             runner.close()
@@ -262,6 +300,7 @@ def run(model, corpus, backend, out, device='cpu', config=None, expected_gpu=Non
         failed = True
     report['memory_after'] = memory()
     report['status'] = 'failed' if failed else 'completed'
+    checkpoint('failed' if failed else 'completed')
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
@@ -271,7 +310,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     for name in ('model', 'corpus', 'out'):
         p.add_argument('--' + name, type=Path, required=True)
-    p.add_argument('--backend', choices=('hf', 'dml', 'qnn'), required=True)
+    p.add_argument('--backend', choices=('hf', 'dml', 'qnn', 'cpu'), required=True)
     p.add_argument('--device', default='cpu', help='HF device: cpu or cuda:0 (ROCm uses the CUDA API)')
     p.add_argument('--config', type=Path, help='Optional recipe; QNN provider options from qnn_probe.provider_options')
     p.add_argument('--expected-gpu', help='Require selected HF CUDA/HIP device name to contain this model name')

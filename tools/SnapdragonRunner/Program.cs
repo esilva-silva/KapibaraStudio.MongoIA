@@ -10,8 +10,19 @@ for (int i = 0; i < args.Length; i += 2) {
     options[args[i][2..]] = args[i + 1];
 }
 if (options.GetValueOrDefault("backend") == "dml-smoke") return GpuProbe.Run(options["model"], options["out"]);
+var backend = options.GetValueOrDefault("backend", "dml");
+var requestedProvider = backend == "cpu" ? "CPUExecutionProvider" : "DmlExecutionProvider";
 var rows = new List<object>();
+var rootWatch = Stopwatch.StartNew();
 var report = new Dictionary<string, object?> {
+    ["runner_version"] = 2, ["workspace_commit_at_run"] = ReadCommit(),
+    ["runner_binary_sha256"] = HashFile(typeof(Program).Assembly.Location),
+    ["runtime_file_versions"] = new {
+        genai = NativeVersion("onnxruntime-genai.dll"),
+        ort = NativeVersion("onnxruntime.dll"),
+        directml = NativeVersion("DirectML.dll")
+    },
+    ["timing_convention"] = "v2: request starts before Generator construction; ends before final decode; decode rate excludes first token and includes stop-check decoding",
     ["schema"] = "kapi-snapdragon-sample-v1", ["context_tokens"] = 2048, ["max_new_tokens"] = 32,
     ["greedy"] = true, ["items"] = rows,
     ["backend"] = options.GetValueOrDefault("backend", "dml"), ["model"] = options.GetValueOrDefault("model"),
@@ -21,18 +32,34 @@ var report = new Dictionary<string, object?> {
 int exitCode = 0;
 string profilePrefix = Path.GetFullPath(options["out"]) + ".profile-" + Guid.NewGuid().ToString("N");
 Directory.CreateDirectory(Path.GetDirectoryName(profilePrefix)!);
+void Checkpoint(string phase) {
+    report["phase"] = phase;
+    report["wall_elapsed_s"] = rootWatch.Elapsed.TotalSeconds;
+    File.WriteAllText(Path.GetFullPath(options["out"]) + ".progress.json", JsonSerializer.Serialize(report));
+    Console.Error.WriteLine($"Phase: {phase}; elapsed {rootWatch.Elapsed.TotalSeconds:F3}s");
+}
+Checkpoint("validation_start");
 try {
     var corpusLines = File.ReadLines(options["corpus"]).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
     if (corpusLines.Length == 0) throw new ArgumentException("Corpus is empty");
     using (var corpusStream = File.OpenRead(options["corpus"])) report["corpus_sha256"] = Convert.ToHexString(SHA256.HashData(corpusStream)).ToLowerInvariant();
-    if (options.GetValueOrDefault("backend", "dml") != "dml") throw new ArgumentException("This .NET runner currently supports dml only");
+    if (backend is not ("dml" or "cpu")) throw new ArgumentException("This .NET runner supports dml and explicit CPU controls only");
+    Checkpoint("model_load_start");
+    var loadWatch = Stopwatch.StartNew();
     using var config = new Config(options["model"]);
     config.ClearProviders();
-    config.AppendProvider("dml");
-    config.SetProviderOption("dml", "device_id", options.GetValueOrDefault("device-id", "0"));
+    if (backend == "dml") {
+        config.AppendProvider("dml");
+        config.SetProviderOption("dml", "device_id", options.GetValueOrDefault("device-id", "0"));
+        if (options.TryGetValue("graph-capture", out var graphCapture)) config.SetProviderOption("dml", "enable_graph_capture", graphCapture);
+    }
     var original = JsonNode.Parse(File.ReadAllText(Path.Combine(options["model"], "genai_config.json")))!;
     var decoder = original["model"]!["decoder"]!;
     var decoderOverlay = new JsonObject { ["session_options"] = new JsonObject { ["enable_profiling"] = profilePrefix } };
+    if (options.TryGetValue("graph-optimization", out var optimization)) {
+        decoderOverlay["session_options"]!["graph_optimization_level"] = optimization;
+        report["graph_optimization_level"] = optimization;
+    }
     if (decoder["pipeline"] is JsonArray pipeline) {
         var stages = new JsonArray();
         foreach (var stage in pipeline) {
@@ -46,6 +73,8 @@ try {
     config.Overlay(new JsonObject { ["model"] = new JsonObject { ["decoder"] = decoderOverlay } }.ToJsonString());
     using var model = new Model(config);
     using var tokenizer = new Tokenizer(model);
+    report["model_load_elapsed_s"] = loadWatch.Elapsed.TotalSeconds;
+    Checkpoint("model_load_done");
     using var modelConfig = JsonDocument.Parse(File.ReadAllText(Path.Combine(options["model"], "genai_config.json")));
     var eos = new HashSet<int>();
     if (modelConfig.RootElement.GetProperty("model").TryGetProperty("eos_token_id", out var eosNode)) {
@@ -70,10 +99,14 @@ try {
             using var parameters = new GeneratorParams(model);
             parameters.SetSearchOption("do_sample", false);
             parameters.SetSearchOption("max_length", promptLength + 32);
-            using var generator = new Generator(model, parameters);
-            var tokens = new List<int>();
-            var suffix = item.TryGetProperty("suffix", out var s) ? s.GetString() ?? "" : "";
+            report["current_item_id"] = item.GetProperty("id").Clone();
+            Checkpoint("generator_start");
             var watch = Stopwatch.StartNew();
+            using var generator = new Generator(model, parameters);
+            row["generator_creation_ms"] = watch.Elapsed.TotalMilliseconds;
+            var tokens = new List<int>();
+            var sequenceGrowth = new List<int>();
+            var suffix = item.TryGetProperty("suffix", out var s) ? s.GetString() ?? "" : "";
             double? first = null;
             string stop = "runtime_done";
             generator.AppendTokenSequences(input);
@@ -81,6 +114,7 @@ try {
                 int beforeLength = generator.GetSequence(0).Length;
                 generator.GenerateNextToken();
                 int afterLength = generator.GetSequence(0).Length;
+                sequenceGrowth.Add(afterLength - beforeLength);
                 if (afterLength <= beforeLength) {
                     if (!generator.IsDone()) throw new InvalidOperationException("Generator made no sequence progress");
                     stop = "runtime_done_without_token";
@@ -96,12 +130,13 @@ try {
             double elapsed = watch.Elapsed.TotalSeconds;
             var content = tokens.Where(t => !stops.Contains(t)).ToArray();
             row["generated_ids"] = tokens;
+            row["sequence_growth"] = sequenceGrowth;
             var text = tokenizer.Decode(content);
             if (suffix.Length > 0 && text.Contains(suffix)) text = text[..text.IndexOf(suffix, StringComparison.Ordinal)];
             row["generated_text"] = text;
             row["prompt_tokens"] = promptLength;
             row["generated_tokens"] = tokens.Count;
-            row["content_tokens"] = content.Length;
+            row["content_tokens_before_suffix_trim"] = content.Length;
             row["ttft_ms"] = first * 1000;
             row["elapsed_s"] = elapsed;
             row["decode_tokens_per_second"] = tokens.Count > 1 && elapsed > first ? (tokens.Count - 1) / (elapsed - first) : null;
@@ -111,12 +146,12 @@ try {
         using var process = Process.GetCurrentProcess();
         row["memory"] = new { rss_bytes = process.WorkingSet64, peak_rss_bytes = process.PeakWorkingSet64 };
         rows.Add(row);
-        if (rows.Count % 10 == 0) {
+        if (rows.Count % 10 == 0 || rows.Count == corpusLines.Length) {
             Console.Error.WriteLine($"Processed {rows.Count}/{corpusLines.Length} requests");
             report["status"] = "running";
             report["processed"] = rows.Count;
             report["total"] = corpusLines.Length;
-            File.WriteAllText(Path.GetFullPath(options["out"]) + ".progress.json", JsonSerializer.Serialize(report));
+            Checkpoint("request_done");
         }
     }
 } catch (Exception ex) { report["error"] = ex.ToString(); exitCode = 1; }
@@ -134,13 +169,45 @@ foreach (var file in profileFiles) {
         }
     } catch (Exception ex) { profileErrors.Add(ex.Message); }
 }
-report["provider_evidence"] = new { requested = "DmlExecutionProvider", configured = "dml", effective = providerCounts.Keys.ToArray(),
-    verified = providerCounts.GetValueOrDefault("DmlExecutionProvider") > 0, kernel_events_by_provider = providerCounts,
+report["provider_evidence"] = new { requested = requestedProvider, configured = backend, effective = providerCounts.Keys.ToArray(),
+    verified = providerCounts.GetValueOrDefault(requestedProvider) > 0, kernel_events_by_provider = providerCounts,
     cpu_kernel_events = providerCounts.GetValueOrDefault("CPUExecutionProvider"), profile_files = profileFiles,
     profile_errors = profileErrors, reason = providerCounts.Count > 0 ? "Observed ORT kernel events after model disposal" : "No provider kernel events captured; GPU execution unverified" };
 report["status"] = exitCode == 0 ? "completed" : "failed";
+Checkpoint(exitCode == 0 ? "completed" : "failed");
 using (var process = Process.GetCurrentProcess()) report["memory_after"] = new { rss_bytes = process.WorkingSet64, peak_rss_bytes = process.PeakWorkingSet64 };
 var output = Path.GetFullPath(options["out"]);
 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
 File.WriteAllText(output, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
 return exitCode;
+
+static string HashFile(string path) {
+    using var stream = File.OpenRead(path);
+    return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+}
+
+static string? NativeVersion(string name) {
+    var path = Path.Combine(AppContext.BaseDirectory, name);
+    return File.Exists(path) ? FileVersionInfo.GetVersionInfo(path).FileVersion : null;
+}
+
+static string? ReadCommit() {
+    var supplied = Environment.GetEnvironmentVariable("KAPI_RUNNER_COMMIT");
+    if (!string.IsNullOrWhiteSpace(supplied)) return supplied;
+    for (DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent) {
+        var git = Path.Combine(directory.FullName, ".git");
+        if (!Directory.Exists(git) && !File.Exists(git)) continue;
+        try {
+            if (File.Exists(git)) git = Path.GetFullPath(Path.Combine(directory.FullName, File.ReadAllText(git).Trim()[8..]));
+            var head = File.ReadAllText(Path.Combine(git, "HEAD")).Trim();
+            if (!head.StartsWith("ref: ")) return head;
+            var reference = head[5..];
+            var refPath = Path.Combine(git, reference.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(refPath)) return File.ReadAllText(refPath).Trim();
+            var packed = Path.Combine(git, "packed-refs");
+            if (File.Exists(packed)) foreach (var line in File.ReadLines(packed)) if (line.EndsWith(" " + reference, StringComparison.Ordinal)) return line.Split(' ')[0];
+        } catch (IOException) { return null; }
+        return null;
+    }
+    return null;
+}

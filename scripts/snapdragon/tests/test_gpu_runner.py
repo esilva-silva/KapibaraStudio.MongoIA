@@ -22,6 +22,19 @@ with patch.dict(sys.modules, {'run_sample': runner}):
     remote = load('remote_prepare')
 
 class RunnerTests(unittest.TestCase):
+    def test_single_item_records_phases_and_new_convention(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            corpus = root / 'one.jsonl'
+            corpus.write_text(json.dumps({'id': 'one', 'prompt_text': 'x'}))
+            fake = SimpleNamespace(evidence={'effective': 'cpu'}, generate=lambda item: {'generated_text': 'x'})
+            with patch.object(runner, 'HFRunner', return_value=fake):
+                self.assertEqual(runner.run(root, corpus, 'hf', root / 'result.json'), 0)
+            report = json.loads((root / 'result.json').read_text())
+            progress = json.loads((root / 'result.json.progress.json').read_text())
+            self.assertEqual(report['runner_version'], 2)
+            self.assertEqual(progress['phase'], 'completed')
+            self.assertIn('model_load_elapsed_s', report)
     def test_gpu_selection_rejects_igpu_and_uses_real_index(self):
         devices = [{'index': 0, 'name': 'AMD Radeon Graphics', 'vram_bytes': 512},
                    {'index': 1, 'name': 'AMD Radeon RX 7800 XT', 'vram_bytes': 16384}]

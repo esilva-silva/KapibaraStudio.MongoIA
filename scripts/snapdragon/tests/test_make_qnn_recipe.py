@@ -39,14 +39,55 @@ class RecipeTest(unittest.TestCase):
         self.assertEqual(config['data_configs'][0]['pre_process_data_config']['model_name'], str(self.source))
         self.assertEqual(json.loads((self.root / 'out/calibration.jsonl').read_text(encoding='utf-8').splitlines()[0]), {'text': 'db.test.find()'})
 
-    def test_compile_requires_model_and_does_not_guess_soc(self):
-        with self.assertRaises(ValueError):
-            recipe.generate(self.source, self.cal, self.root, self.root / 'bad', 'compile')
+    def composite(self, origin='/build/output'):
+        artifact = self.root / 'artifact'
+        artifact.mkdir(exist_ok=True)
+        for name in ('embeddings.onnx', 'context.onnx', 'iterator.onnx', 'lm_head.onnx', 'genai_config.json'):
+            (artifact / name).write_text('fixture', encoding='utf-8')
+        names = ['embeddings', 'context', 'iterator', 'lm_head']
+        return artifact, {'type': 'CompositeModel', 'config': {'model_path': origin,
+            'model_component_names': names,
+            'model_components': [{'type': 'ONNXModel', 'config': {'model_path': origin,
+                'onnx_file_name': name + '.onnx'}} for name in names],
+            'model_attributes': {'additional_files': [origin + '/genai_config.json'],
+                'llm_pipeline': {'embeddings': 'embeddings', 'context': ['context'],
+                    'iterator': ['iterator'], 'lm_head': 'lm_head'}}}}
+
+    def test_compile_rebases_composite_and_disables_fallback(self):
+        artifact, data = self.composite()
         model = self.root / 'model.json'
-        model.write_text(json.dumps({'type': 'ONNXModel', 'config': {'model_path': 'model.onnx'}}), encoding='utf-8')
-        config = recipe.generate(self.source, self.cal, self.root, self.root / 'out', 'compile', model)
+        model.write_text(json.dumps(data), encoding='utf-8')
+        config = recipe.generate(self.source, self.cal, self.root, self.root / 'out', 'compile', model,
+                                 artifact_root=artifact, original_artifact_root='/build/output')
         self.assertEqual(set(config['passes']), {'cb', 'cp'})
+        self.assertTrue(config['passes']['cb']['disable_cpu_fallback'])
         self.assertNotIn('soc_model', config['passes']['cb']['provider_options'])
+        actual = config['input_model']['config']
+        self.assertEqual(actual['model_components'][0]['config']['model_path'], str(artifact.resolve()))
+        self.assertEqual(actual['model_attributes']['llm_pipeline'], data['config']['model_attributes']['llm_pipeline'])
+
+    def test_windows_origin_rebases(self):
+        artifact, data = self.composite('C:/build/output')
+        rebased = recipe.rebase_composite(data, artifact, 'C:/build/output')
+        self.assertEqual(rebased['config']['model_path'], str(artifact.resolve()))
+
+    def test_rejects_outside_or_missing_resources(self):
+        artifact, data = self.composite()
+        data['config']['model_components'][0]['config']['model_path'] = '/elsewhere'
+        with self.assertRaises(ValueError):
+            recipe.rebase_composite(data, artifact, '/build/output')
+        data['config']['model_components'][0]['config']['model_path'] = '/build/output'
+        data['config']['model_components'][0]['config']['onnx_file_name'] = 'missing.onnx'
+        with self.assertRaises(ValueError):
+            recipe.rebase_composite(data, artifact, '/build/output')
+
+    def test_rejects_parent_traversal_and_single_model(self):
+        artifact, data = self.composite()
+        data['config']['model_components'][0]['config']['onnx_file_name'] = '../escape.onnx'
+        with self.assertRaises(ValueError):
+            recipe.rebase_composite(data, artifact, '/build/output')
+        with self.assertRaises(ValueError):
+            recipe.rebase_composite({'type': 'ONNXModel', 'config': {}}, artifact)
 
     def test_tampered_weights_rejected(self):
         (self.source / 'model.safetensors').write_text('tampered', encoding='utf-8')

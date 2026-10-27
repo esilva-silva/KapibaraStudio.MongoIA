@@ -2,7 +2,7 @@ import argparse
 import copy
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from export_gpu import source_provenance, sha256
 
@@ -11,7 +11,70 @@ TEMPLATE = ROOT / 'configs/snapdragon/qnn-upstream.json'
 PROVENANCE = ROOT / 'configs/snapdragon/qnn-upstream-source.json'
 
 
-def generate(source, calibration, qnn_python, out_dir, phase, input_model_config=None, soc_model=None, gptq_device='cuda'):
+def rebase_composite(model, artifact_root, original_artifact_root=None):
+    """Rebase Olive CompositeModel resource paths while preserving model metadata."""
+    if not artifact_root:
+        raise ValueError('compile requires --artifact-root')
+    root = Path(artifact_root).resolve(strict=True)
+    if not root.is_dir():
+        raise ValueError('artifact root must be a directory')
+    original = str(original_artifact_root or root)
+    windows = bool(PureWindowsPath(original).drive)
+    pure = PureWindowsPath if windows else PurePosixPath
+    old = pure(original)
+    if not old.is_absolute() or '..' in old.parts:
+        raise ValueError('original artifact root must be an absolute canonical path')
+
+    def resource(value):
+        if not isinstance(value, str) or not value:
+            raise ValueError('Invalid model resource path')
+        path = pure(value)
+        if '..' in path.parts:
+            raise ValueError('Resource path contains parent traversal')
+        if path.is_absolute():
+            try:
+                relative = path.relative_to(old)
+            except ValueError as exc:
+                raise ValueError('Resource is outside original artifact root: ' + value) from exc
+        else:
+            if path.drive:
+                raise ValueError('Invalid resource path: ' + value)
+            relative = path
+        dest = root.joinpath(*relative.parts).resolve()
+        if not dest.is_relative_to(root) or not dest.exists():
+            raise ValueError('Resource missing or outside artifact root: ' + value)
+        return str(dest)
+
+    model = copy.deepcopy(model)
+    if str(model.get('type', '')).lower() != 'compositemodel':
+        raise ValueError('compile requires Olive CompositeModel from StaticLLM')
+    def visit(obj):
+        if isinstance(obj, dict):
+            for key, value in list(obj.items()):
+                if key == 'model_path' and value is not None:
+                    obj[key] = resource(value)
+                elif key == 'additional_files' and value is not None:
+                    if not isinstance(value, list):
+                        raise ValueError('additional_files must be a list')
+                    obj[key] = [resource(item) for item in value]
+                else:
+                    visit(value)
+            if 'onnx_file_name' in obj and obj['onnx_file_name']:
+                filename = pure(obj['onnx_file_name'])
+                if filename.is_absolute() or '..' in filename.parts or filename.drive:
+                    raise ValueError('Invalid onnx_file_name')
+                base = Path(obj.get('model_path', root))
+                target = (base / Path(*filename.parts)).resolve()
+                if not target.is_relative_to(root) or not target.is_file():
+                    raise ValueError('ONNX component missing or outside artifact root')
+        elif isinstance(obj, list):
+            for value in obj:
+                visit(value)
+    visit(model)
+    return model
+
+
+def generate(source, calibration, qnn_python, out_dir, phase, input_model_config=None, soc_model=None, gptq_device='cuda', artifact_root=None, original_artifact_root=None):
     source = Path(source).resolve()
     provenance = source_provenance(source)
     expected = json.loads(PROVENANCE.read_text(encoding='utf-8'))
@@ -36,6 +99,7 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
         model_config = json.loads(Path(input_model_config).read_text(encoding='utf-8'))
         if not isinstance(model_config, dict) or not model_config.get('type') or not isinstance(model_config.get('config'), dict):
             raise ValueError('Expected Olive serialized model config with type and config')
+        model_config = rebase_composite(model_config, artifact_root, original_artifact_root)
     if soc_model is not None and (not str(soc_model).isdigit() or int(soc_model) < 1):
         raise ValueError('soc-model must be a positive numeric identifier')
     out_dir = Path(out_dir).resolve()
@@ -68,6 +132,7 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
         config['input_model'] = model_config
         config['data_configs'] = []
         config['passes'] = {k: v for k, v in config['passes'].items() if k in ('cb', 'cp')}
+        config['passes']['cb']['disable_cpu_fallback'] = True
         provider_options = config['passes']['cb']['provider_options']
         provider_options.pop('soc_model', None)
         if soc_model is not None:
@@ -76,8 +141,8 @@ def generate(source, calibration, qnn_python, out_dir, phase, input_model_config
     config_path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     manifest = {'source': provenance, 'recipe': expected, 'calibration_sha256': sha256(calibration),
                 'phase': phase, 'gptq_device': gptq_device, 'calibration_provider': 'CPUExecutionProvider',
-                'changes': ['local calibration', 'CPU activation calibration', 'ModelBuilder Olive 0.13 option names', 'context 2048', 'split preparation and compilation'],
-                'status': 'generated_not_executed', 'config': str(config_path)}
+                'changes': ['local calibration', 'CPU activation calibration', 'ModelBuilder Olive 0.13 option names', 'search.max_length 2048 (not validated as model capacity)', 'split preparation and compilation'],
+                'status': 'generated_not_executed', 'context_validation': 'pending: inspect KV shapes and genai_config; run generation', 'config': str(config_path)}
     (out_dir / f'{phase}-manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     return config
 
@@ -90,11 +155,13 @@ def main():
     p.add_argument('--out-dir', required=True)
     p.add_argument('--phase', required=True, choices=('prepare', 'compile'))
     p.add_argument('--input-model-config')
+    p.add_argument('--artifact-root', help='Transferred Olive output directory (required for compile)')
+    p.add_argument('--original-artifact-root', help='Original absolute output root, for cross-host rebasing')
     p.add_argument('--soc-model')
     p.add_argument('--gptq-device', choices=('cuda', 'cpu'), default='cuda')
     a = p.parse_args()
     try:
-        generate(a.source, a.calibration, a.qnn_python, a.out_dir, a.phase, a.input_model_config, a.soc_model, a.gptq_device)
+        generate(a.source, a.calibration, a.qnn_python, a.out_dir, a.phase, a.input_model_config, a.soc_model, a.gptq_device, a.artifact_root, a.original_artifact_root)
     except (ValueError, OSError, KeyError) as exc:
         p.exit(1, f'Recipe generation failed: {exc}\n')
 
