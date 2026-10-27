@@ -31,6 +31,11 @@ def run(config_path,report_path):
             if x.device.type!='cuda' or x.device.index!=0:raise RuntimeError('Hadamard input must use selected RX')
             report['fwht_calls']+=1
             return torch_fwht.hadamard_transform(x,scale)
+        adapter.hadamard_transform=transform
+        # Exercise the registered entrypoint before loading a real model.
+        sanity=adapter.hadamard_transform(torch.tensor([1.,-1.,1.,-1.],device='cuda:0'),0.5)
+        torch.testing.assert_close(sanity,torch.tensor([0.,2.,0.,0.],device='cuda:0'),rtol=0,atol=0)
+        report['adapter_entrypoint_preflight']='passed'
         if 'fast_hadamard_transform' in sys.modules:raise RuntimeError('Ambiguous FHT module in current process')
         sys.modules[adapter.__name__]=adapter
         from gptqmodel.models.auto import BaseGPTQModel
@@ -65,6 +70,7 @@ def run(config_path,report_path):
         report['peak_gpu_bytes']=torch.cuda.max_memory_allocated()
     except Exception as error:
         report.update(status='failed',error=f'{type(error).__name__}: {error}',traceback=traceback.format_exc())
+    report['peak_gpu_bytes']=torch.cuda.max_memory_allocated()
     save();return report
 
 if __name__=='__main__':
