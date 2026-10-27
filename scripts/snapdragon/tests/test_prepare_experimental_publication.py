@@ -21,7 +21,7 @@ class PublicationTest(unittest.TestCase):
             files.append({'path': 'kapicoder_manifest.json', 'sha256': mod.sha(source / 'kapicoder_manifest.json')})
             (source / 'export_manifest.json').write_text(json.dumps({'files': files, 'source': {'revision': 'abc'}}), encoding='utf-8')
             comparison = root / 'comparison.json'
-            comparison.write_text(json.dumps({'qualified': False, 'proxy': True, 'baseline': {'n': 200, 'trimmed_exact_match': .4}, 'candidate': {'n': 200, 'trimmed_exact_match': .395, 'provider_evidence': {'requested': 'DmlExecutionProvider', 'verified': True}}, 'limitations': ['proxy']}), encoding='utf-8')
+            comparison.write_text(json.dumps({'qualified': False, 'proxy': True, 'baseline': {'n': 200, 'trimmed_exact_match': .4}, 'candidate': {'n': 200, 'trimmed_exact_match': .395, 'provider_evidence': {'requested': 'DmlExecutionProvider', 'verified': True}, 'execution_protocol': {'single_session': False, 'batch_size': 25}}, 'limitations': ['proxy']}), encoding='utf-8')
             before = mod.sha(source / 'model.onnx')
             plan = mod.prepare(source, root / 'out', comparison, 'esilva/test', 'experimental/rmsnorm', '913ef5fc78e70000e118d4384cadb401fcac4f4f', 'dml-fp16-split')
             self.assertEqual(plan['base_commit'], '913ef5fc78e70000e118d4384cadb401fcac4f4f')
@@ -31,6 +31,8 @@ class PublicationTest(unittest.TestCase):
             self.assertEqual((source / 'RMSNORM_TRANSFORM.md').read_text(), 'pending')
             manifest = json.loads((root / 'out/export_manifest.json').read_text())
             self.assertFalse(manifest['validation']['qualified'])
+            self.assertEqual(manifest['validation']['execution_protocol']['batch_size'], 25)
+            self.assertIn('fresh process every 25 requests', (root / 'out/RMSNORM_TRANSFORM.md').read_text())
             for item in manifest['files']:
                 self.assertEqual(item['sha256'], mod.sha(root / 'out' / item['path']))
             self.assertEqual(manifest['validation_parent_export_manifest_sha256'], mod.sha(source / 'export_manifest.json'))

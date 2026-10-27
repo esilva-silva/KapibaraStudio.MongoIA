@@ -50,22 +50,26 @@ def prepare(source, output, comparison_path, repo, branch, base_commit='b34d90bb
     shutil.copy2(comparison_path, output / report_name)
     report_sha = sha(output / report_name)
     validation = {'scope': 'proxy, not IDE-qualified', 'qualified': result.get('qualified'), 'proxy': result.get('proxy'),
-        'n': result['candidate'].get('n'), 'candidate_trimmed_exact_match': result['candidate'].get('trimmed_exact_match'),
+        'n': result['candidate'].get('n'), 'execution_protocol': result['candidate'].get('execution_protocol'), 'candidate_trimmed_exact_match': result['candidate'].get('trimmed_exact_match'),
         'baseline_trimmed_exact_match': result['baseline'].get('trimmed_exact_match'),
         'provider_evidence': result['candidate'].get('provider_evidence'), 'limitations': result.get('limitations', []),
         'comparison_file': report_name, 'comparison_sha256': report_sha}
+    protocol = result['candidate'].get('execution_protocol') or {}
+    protocol_note = '' if protocol.get('single_session', True) else (
+        f"Validated with a fresh process every {protocol.get('batch_size')} requests. "
+        'Use scripts/snapdragon/run_batched_gpu.py; single-session stability is not established. ')
     note = output / 'RMSNORM_TRANSFORM.md'
     note.write_text('# Experimental RMSNorm graph transformation\n\n'
         'Graph-only transformation; no new training and FP16 weights unchanged. Graph optimization must remain disabled to prevent refusion. '
         'The DirectML issue is an analogy, not proof of the cause on this device: https://github.com/microsoft/onnxruntime/issues/29739\n\n'
         f"Proxy comparison: {validation['n']} prompts; candidate exact match {validation['candidate_trimmed_exact_match']}, "
         f"BF16 baseline {validation['baseline_trimmed_exact_match']}. This is not IDE qualification. "
-        'See validation-comparison.json for provider evidence, CPU participation and limitations.\n', encoding='utf-8')
+        + protocol_note + 'See validation-comparison.json for provider evidence, CPU participation and limitations.\n', encoding='utf-8')
     split_note = output / 'SPLIT_EMBEDDING.md'
     if split_note.exists():
         split_note.write_text(split_note.read_text(encoding='utf-8').rstrip() +
             '\n\nProxy comparison completed: see [validation-comparison.json](validation-comparison.json). '
-            'This evidence does not constitute IDE qualification.\n', encoding='utf-8')
+            + protocol_note + 'This evidence does not constitute IDE qualification.\n', encoding='utf-8')
     kapi_path = output / 'kapicoder_manifest.json'
     if kapi_path.exists():
         kapi = json.loads(kapi_path.read_text(encoding='utf-8'))

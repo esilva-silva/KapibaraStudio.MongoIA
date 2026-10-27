@@ -58,6 +58,9 @@ def summarize(report, corpus, tokenizer):
             "stop_reasons": dict(Counter(row.get("stop_reason", "not_recorded") for row in actual.values())),
             "observed_eos_count": sum(bool(row.get("eos")) for row in actual.values()),
             "generated_tokens_total": sum(len(row.get("generated_ids", [])) for row in actual.values()),
+            "execution_protocol": {"executor": report.get("executor", "single_process"),
+                "single_session": report.get("single_session", True), "batch_size": report.get("batch_size"),
+                "model_loads_count": report.get("model_loads_count", 1), "model_load_seconds": report.get("model_load_seconds")},
             "provider_evidence": report.get("provider_evidence"), "memory": report.get("memory_after")}
 
 
@@ -81,6 +84,8 @@ def main():
               "baseline": baseline, "candidate": candidate,
               "delta_accepted_prefix_tokens": candidate["accepted_prefix_tokens"] - baseline["accepted_prefix_tokens"],
               "limitations": ["Small synthetic sample; no IDE qualification", "Generated JavaScript was not executed", "Decode rate uses only recorded non-null observations; EOS may be omitted by GenAI"]}
+    if not candidate["execution_protocol"]["single_session"]:
+        result["limitations"].append(f"Candidate reloads the model every {candidate['execution_protocol']['batch_size']} requests; this does not establish single-session stability")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 

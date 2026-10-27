@@ -53,3 +53,9 @@ O novo grafo completou 200 pedidos na Adreno: match textual 39,5% contra 40% BF1
 O pacote foi publicado e seus 19 arquivos foram verificados no [commit HF ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea/dml-fp16-rmsnorm-split). A comparação detalhada está em `nano-rmsnorm-split-vs-bf16-detailed.json`. RSS mede o processo, não VRAM ou memória exclusiva do acelerador; não é comparação de memória total entre a RX discreta e a Adreno UMA. Os tempos são observações no ambiente de trabalho, sem controle de benchmark de release.
 
 O compilador QNN ARM64 gerou um EPContext de teste e binário de 49.152 bytes, recarregou o contexto e executou a saída esperada: um kernel QNN, zero kernels CPU, fallback desabilitado. O perfil HTP registra quatro threads HVX e execução no acelerador. Esse grafo Relu QDQ pequeno não qualifica Nano ou Small NPU. Evidências: `qnn-compiled-context-smoke.json` e `qnn-compiled-context-htp-profile.csv`.
+
+## Small: limite da sessão longa
+
+A execução Small em sessão única gerou 175 casos antes de receber `0x887A0005` (dispositivo DirectML perdido). Os 25 pedidos seguintes falharam no mesmo dispositivo; o relatório de 200 linhas foi marcado `failed`, sem produzir aceite de qualidade. Pico RSS: 8,34 GiB. O pedido 176, repetido isoladamente em processo novo, gerou `tCollection` sem erro. Isso indica dependência do estado da execução, mas não estabelece a causa exata no driver.
+
+A próxima avaliação usa oito processos sequenciais de 25 casos, sem reaproveitar resultados da sessão que falhou. O executor `run_batched_gpu.py` confere manifesto, SHA do corpus e DLL, ordem dos IDs e evidência DirectML de cada processo; falhas interrompem o agregado. O relatório identifica explicitamente recargas e pico RSS máximo dos filhos, sem alegar estabilidade de uma sessão única ou consumo de VRAM.

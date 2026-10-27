@@ -24,18 +24,38 @@ with patch.dict(sys.modules, {'run_sample': runner}):
 class RunnerTests(unittest.TestCase):
     def test_qnn_overlay_preserves_two_stages_and_disables_fallback(self):
         original = {'model': {'decoder': {'session_options': {'existing': 1}, 'pipeline': [
-            {'session_options': {'provider_options': [{'qnn': {'enable_htp_weight_sharing': '1'}}]}},
-            {'session_options': {'custom': 'keep'}}]}}}
+            {'filename': 'ctx.onnx', 'session_options': {'provider_options': [{'qnn': {'enable_htp_weight_sharing': '1'}}]}},
+            {'filename': 'embed.onnx', 'session_options': {'custom': 'keep'}}]}}}
         overlay = runner.genai_session_overlay(original, 'profile', 'qnn')['model']['decoder']
-        self.assertTrue(overlay['session_options']['disable_cpu_ep_fallback'])
+        self.assertNotIn('disable_cpu_ep_fallback', overlay['session_options'])
         self.assertEqual(overlay['session_options']['existing'], 1)
         for index, stage in enumerate(overlay['pipeline']):
-            self.assertTrue(stage['session_options']['disable_cpu_ep_fallback'])
+            self.assertEqual(stage['session_options'].get('disable_cpu_ep_fallback', False), index == 0)
             self.assertEqual(stage['session_options']['enable_profiling'], f'profile-{index}')
         self.assertEqual(overlay['pipeline'][0]['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
         self.assertNotIn('disable_cpu_ep_fallback', original['model']['decoder']['pipeline'][0]['session_options'])
         cpu = runner.genai_session_overlay(original, None, 'cpu')['model']['decoder']
         self.assertNotIn('disable_cpu_ep_fallback', cpu['session_options'])
+
+    def test_grouped_olive_pipeline_preserves_cpu_and_qnn(self):
+        original = {'model': {'decoder': {'pipeline': [{'embeddings': {'filename': 'emb.onnx'},
+            'context': {'filename': 'ctx.onnx', 'run_on_token_gen': False, 'session_options': {'provider_options': [{'qnn': {'enable_htp_weight_sharing': '1'}}]}},
+            'iterator': {'filename': 'iter.onnx', 'run_on_prompt': False, 'session_options': {'provider_options': [{'qnn': {}}]}},
+            'lm_head': {'filename': 'head.onnx', 'is_lm_head': True}}]}}}
+        dec = runner.genai_session_overlay(original, 'profile', 'qnn')['model']['decoder']
+        group = dec['pipeline'][0]
+        self.assertNotIn('session_options', group)
+        self.assertNotIn('disable_cpu_ep_fallback', group['embeddings']['session_options'])
+        self.assertNotIn('disable_cpu_ep_fallback', group['lm_head']['session_options'])
+        self.assertTrue(group['context']['session_options']['disable_cpu_ep_fallback'])
+        self.assertTrue(group['iterator']['session_options']['disable_cpu_ep_fallback'])
+        self.assertEqual(group['context']['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
+        broken = json.loads(json.dumps(original)); broken['model']['decoder']['pipeline'][0]['context']['session_options'] = {}
+        with self.assertRaises(ValueError): runner.genai_session_overlay(broken, None, 'qnn')
+
+    def test_monolithic_qnn_disables_fallback(self):
+        result = runner.genai_session_overlay({'model': {'decoder': {}}}, None, 'qnn')
+        self.assertTrue(result['model']['decoder']['session_options']['disable_cpu_ep_fallback'])
 
     def test_qnn_rejects_non_htp_backend(self):
         with self.assertRaises(ValueError): runner.validate_qnn_options({'backend_type': 'cpu'}, 'QnnHtp.dll')
