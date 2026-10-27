@@ -48,7 +48,7 @@ Tudo acima e sintetico. A correcao historica do guard v1/v1 e a falta de deconta
 
 Erros T0 por dominio/corte, propostas de dados, limiares e custo da segunda semente: `reports/student/correcoes-coordenadas-20261026.md`. READMEs dos jobs apontam ao sft_v3 e ao hash real da configuracao; o v1 foi preservado como historico.
 
-Os relatorios de decisao foram reemitidos a partir dos agregados existentes, preservando GO. O lock possui --require-clean; nao declarar scripts_dirty=false nem commitar alteracoes de terceiros para fabricar limpeza. scripts_commit deve identificar o commit que contem os scripts, anterior ao commit que grava o lock. O lock final depende dos commits revisados.
+Os relatorios de decisao foram reemitidos a partir dos agregados existentes, preservando GO. O lock possui --require-clean; nao declarar scripts_dirty=false nem commitar alteracoes de terceiros para fabricar limpeza. scripts_commit deve identificar o commit que contem os scripts, anterior ao commit que grava o lock. Os locks finais foram regenerados com --require-clean a partir do commit revisado 2b0ee093a5cf224a0d9d2d07ab5d0c6349ad2df6, com scripts_dirty=false e hashes do braço v3; o commit de gravação dos locks é posterior a essa referência.
 
 
 ## 6. Contexto historico preservado para os cards
