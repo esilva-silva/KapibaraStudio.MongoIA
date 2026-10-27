@@ -88,19 +88,32 @@ O bundle contém apenas scripts/configurações e a amostra sintética, com mani
 As exportações e referências são sequenciais. A receita QNN separa preparação e compilação; antes de executar o processo completo, rode `probe_gptq.py` no ROCm e consulte `docs/snapdragon-qnn.md`. Os scripts não configuram compartilhamento de rede nem publicam pesos. A transferência dos pacotes requer um canal de arquivos acessível entre os hosts.
 
 
-## Pacote experimental Nano validado neste notebook
+## GPU experimental preferida: RMSNorm com embeddings separados (27/10/2026)
 
-O pacote corrigido está em [Hugging Face, commit b173484e97e24978d521a2723fa300f3f1d26224](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/b173484e97e24978d521a2723fa300f3f1d26224/dml-fp16-rmsnorm). A transformação de RMSNorm preserva pesos FP16 e exige `ORT_DISABLE_ALL`, persistido na configuração. O pacote inclui manifesto e comparação; `nano-publication-result.json` registra a verificação de todos os arquivos no commit imutável.
+Para Nano e Small na Adreno X1-45, use o subdiretório `dml-fp16-rmsnorm-split` fixado em `experimental_exports` de `configs/snapdragon.json`: [Nano, commit ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea/dml-fp16-rmsnorm-split) e [Small, commit ed1af97eb31b4ff504f9e09398ffe2c024a44380](https://huggingface.co/esilva/KapiCoder-Mongo-Small-ONNX/tree/ed1af97eb31b4ff504f9e09398ffe2c024a44380/dml-fp16-rmsnorm-split). Esses pacotes substituem o RMSNorm sem split como opção GPU preferida. Preservam pesos FP16, FIM, contexto de 2048 tokens e geração greedy de até 32 novos tokens; `ORT_DISABLE_ALL` está persistido na configuração.
 
-Na Adreno X1-45, 200 exemplos completaram sem exceções, com match textual de 39,5% contra 40% da referência BF16; TTFT mediano 1,254 s e decode mediano 3,45 tokens/s. Pico RSS 7,24 GiB. Operações auxiliares em CPU foram observadas. Resultados são proxy sintético, sem execução de JavaScript ou qualificação na IDE. O export original não produz resultados corretos neste notebook.
+| Modelo / protocolo | Casos | Match textual | Prefixo aceito médio | TTFT mediano | Decode mediano | Pico RSS |
+| --- | --- | --- | --- | --- | --- | --- |
+| Nano, processo único | 200 | 39,5% | 2,57 tokens | 1233 ms | 3,69 tokens/s | 8,21 GiB |
+| Small, 8 processos novos de 25 casos | 200 | 42% | 2,57 tokens | 2203 ms | 2,82 tokens/s | 5,81 GiB por processo filho |
+
+Evidências: `reports/snapdragon/nano-gpu-rmsnorm-split-200.json`, `nano-rmsnorm-split-vs-bf16-detailed.json`, `small-gpu-rmsnorm-split-batched-exe-200.json` e `small-rmsnorm-split-batched-vs-bf16.json`. O Nano completou os 200 casos em um processo. O Small em processo único falhou após 175 casos com `DeviceRemoved` (`0x887A0005`); o protocolo aprovado para estes 200 casos recarrega o modelo a cada 25 requisições e não demonstra estabilidade contínua em uma sessão. RSS é memória do processo, não VRAM. As medianas de decode usam somente observações não nulas; o GenAI pode omitir o EOS.
+
+O profiling confirmou kernels DirectML e registrou operações auxiliares em CPU nos dois modelos. A comparação permanece `proxy: true`, `qualified: false`, sem execução do JavaScript gerado ou homologação na IDE. Nano CPU int4 continua como padrão da IDE. A validação dos LLMs NPU/QNN permanece incompleta.
 
 ```powershell
-# Download do artefato exato; autenticação pública não é necessária.
-env/.venv-snapdragon-tools/Scripts/python.exe -c "from huggingface_hub import snapshot_download; snapshot_download('esilva/KapiCoder-Mongo-Nano-ONNX',revision='b173484e97e24978d521a2723fa300f3f1d26224',allow_patterns=['dml-fp16-rmsnorm/*'],local_dir='C:/dev/models/Nano-Adreno-tested')"
-tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --backend dml --model C:/dev/models/Nano-Adreno-tested/dml-fp16-rmsnorm --corpus data/calib/snapdragon-20261026/evaluation.jsonl --out reports/snapdragon/nano-gpu-repeat.json
+# Baixa os snapshots de origem fixados e verifica identidade e manifesto dos exports.
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_models.py --config configs/snapdragon.json
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_exports.py --config configs/snapdragon.json --catalog experimental_exports --models nano small
+
+# Nano: execução contínua dos 200 casos.
+tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --backend dml --model C:/dev/models/KapiCoder-Mongo-Nano-ONNX/ce0a7bd6c431bc6737e0b90a5a06dbba1ba8b2ea/dml-fp16-rmsnorm-split --corpus data/calib/snapdragon-20261026/evaluation.jsonl --out reports/snapdragon/nano-gpu-rmsnorm-split-repeat.json
+
+# Small: processos sequenciais novos, 25 casos por processo; saída e work-dir devem ser novos.
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/run_batched_gpu.py --runner tools/SnapdragonRunner/bin/Release/net10.0/win-arm64/SnapdragonRunner.exe --model C:/dev/models/KapiCoder-Mongo-Small-ONNX/ed1af97eb31b4ff504f9e09398ffe2c024a44380/dml-fp16-rmsnorm-split --corpus data/calib/snapdragon-20261026/evaluation.jsonl --batch-size 25 --work-dir reports/snapdragon/small-split-batches-repeat --out reports/snapdragon/small-gpu-rmsnorm-split-batched-repeat.json
 ```
 
-Small FP16 e os dois LLMs QNN ainda não foram aprovados. Consulte `reports/snapdragon/gpu-diagnosis-20261026.md` antes de reutilizar outros pacotes.
+Use o apphost `.exe` ARM64 com seus arquivos de runtime ao lado. Iniciar com `dotnet SnapdragonRunner.dll` selecionou ORT 1.17.1 incorreto neste ambiente e não reproduz o executor validado. O agregador verifica manifesto, IDs/ordem, hashes do executor e evidência DirectML de cada filho; registra oito cargas do modelo e o maior pico RSS dos filhos.
 
 ## Preparação RX / QNN CPU isolada (27/10/2026)
 
@@ -129,7 +142,21 @@ python scripts/snapdragon/verify_manifest.py <diretorio-novo>/qnn-prepared
 
 `prepare_qnn_transfer.py` preserva a fonte, copia todos os dados externos, normaliza o Composite relativo e verifica atribuições contra o snapshot fixado. `inspect_qnn_prepared.py` audita grafos, valores numéricos, interfaces e IDs sem criar sessões. A cópia passou os quatro checkers e os 456 prompts. Erros de hardlinks e caminhos do source estão preservados em relatório separado.
 
-O runner precisa reservar geração após o padding estático: 361 tokens com janela de 64 viram 384; 32 novos exigem max_length=416. A correção está em generation_budget e rejeita orçamento acima da capacidade sem truncar. O controle manual `probe_qnn_static_cpu.py --model <pacote> --out <relatorio>` confirmou 32 tokens na CPU. Qualidade completa do pipeline QNN, compilação HTP e geração próxima da capacidade ainda pendem.
+O runner reserva geração após o padding estático sem truncar: 361 tokens com janela 64 viram 384 e exigem orçamento mínimo de 416. No pacote preparado executado em CPU, `max_length` é esse mínimo (padding + 32). No QNN compilado, o cache mantém `max_length=2048` fixo e o loop limita manualmente a geração a 32 tokens. O controle `probe_qnn_static_cpu.py --model <pacote> --out <relatorio>` confirmou 32 tokens na CPU. A janela 64 não aceita o limite de 2016 tokens de entrada mais 32 de saída: o padding já ocupa 2048. O teste desse limite na NPU aguarda a variante de janela 32.
+
+## Nano NPU: 200 casos com janela 64
+
+```powershell
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/compile_qnn_context.py --model <context.onnx> --model <iterator.onnx> --manifest <manifesto-transferencia.json> --affinity-htp --free-dim past_sequence_length=2048 --weight-sharing --out-dir <novos-contextos>
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/assemble_qnn_package.py --prepared <pacote-preparado> --compiled <novos-contextos> --source-tokenizer C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --out-dir <novo-pacote-misto>
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py --model <novo-pacote-misto> --corpus data/calib/snapdragon-20261026/evaluation.jsonl --backend qnn --config configs/snapdragon.json --out reports/snapdragon/nano-npu-repeat.json
+```
+
+O Nano compilado completou os 200 casos em um processo: match textual de 39,5% e prefixo aceito médio de 2,495 tokens, contra 40% e 2,585 da referência BF16. TTFT mediano de 156,76 ms (p95 243,38 ms), decode mediano de 56,63 tokens/s, pico RSS de 958795776 bytes (0,893 GiB), tempo total de 76,355 s e carga do modelo de 1,559 s. Evidências: `reports/snapdragon/nano-npu-compiled-window64-200.json`, `nano-npu-window64-vs-bf16.json` e `nano-npu-window64-200-stage-summary.json`.
+
+O pipeline é misto: context registrou 881 kernels QNN/0 CPU e iterator 2333 QNN/0 CPU; embeddings registrou 6428 kernels CPU e lm_head 5066 CPU. Esses eventos ORT e a configuração real do backend HTP comprovam execução QNN das etapas transformer, sem pipeline 100% NPU. O CSV QNN solicitado não apareceu no teste completo; não há timings HTP em CSV do LLM. O teste micro GQA dispõe de CSV próprio e não substitui essa evidência.
+
+A receita de compilação, montagem e execução está em `docs/snapdragon-qnn.md`. O assembler restaura os arquivos originais do tokenizer com identidade e hashes do snapshot, e usa `disable_cpu_ep_fallback='1'` como string nas sessões context/iterator. Permanecem FIM, greedy, 32 novos tokens e capacidade 2048, com a restrição de padding da janela 64. São resultados sintéticos `proxy: true`, `qualified: false`; o JavaScript não foi executado e a IDE não foi homologada. Small NPU está em preparação remota. A meta NPU continua ativa até validar a janela 32 na NPU, incluindo o limite 2016+32.
 
 ## Janela 32 para preservar entrada máxima
 

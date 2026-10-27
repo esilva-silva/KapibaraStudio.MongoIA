@@ -50,7 +50,23 @@ O helper `scripts/snapdragon/compile_qnn_context.py` usa ORT/QNN ARM64 diretamen
 
 ```powershell
 env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/compile_qnn_context.py --smoke --out-dir tmp/qnn-context-smoke-20261027
-env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/compile_qnn_context.py --model <prefill.onnx> --model <iterator.onnx> --manifest <manifesto-transferencia.json> --weight-sharing --out-dir <nova-pasta-contextos>
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/compile_qnn_context.py --model <context.onnx> --model <iterator.onnx> --manifest <manifesto-transferencia.json> --affinity-htp --free-dim past_sequence_length=2048 --weight-sharing --out-dir <nova-pasta-contextos>
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/assemble_qnn_package.py --prepared <pacote-preparado> --compiled <nova-pasta-contextos> --source-tokenizer C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --out-dir <novo-pacote-misto>
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py --model <novo-pacote-misto> --corpus data/calib/snapdragon-20261026/evaluation.jsonl --backend qnn --config configs/snapdragon.json --out reports/snapdragon/nano-npu-repeat.json
 ```
 
 O manifesto deve cobrir ONNX e dados externos com `path`, `bytes` e `sha256`. O diretório de saída precisa ser novo. O helper verifica os binários referenciados pelo EPContext; compilação de LLM é registrada como `compiled_not_inference_validated`. Apenas o smoke recarrega o contexto e verifica a saída fixa, com fallback desabilitado. Nem o código nem um smoke aprovado substituem geração e comparação dos LLMs completos no HTP.
+
+`--affinity-htp` fixa GroupQueryAttention em HTP; `--free-dim past_sequence_length=2048` fixa a dimensão livre do cache, e `--weight-sharing` compartilha os pesos entre context/iterator. Informe os dois grafos nessa ordem. O assembler verifica manifesto, hashes dos artefatos compilados e identidade do snapshot do tokenizer; restaura seus arquivos originais exatos e mantém embeddings/lm_head em CPU. Context/iterator usam backend HTP e `disable_cpu_ep_fallback='1'` como string no GenAI; na sessão ORT de compilação, a entrada equivalente é `session.disable_cpu_ep_fallback` com valor string `'1'`.
+
+O QNN compilado exige `max_length=2048` fixo para o cache; o runner limita manualmente a geração a 32 tokens, greedy, preservando FIM. O orçamento também exige prompt com padding mais 32 dentro de 2048, sem truncamento implícito. Para o pacote preparado em CPU, `max_length` é padding + 32: 361 tokens com janela 64 viram 384 e pedem 416. Não aplicar esse 416 ao cache QNN fixo.
+
+## Evidência Nano NPU e limite pendente
+
+O pacote Nano de janela 64 passou os 200 casos em processo único (`reports/snapdragon/nano-npu-compiled-window64-200.json`). A comparação `nano-npu-window64-vs-bf16.json` registra match textual de 39,5%, prefixo aceito médio de 2,495 tokens (BF16: 40% e 2,585), TTFT mediano de 156,76 ms/p95 243,38 ms e decode mediano de 56,63 tokens/s. Pico RSS: 958795776 bytes (0,893 GiB); tempo total: 76,355 s; carga: 1,559 s. Permanece `proxy: true`, `qualified: false`, sem executar JavaScript ou homologar a IDE.
+
+`nano-npu-window64-200-stage-summary.json` separa a atribuição: context tem 881 kernels QNN/0 CPU, iterator 2333 QNN/0 CPU, embeddings 6428 CPU e lm_head 5066 CPU. É um pipeline misto. Os perfis ORT e a configuração real HTP sustentam a execução transformer na NPU. O CSV QNN solicitado não foi produzido para esse LLM; não há timings HTP em CSV do modelo completo. O microteste GQA tem CSV disponível, com escopo restrito ao microteste.
+
+A janela 64 não aceita 2016 tokens de entrada mais 32 de saída: o prompt é arredondado para 2048 antes da geração. A variante janela 32 v2 passou o controle CPU 2016+32 e preserva os arquivos originais do tokenizer, mas seu upload segue bloqueado aguardando aprovação específica do usuário após rejeição automática. Ainda não há validação desse limite na NPU. Small NPU está em preparação remota; a meta NPU continua ativa até a validação da variante janela 32 e do limite, sem alterar Nano CPU int4 como padrão da IDE.
+
+A recarga direta dos mesmos EPContexts também gerou CSV físico HTP em ambos os estágios: `reports/snapdragon/nano-qnn-compiled-context-htp.csv` e `nano-qnn-compiled-iterator-htp.csv`. As sondas `probe_compiled_qnn.py` usaram entradas sintéticas, fallback CPU desabilitado, um evento QNN e nenhum CPU por estágio, saídas finitas e encerramento com código zero. Isso comprova o backend físico; os tempos dessas sondas não são métricas de geração do corpus. Os relatórios `nano-qnn-compiled-*-direct-profile.json` fixam os hashes das wrappers e do binário compartilhado usados também no teste de 200 casos. O CSV da execução GenAI completa continua ausente; os perfis ORT dessa execução são a evidência de atribuição por estágio.
