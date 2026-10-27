@@ -13,3 +13,13 @@ A preparação CPU completou ModelBuilder, conversão QDQ, cirurgias e fixação
 Ainda pendem calibração dos 256 prompts, Split/StaticLLM, controles CPU de 32 tokens e de 2016+32, auditoria de grafos e tokenizer original byte a byte, manifesto de pacote e avaliação física HTP. Energia e custo monetário não foram medidos. Nenhum pacote Small será publicado antes de aprovação do artefato concreto.
 
 Utilitários e testes pertinentes: 100 passaram e um foi ignorado. Execução manual de modelos permanece fora de CI.
+
+## Cobertura efetiva do GPTQ auditada
+
+A seleção continua com 256 prompts e a calibração de ativações é um fluxo separado de 256 entradas. A reprodução do pré-processador instalado revelou que o JOIN do GPTQ conserva 29 blocos de 2048 tokens e descarta a cauda de 1881 tokens: 248 IDs têm todos os tokens representados, um ID tem 177/290 tokens e sete IDs são omitidos. Desses 248, 220 permanecem em um único bloco e 28 atravessam fronteiras; cobertura integral de tokens não significa contexto indiviso.
+
+O histórico registrou contagens/comprimentos, não hashes ou IDs. A atribuição por ID é reconstrução verificável com código e entradas fixados, detalhada em gptq-calibration-token-attribution-rx7800xt.json; não é captura histórica dos tokens. A perda decorre do JOIN, sem truncamento individual, embaralhamento ou filtro posterior dos 29 blocos.
+
+Não há flag suportada no Olive0.13 para conservar a cauda. Uma política futura explícita poderia emitir o bloco final de 1881 tokens (30 lotes, mesmos 256 IDs, sem padding); sua preparação foi validada apenas em CPU. Isso mudaria os pesos e exigiria repetir GPTQ, calibração de ativações e avaliação. Não foi executado e não garante melhora de qualidade. Se o requisito for manter cada prompt indiviso, será necessária outra política de agrupamento.
+
+O job Small atual foi preservado. As amostras de memória mostram RSS próximo de 37 GB e memória privada de 40,7 GB, com margem de commit de 11,8 GB e paginação instantânea zerada nas amostras observadas. Não existe checkpoint configurado dos ranges parciais; interromper perderia a calibração em curso. CalibMaxIntermediateOutputs não foi aplicado: na versão instalada, o caminho inspecionado limpa a coleção antes de computar ao atingir o limite, sem equivalência demonstrada.
