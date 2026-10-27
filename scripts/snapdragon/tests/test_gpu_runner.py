@@ -51,6 +51,17 @@ class RunnerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             runner.check_ids([1] * 2017)
 
+    def test_static_prefill_padding_preserves_new_token_budget(self):
+        self.assertEqual(runner.generation_budget(361, 2048, 64), (384, 416))
+        self.assertEqual(runner.generation_budget(384, 2048, 64), (384, 416))
+        self.assertEqual(runner.generation_budget(361), (361, 393))
+        self.assertEqual(runner.generation_budget(1984, 2048, 64), (1984, 2016))
+        with self.assertRaisesRegex(ValueError, 'Padded prompt'):
+            runner.generation_budget(1985, 2048, 64)
+        for window in (0, -1, True, '64'):
+            with self.subTest(window=window), self.assertRaises(ValueError):
+                runner.generation_budget(361, 2048, window)
+
     def test_timing_excludes_first_token_from_decode_rate(self):
         r = runner.measurement([1, 2, 3], 'x', 10, 11, 13, 'eos', 5)
         self.assertEqual(r['ttft_ms'], 1000)

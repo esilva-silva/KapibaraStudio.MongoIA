@@ -35,3 +35,19 @@ Auditoria do StaticLLM Olive0.13 confirmou: context_length64 é o bloco de prefi
 StaticLLM gera context.onnx e iterator.onnx compartilhando external_data do transformer; transformer.onnx pode ser apagado enquanto transformer.onnx.data continua necessário. O pacote deve incluir TODOS os arquivos referenciados por locations, não apenas dados com nome igual ao grafo.
 
 O EPContextBinaryGenerator do Olive compila os grupos context/iterator em HTP e preserva embeddings/lm_head fora desses grupos. O desenho é híbrido: embeddings Gather4bit e lm_head MatMulNBits8bit podem executar em CPU. Desabilitar fallback nas sessões compiladas do transformer não prova todo o LLM na NPU. O compilador ARM deve receber somente os grafos dos grupos context/iterator, preservando os componentes CPU e registrando profiling por componente.
+
+## Preparação concluída e transferência experimental
+
+A v6 completou 256 entradas em CPU (1053,44 s de iteração), OnnxStaticQuantization em 1061,843 s, Split em 1,078 s e StaticLLM em 0,969 s. O wrapper falhou depois de emitir os artefatos porque Olive remove output_dir do dicionário. A falha foi preservada; o wrapper agora captura o caminho antes da chamada. Nenhuma repetição da calibração foi necessária.
+
+O source mantém hardlinks e 25 referências antigas ao cache; o checker ONNX 1.23 recusou links múltiplos por segurança. A proteção foi mantida: o pacote foi copiado para um diretório novo, com recursos próprios e Composite relativo. Os quatro grafos da cópia passaram full_check, com floats finitos, escalas Q/DQ positivas, nenhuma referência fora do pacote e paridade do tokenizer em 456 prompts. Escalas assinadas dos pesos GatherBlockQuantized foram quantificadas separadamente das escalas de ativação.
+
+Controle CPU com GenAI 0.18: o prompt de 361 tokens recebe padding até 384. O orçamento de 393 produzia apenas 9 tokens novos; com orçamento de 416, produziu 32 tokens plausíveis, começando pelo ID 1666. O runner agora reserva espaço após padding, registra padded_prompt_tokens/max_length_requested e recusa estouro sem truncamento. Esse controle não substitui a avaliação dos 200 casos ou a medição na NPU.
+
+O pacote v7 contém 30 arquivos mais export_manifest.json. LICENSE, NOTICE e REPLAY_ATTRIBUTION foram verificadas contra o snapshot fixado. Publicação: https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/39a55f1c17411d8d2cfa0167095bff5250f7c98e/qnn-prepared . Branch experimental/snapdragon-qnn-rx7800xt-20261027. O download público dos 31 arquivos foi concluído e todos os hashes conferiram. O manifesto remoto também corresponde ao local. A publicação é preparação W4A16; a compilação de EPContext HTP ainda depende do Snapdragon. O catálogo e o padrão Nano CPU int4 permanecem como estavam.
+
+Antes de compilar no ARM, verificar o manifesto e preservar pipeline/model_config relativo. make_qnn_recipe.rebase_composite resolve os recursos para o diretório baixado. O compilador direto deve receber context.onnx e iterator.onnx com compartilhamento de pesos; embeddings/head permanecem componentes CPU. Ainda pendem geração de EPContext HTP, profiling QNN, avaliação dos 200 itens na NPU, limites próximos da capacidade, cancelamento e paridade. Nenhuma inferência HTP foi realizada neste host.
+
+Os relatórios dentro de audit registram os estados observados durante a preparação; o relatório estrutural aprovado e o manifesto de transferência são as evidências finais dessa cópia. A avaliação de qualidade publicada é a referência GPTQ, não uma avaliação do pipeline ONNX na NPU.
+
+Suíte dos scripts: 62 testes passaram e um foi ignorado por ausência do wheel opcional de inspeção. Benchmarks permanecem manuais. Os repositórios originais IDE b2164ab e MongoIA d01e04b estavam limpos na conferência.

@@ -117,3 +117,16 @@ Para a fase CPU, iniciar processo com HIP_VISIBLE_DEVICES=-1, HF_HUB_OFFLINE=1 e
 `make_qnn_recipe.py` fixa somente kv_cache_dim, obtido de head_dim ou hidden_size/num_attention_heads verificados, antes da calibração. Nunca congelar past_sequence_length para contornar o leitor. Modelos GPTQ serializados com load_kwargs:null precisam de `{}` na configuração de retomada. A v6 e a alteração derivada de capacidade2048 estão documentadas nos relatórios, sem modificar o snapshot ou os pesos originais.
 
 Transferir todos os dados externos referenciados, inclusive transformer.onnx.data compartilhado entre context/iterator, Composite, genai_config e tokenizer. Compilar HTP apenas context/iterator; embeddings/head separados podem usar CPU. Fallback desabilitado nessas sessões não prova pipeline100%NPU. Validar shapes, IDs, geração atravessando blocos64 e capacidade2048, além de profiling real no Snapdragon.
+
+## Nano QNN preparado para transferência
+
+A preparação completa está no commit imutável Hugging Face `39a55f1c17411d8d2cfa0167095bff5250f7c98e`, prefixo `qnn-prepared`, branch `experimental/snapdragon-qnn-rx7800xt-20261027`. É uma publicação intermediária para compilação HTP no Snapdragon, com qualified=false. Nano CPU int4 continua como padrão da IDE. O download público dos 31 arquivos foi verificado por tamanho e SHA-256.
+
+```powershell
+python -c "from huggingface_hub import snapshot_download; snapshot_download('esilva/KapiCoder-Mongo-Nano-ONNX', revision='39a55f1c17411d8d2cfa0167095bff5250f7c98e', allow_patterns=['qnn-prepared/**'], local_dir='<diretorio-novo>', token=False)"
+python scripts/snapdragon/verify_manifest.py <diretorio-novo>/qnn-prepared
+```
+
+`prepare_qnn_transfer.py` preserva a fonte, copia todos os dados externos, normaliza o Composite relativo e verifica atribuições contra o snapshot fixado. `inspect_qnn_prepared.py` audita grafos, valores numéricos, interfaces e IDs sem criar sessões. A cópia passou os quatro checkers e os 456 prompts. Erros de hardlinks e caminhos do source estão preservados em relatório separado.
+
+O runner precisa reservar geração após o padding estático: 361 tokens com janela de 64 viram 384; 32 novos exigem max_length=416. A correção está em generation_budget e rejeita orçamento acima da capacidade sem truncar. O controle manual `probe_qnn_static_cpu.py --model <pacote> --out <relatorio>` confirmou 32 tokens na CPU. Qualidade completa do pipeline QNN, compilação HTP e geração próxima da capacidade ainda pendem.

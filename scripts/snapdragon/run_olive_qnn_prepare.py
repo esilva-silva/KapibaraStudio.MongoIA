@@ -35,9 +35,10 @@ def run(config_path,report_path):
                 report_path.write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8');raise
         Pass.run=timed_pass
         from olive.workflows import run as olive_run
+        # Olive mutates/pops workflow fields from this dictionary. Capture first.
+        final_config=Path(config['output_dir'])/'model_config.json'
         result=olive_run(config,tempdir=str(config_path.parent/'qnn-tmp'))
         report['workflow_result_nonempty']=bool(result)
-        final_config=Path(config['output_dir'])/'model_config.json'
         report['final_model_config_exists']=final_config.is_file()
         if not result or not final_config.is_file():raise RuntimeError('Olive produced no final model_config; inspect pass failures in the log')
         report.update(status='workflow_returned_artifact_validation_pending',final_model_config=str(final_config))
