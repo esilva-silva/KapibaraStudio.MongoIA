@@ -14,7 +14,7 @@ python -m unittest discover -s scripts/snapdragon/tests
 
 A [receita oficial Qwen2.5 1.5B QNN](https://github.com/microsoft/olive-recipes/blob/main/Qwen-Qwen2.5-1.5B-Instruct/QNN/config.json) é um ponto de partida, não uma receita validada para estes pesos: fixa GPTQ em `cuda`, calibração no CUDA EP, contexto de 64 e `soc_model` 60. Em uma cópia da receita, configure o caminho do modelo local, ambiente QNN e opções apropriadas ao dispositivo, sem adivinhar SoC. A execução de referência é `olive run --config <copia-adaptada.json>`; fixe e registre versões, revisões, dataset de calibração e logs antes de executá-la. Não execute essa receita sem adaptação no notebook.
 
-Uma máquina AMD ROCm pode expor o dispositivo por `torch.cuda`; isso não garante que GPTQModel, seus kernels ou ONNX Runtime CUDA EP sejam compatíveis com ROCm. Antes da quantização completa, registre `torch.version.hip`, `torch.cuda.is_available()`, dispositivo, versões dos pacotes e rode uma quantização GPTQ pequena com o backend exato escolhido; confirme também que a calibração usa um provider efetivamente disponível (CPU se necessário). O Nano foi posteriormente compilado e avaliado no HTP conforme a evidência abaixo; a preparação do Small ainda está em andamento. Não substitua silenciosamente um estágio nem declare o resultado equivalente à receita original. Calibre com exemplos representativos de tarefas MongoDB e valide perda de qualidade.
+Uma máquina AMD ROCm pode expor o dispositivo por `torch.cuda`; isso não garante que GPTQModel, seus kernels ou ONNX Runtime CUDA EP sejam compatíveis com ROCm. Antes da quantização completa, registre `torch.version.hip`, `torch.cuda.is_available()`, dispositivo, versões dos pacotes e rode uma quantização GPTQ pequena com o backend exato escolhido; confirme também que a calibração usa um provider efetivamente disponível (CPU se necessário). O Nano foi posteriormente compilado e avaliado no HTP conforme a evidência abaixo; o Small corrigido também foi preparado, compilado e avaliado no HTP. Não substitua silenciosamente um estágio nem declare o resultado equivalente à receita original. Calibre com exemplos representativos de tarefas MongoDB e valide perda de qualidade.
 
 O [QNN EP](https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html) documenta quantização em Python x64, inclusive em Windows ARM64, e inferência ARM64. O modelo exige operadores e shapes suportados e quantização adequada ao HTP. A compilação do contexto no dispositivo e o uso do [ONNX Runtime GenAI](https://github.com/microsoft/onnxruntime-genai/blob/main/docs/qnn.md) dependem de artefatos e versões compatíveis. Comece pelo Nano, valide contexto, tokenizer, geração, ausência de fallback, memória e qualidade; depois repita com Small. Smoke de grafo pequeno não substitui essas provas.
 
@@ -41,7 +41,7 @@ A sonda usa um Qwen2 aleatório de uma camada e até quatro prompts truncados em
 
 Por padrão, a sonda exige que o dispositivo CUDA/ROCm de índice 0 seja a **RX 7800 XT**. O relatório enumera os dispositivos visíveis e sua VRAM; se o índice 0 for a GPU integrada, a sonda para antes da quantização. Selecione a GPU discreta usando `HIP_VISIBLE_DEVICES` antes de iniciar um novo processo e confira a enumeração. `--expected-gpu` permite configurar outro identificador explícito quando apropriado.
 
-A preparação mantém o target `QNNExecutionProvider` para selecionar `get_qnn_qdq_config` no Olive 0.13, enquanto a execução da calibração de ativações usa `CPUExecutionProvider`. Informe `--prepare-python <diretorio-do-python-qnn-x64>` se o ambiente QNN da máquina de preparação diferir do ambiente indicado por `--qnn-python`. O ambiente e o provider precisam ser reconhecidos pelo Olive; a geração da configuração não comprova que o fluxo executou. O GPTQ usa estratégia `join`, até 128 blocos de 2048 tokens, que não equivalem a 128 prompts; a calibração de ativações usa até 256 exemplos linha a linha. A validação local do Nano em 2016 tokens de entrada mais 32 de saída é descrita abaixo; não implica o mesmo resultado para o Small.
+A preparação mantém o target `QNNExecutionProvider` para selecionar `get_qnn_qdq_config` no Olive 0.13, enquanto a execução da calibração de ativações usa `CPUExecutionProvider`. Informe `--prepare-python <diretorio-do-python-qnn-x64>` se o ambiente QNN da máquina de preparação diferir do ambiente indicado por `--qnn-python`. O ambiente e o provider precisam ser reconhecidos pelo Olive; a geração da configuração não comprova que o fluxo executou. O GPTQ usa estratégia `join`, até 128 blocos de 2048 tokens, que não equivalem a 128 prompts; a calibração de ativações usa até 256 exemplos linha a linha. A validação local do Nano em 2016 tokens de entrada mais 32 de saída é descrita abaixo; o Small corrigido também passou seu próprio boundary, descrito abaixo.
 
 
 ## Compilação direta no notebook
@@ -81,7 +81,41 @@ env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py -
 
 O fallback permanece desabilitado como string `disable_cpu_ep_fallback='1'` em context/iterator. Cache QNN fixa `max_length=2048`; o loop limita 32 novos tokens manualmente. O pacote preparado CPU usa orçamento padding+32. A transferência privada final passou download, verificação de origem original e smoke NPU: commit `a42805ec7740e84dd392e316eab3486dd4e130d7`, prefixo `nano/htp-fim-exact-v1`, manifesto SHA-256 `0720f8859521628fc43aea38d73c5cc6d7e32156e1bcb98c9ecff3199ecf4abe`. `configs/snapdragon.json` já registra esses pins em `npu_exports.nano` (repo_id/revision/subfolder/manifest_sha256). Leia esses campos ao baixar a release final; os pins de preparação acima e os legados abaixo têm escopos diferentes.
 
-Small NPU continua em calibração CPU remota, com 91/256 entradas na última observação. As GPUs Nano/Small FP16 permanecem validadas e inalteradas. A meta das quatro variantes ainda não foi concluída; Nano CPU int4 segue padrão da IDE.
+Small NPU corrigido também passou calibração, 200 casos, boundary e transferência final privada com download e geração NPU da cópia baixada. As GPUs Nano/Small FP16 permanecem validadas e inalteradas. Nano CPU int4 segue padrão da IDE.
+
+## Comparação atual das quatro variantes
+
+Todos os resultados usam os mesmos 200 casos e permanecem `proxy:true`, `qualified:false`. GPU usa FP16 DirectML; NPU usa a calibração corrigida `fim-exact-tail-v1` com transformer HTP e embeddings/head CPU. Cada variante passou o boundary de 2016+32.
+
+| Variante | Protocolo | Match / BF16 | Prefixo aceito / BF16 | TTFT p50 | TTFT p95 | Decode mediano | Pico RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Nano GPU | 1 processo, 200 | 39,5% / 40% | 2,57 / 2,585 | 1233,471 ms | 1982,475 ms | 3,691 tokens/s | 8813236224 bytes |
+| Nano NPU corrigido | 1 processo, 200 | 39% / 40% | 2,46 / 2,585 | 190,184 ms | 303,207 ms | 57,613 tokens/s | 946950144 bytes |
+| Small GPU | 8 processos × 25 | 42% / 42% | 2,57 / 2,55 | 2202,518 ms | 3134,338 ms | 2,822 tokens/s | 6238363648 bytes por filho |
+| Small NPU corrigido | 1 processo, 200 | 41% / 42% | 2,585 / 2,55 | 372,960 ms | 579,178 ms | 25,833 tokens/s | 1971896320 bytes |
+
+RSS é memória do processo, não VRAM. Small GPU não comprovou estabilidade contínua: a tentativa em processo único falhou após 175 casos. As medianas de decode GPU usam observações não nulas; o GenAI pode omitir EOS. Os resultados NPU corrigidos incluem os eventos EOS registrados pelo executor. As releases privadas Nano e Small passaram na conferência de todos os arquivos por download e na geração NPU das cópias baixadas.
+
+## Small NPU corrigido: 200 casos e boundary validados
+
+O pacote avaliado é `C:/dev/models/KapiCoder-Mongo-Small-QNN-Compiled/mixed-htp-fim-exact-v1`; sua cópia entregue é `validated-fim-exact-v1` na mesma raiz, com os mesmos bytes de runtime avaliados. Passou 200 casos em processo único e o boundary de 2016+32. Os perfis registram 1667 kernels QNN no context e 2363 no iterator, sem kernels CPU nesses estágios; embeddings/head usam CPU.
+
+Evidências sob `reports/snapdragon/`: `small-npu-fim-exact-200.json`, `small-npu-fim-exact-vs-bf16.json`, `small-npu-fim-exact-stage-summary.json`, `small-npu-fim-exact-boundary-2048.json` e `small-qnn-fim-exact-compile.json`. As sondas físicas `small-fim-exact-htp-context-probe/report.json` e `small-fim-exact-htp-iterator-probe/report.json` produziram CSV HTP; seus timings sintéticos não são métricas de geração.
+
+A preparação privada está em `esilva/KapiCoder-Mongo-Snapdragon-Transfer`, commit `2c6f3ce72c4ffdf7ff1f4eb449efd1f565b9fd95`, prefixo `small/qnn-fim-exact-v3-prepared`, manifesto SHA-256 `db2be4555d5b501afa8782f8d270bcb304ffb2fadc747f6e26da7a270653f450`. Sua auditoria comprovou 256 IDs/máscaras FIM exatos, 61273 tokens GPTQ, 30 blocos incluindo a cauda de 1881 e hashes idênticos nos dois hooks downstream; ativações QUInt16 e KV head 128. Os arquivos originais do tokenizer e de geração foram preservados.
+
+```powershell
+# Reproduzir inferência do pacote Small avaliado, sem sobrescrever evidências.
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py --model C:/dev/models/KapiCoder-Mongo-Small-QNN-Compiled/mixed-htp-fim-exact-v1 --corpus data/calib/snapdragon-20261026/evaluation.jsonl --backend qnn --out reports/snapdragon/small-npu-fim-exact-repeat.json
+
+# Obter os pins finais verificados do Small no config.
+$smallConfig = Get-Content configs/snapdragon.json -Raw | ConvertFrom-Json
+$smallExport = $smallConfig.npu_exports.small
+$smallRawRevision = $smallConfig.models.small.revision
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id $smallExport.repo_id --revision $smallExport.revision --subfolder $smallExport.subfolder --manifest-sha256 $smallExport.manifest_sha256 --source "C:/dev/models/KapiCoder-Mongo-Small/$smallRawRevision" --require-original-tokenizer
+```
+
+O comando de download final exige que `npu_exports.small` já contenha os pins verificados da release compilada; os pins da preparação acima são de outro artefato. A release final privada é o commit `54e169e170f6f3ba51eb0ebc3a37f8f83268a08a`, prefixo `small/htp-fim-exact-v1`, manifesto SHA-256 `e82e3cc5f6bcd0ffc3b31d5a4ed76cf3fb122726537d68b48742cde8dcc15ebb`. Passou download completo, identidade da origem/tokenizer e geração real NPU da cópia baixada. Não há homologação na IDE nem execução do JavaScript gerado. Nano CPU int4 continua padrão da IDE.
 
 ## Histórico legado: Nano NPU janela 32
 
@@ -106,7 +140,7 @@ $env32 = 'env/.venv-snapdragon-arm64/Scripts/python.exe'
 
 O diretório `local-window32-shapes-v1` já existe nesta máquina; para reproduzir a derivação, escolha outro diretório novo e ajuste `$prepared32`. A avaliação registra a execução QNN dos estágios de transformer e as partes CPU separadamente.
 
-A janela 64 permanece como histórico: passou 200 casos com 56,63 tokens/s e TTFT mediano de 156,76 ms, mas não atende ao limite 2016+32 porque o padding arredonda o prompt para 2048 antes da geração. O relatório é `reports/snapdragon/nano-npu-compiled-window64-200.json`. A calibração legada do Small foi concluída e arquivada; a revisão corrigida do Small continua em calibração CPU remota e ainda não tem resultado NPU de 200 casos.
+A janela 64 permanece como histórico: passou 200 casos com 56,63 tokens/s e TTFT mediano de 156,76 ms, mas não atende ao limite 2016+32 porque o padding arredonda o prompt para 2048 antes da geração. O relatório é `reports/snapdragon/nano-npu-compiled-window64-200.json`. A calibração legada do Small foi concluída e arquivada; a revisão corrigida do Small também já tem 200 casos e boundary validados, descritos acima.
 
 ## Histórico legado: conjunto selecionado e consumo por fase
 
@@ -114,14 +148,14 @@ A amostra comum contém 256 exemplos de calibração e 200 de avaliação, com g
 
 A reconstrução de dados em `reports/snapdragon/gptq-calibration-token-summary-rx7800xt.json`, validada contra as funções instaladas do Olive/GPTQ, encontrou o mesmo comportamento para Nano e Small: 29 blocos de 2048 tokens, 59.392 tokens consumidos de 61.273 concatenados. Isso cobre 248 prompts integralmente, um parcialmente e omite sete na cauda descartada. Vinte e oito dos prompts cobertos atravessam fronteiras de bloco. É uma reconstrução determinística dos dados, versões e receitas fixados; os jobs históricos não capturaram hashes dos tokens de entrada em tempo de execução.
 
-A calibração de ativações QNN é uma fase distinta. Nos jobs legados arquivados, Nano e Small concluíram a calibração de ativações; isso não comprova a política FIM corrigida, cuja execução do Small permanece separada e pendente. O campo genérico `status=completed` do helper QNN, sozinho, só indica que a configuração foi criada e não comprova que as 256 entradas terminaram. A auditoria final exige a contagem e o estado de consumo dessa fase, além dos testes do modelo compilado.
+A calibração de ativações QNN é uma fase distinta. Nos jobs legados arquivados, Nano e Small concluíram a calibração de ativações; isso não comprova a política FIM corrigida, comprovada separadamente nos traces corrigidos dos dois modelos. O campo genérico `status=completed` do helper QNN, sozinho, só indica que a configuração foi criada e não comprova que as 256 entradas terminaram. A auditoria final exige a contagem e o estado de consumo dessa fase, além dos testes do modelo compilado.
 
 A quantização legada não foi refeita pela auditoria inicial. A revisão corrigida abaixo executou novos GPTQ e calibração de ativações, preservando a cauda do JOIN e repetindo a avaliação do Nano. O relatório detalhado por ID e bloco está em `gptq-calibration-token-attribution-rx7800xt.json`.
 
-## Revisão FIM exata: Nano executado, Small em preparação
+## Revisão FIM exata: Nano e Small executados
 
 A auditoria adicional encontrou uma falha real na configuração legada de calibração de ativações: `add_special_tokens=true` com `bos_token=None` acrescenta o texto literal `None` e um EOS ao prompt. Os testes de geração dos artefatos legados continuam registrados, mas suas variantes NPU aguardam uma revisão de calibração antes de serem consideradas a entrega final. Os exports GPU FP16 permanecem os mesmos.
 
-A revisão `fim-exact-tail-v1` foi executada para o Nano em diretórios novos, preservando o histórico; o Small segue em preparação. `gptq_join_tail_v1.py` retém o bloco final de 1881 tokens e cobre os 256 prompts nos 30 blocos, sem adicionar dados ou padding. `prepare_fim_calibration.py` desativa special tokens e padding artificial na calibração de ativações, com batch1 e teto2048. O preflight local dos dois modelos confirmou os IDs e as máscaras originais de todos os 256 prompts, com comprimentos reais de8 a549 tokens; isso não comprova ainda execução do leitor Olive ou calibração do modelo.
+A revisão `fim-exact-tail-v1` foi executada para Nano e Small em diretórios novos, preservando o histórico. `gptq_join_tail_v1.py` retém o bloco final de 1881 tokens e cobre os 256 prompts nos 30 blocos, sem adicionar dados ou padding. `prepare_fim_calibration.py` desativa special tokens e padding artificial na calibração de ativações, com batch1 e teto2048. O preflight local dos dois modelos confirmou os IDs e as máscaras originais de todos os 256 prompts, com comprimentos reais de8 a549 tokens; os traces reais posteriores dos dois modelos também comprovaram essa execução e a calibração completa.
 
-O template isolado `qnn_cpu_sitecustomize.py` aceita `KAPI_QNN_FIM_PREFLIGHT=<preflight.json>` junto com `KAPI_QNN_PREP_TRACE_DIR` para conferir os IDs e as máscaras reais de cada lote antes da calibração. A política exata rejeita stride incompatível e exige256 correspondências completas. Nenhum arquivo do ambiente em uso deve ser trocado durante o job legado. O Nano já executou novos GPTQ, ranges, compilação e avaliações; o Small ainda precisa completar essas etapas. Não há novo treinamento.
+O template isolado `qnn_cpu_sitecustomize.py` aceita `KAPI_QNN_FIM_PREFLIGHT=<preflight.json>` junto com `KAPI_QNN_PREP_TRACE_DIR` para conferir os IDs e as máscaras reais de cada lote antes da calibração. A política exata rejeita stride incompatível e exige256 correspondências completas. Nenhum arquivo do ambiente em uso deve ser trocado durante o job legado. Nano e Small já executaram novos GPTQ, ranges, compilação e avaliações. Não há novo treinamento.

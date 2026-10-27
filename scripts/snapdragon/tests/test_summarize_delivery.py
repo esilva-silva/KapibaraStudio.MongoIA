@@ -6,6 +6,48 @@ import json
 scripts=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('delivery',scripts/'summarize_delivery.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 class SummaryTests(unittest.TestCase):
+    def test_explicit_activation_trace_overrides_legacy_without_invalid_fallback(self):
+        with tempfile.TemporaryDirectory(dir=scripts) as directory:
+            root = Path(directory); reports = root / 'reports/snapdragon'; reports.mkdir(parents=True)
+            config = {'required_npu_calibration_policy': 'fim-exact-tail-v1', 'samples': {'calibration_count': 256},
+                      'models': {name: {'revision': name + '-revision'} for name in ('nano', 'small')}, 'npu_exports': {}}
+            (reports / 'gptq-calibration-token-summary-rx7800xt.json').write_text(json.dumps({
+                'historical_runtime_token_hashes_captured': False,
+                'jobs': [{'source_snapshot': 'C:/snapshots/' + name + '-revision'} for name in ('nano', 'small')]}))
+            lengths = [{'tokens': n} for n in [2048] * 29 + [1881]]
+            stream = '07f7dec2ffed64e72f7d015bfd86bbce5d16f0297538c6fffd079fe9183da362'
+            receipt = {'policy': 'kapi_gptq_join_tail_v1', 'all_prompt_tokens_covered': True, 'selected_rows': 256,
+                'joined_tokens': 61273, 'consumed_tokens': 61273, 'add_special_tokens': False, 'padding': 'none',
+                'batch_size': 1, 'shuffle': False, 'batches': lengths, 'stream_token_ids_sha256': stream}
+            hook = {'matched': True, 'batch_count': 30, 'token_count': 61273, 'batches': lengths, 'stream_token_ids_sha256': stream}
+            job = {'status': 'completed', 'effective_gptq_calibration': {'batches': 30, 'min_tokens': 1881, 'max_tokens': 2048},
+                   'runtime_calibration_audit': {'quantize_entry': hook, 'after_prepare_dataset': hook}}
+            (root / 'receipt.json').write_text(json.dumps(receipt)); (root / 'job.json').write_text(json.dumps(job))
+            for name, head in (('nano', 64), ('small', 128)):
+                trace = {'calibration_status': 'input_complete', 'calibration_inputs_seen': 256, 'activation_type': 'QUInt16',
+                    'calibration_providers': ['CPUExecutionProvider'], 'first_input_shapes': {'past_key_values.0.key': {'shape': [1, 2, 0, head]}},
+                    'fim_preflight': {'all_match': True, 'fim_complete': True, 'matched': 256,
+                        'policy': {'add_special_tokens': False, 'pad_to_max_len': False, 'batch_size': 1}}}
+                (root / (name + '-corrected.json')).write_text(json.dumps(trace))
+                (reports / (name + '-qnn-cpu-calibration-trace-rx7800xt.json')).write_text('{legacy-invalid')
+                config['npu_exports'][name] = {'calibration_policy': 'fim-exact-tail-v1',
+                    'activation_calibration_trace': name + '-corrected.json', 'gptq_runtime_receipt': 'receipt.json', 'gptq_completion_report': 'job.json'}
+            phases = mod.calibration_phases(root, config)
+            self.assertTrue(all(p['status'] == 'input_complete' for p in phases['activation'].values()))
+            self.assertTrue(phases['activation']['small']['trace']['path'].endswith('small-corrected.json'))
+            # Even a complete legacy trace cannot rescue missing, partial or wrong-head explicit evidence.
+            trace = json.loads((root / 'small-corrected.json').read_text())
+            (reports / 'small-qnn-cpu-calibration-trace-rx7800xt.json').write_text(json.dumps(trace))
+            (root / 'small-corrected.json').unlink()
+            self.assertEqual(mod.calibration_phases(root, config)['activation']['small']['status'], 'not_validated')
+            trace['calibration_inputs_seen'] = 255
+            (root / 'small-corrected.json').write_text(json.dumps(trace))
+            self.assertEqual(mod.calibration_phases(root, config)['activation']['small']['status'], 'not_validated')
+            trace['calibration_inputs_seen'] = 256
+            trace['first_input_shapes']['past_key_values.0.key']['shape'][-1] = 64
+            (root / 'small-corrected.json').write_text(json.dumps(trace))
+            self.assertEqual(mod.calibration_phases(root, config)['activation']['small']['status'], 'not_validated')
+
     def test_explicit_evidence_set_never_falls_back_to_legacy(self):
         with tempfile.TemporaryDirectory(dir=scripts) as directory:
             root = Path(directory); reports = root / 'reports/snapdragon'; reports.mkdir(parents=True)

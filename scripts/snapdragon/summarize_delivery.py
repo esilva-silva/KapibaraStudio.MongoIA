@@ -323,6 +323,27 @@ def calibration_phases(root, config):
         matched = [j for j in jobs if PureWindowsPath(j.get('source_snapshot','')).name.lower() == revision.lower()]
         if len(matched) != 1:
             raise ValueError('GPTQ reconstruction source revision mismatch: ' + model)
+        spec = config.get('npu_exports', {}).get(model) or {}
+        if 'activation_calibration_trace' in spec:
+            phase = {'status': 'not_validated', 'source_revision': revision, 'expected_kv_head_size': head_size,
+                     'current_policy': spec.get('calibration_policy'), 'selection': 'explicit_current_trace'}
+            try:
+                trace_path = Path(spec['activation_calibration_trace'])
+                if not trace_path.is_absolute():
+                    trace_path = root / trace_path
+                trace = json.loads(trace_path.read_text(encoding='utf-8-sig'))
+                phase['trace'] = {'path': str(trace_path), 'sha256': sha(trace_path)}
+                policy_ok, reason, policy_evidence = calibration_policy_evidence(
+                    spec, config.get('required_npu_calibration_policy') or 'fim-exact-tail-v1', root)
+                phase.update(policy_evidence=policy_evidence, policy_reason=reason,
+                             inputs_seen=trace.get('calibration_inputs_seen'), provider=trace.get('calibration_providers'),
+                             activation_type=trace.get('activation_type'))
+                valid = policy_ok and activation_trace_ok(trace, config['samples']['calibration_count'], head_size)
+                phase['status'] = 'input_complete' if valid else 'not_validated'
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                phase['error'] = 'Invalid explicit activation trace: ' + str(exc)
+            phases['activation'][model] = phase
+            continue
         trace_path = root / 'reports/snapdragon' / f'{model}-qnn-cpu-calibration-trace-rx7800xt.json'
         if not trace_path.is_file():
             phases['activation'][model] = {'status': 'pending', 'source_revision': revision}

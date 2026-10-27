@@ -2,6 +2,8 @@
 
 Este fluxo usa os pesos publicados, sem novo treino. A preparação pesada é destinada ao Esilva-pc; inferência e medições finais são feitas no ESILVA-ARM. Configuração: `configs/snapdragon.json`. Nunca reutilize um export de outra geração apenas pelo nome do diretório.
 
+As quatro variantes passaram nos mesmos 200 exemplos e no limite de 2016+32 tokens. O aceite está em `reports/snapdragon/fim-exact-final-acceptance-20261027.json`; o comparativo completo está em `reports/snapdragon/delivery-summary-fim-exact-final-v3-20261027.json`. GPU usa os pins de `experimental_exports`; NPU corrigida usa `npu_exports`, com pacotes locais `C:/dev/models/KapiCoder-Mongo-{Nano,Small}-QNN-Compiled/validated-fim-exact-v1`. As duas releases NPU privadas passaram por download, hashes, identidade da origem e geração real da cópia baixada. Small GPU usa oito processos de 25 casos; isso não demonstra estabilidade contínua em uma sessão. Não há integração na IDE nesta etapa.
+
 ## Ambiente e snapshots
 
 Os ambientes isolados ficam em `env/.venv-snapdragon-tools` (preparação de amostras/testes) e `env/.venv-snapdragon-arm64` (ORT/QNN/GenAI). As dependências instaladas estão fixadas em `env/snapdragon-tools.lock.txt` e `env/snapdragon-arm64.lock.txt`. Use o Python da arquitetura correspondente. Não instale os dois locks no mesmo ambiente.
@@ -99,7 +101,7 @@ Para Nano e Small na Adreno X1-45, use o subdiretório `dml-fp16-rmsnorm-split` 
 
 Evidências: `reports/snapdragon/nano-gpu-rmsnorm-split-200.json`, `nano-rmsnorm-split-vs-bf16-detailed.json`, `small-gpu-rmsnorm-split-batched-exe-200.json` e `small-rmsnorm-split-batched-vs-bf16.json`. O Nano completou os 200 casos em um processo. O Small em processo único falhou após 175 casos com `DeviceRemoved` (`0x887A0005`); o protocolo aprovado para estes 200 casos recarrega o modelo a cada 25 requisições e não demonstra estabilidade contínua em uma sessão. RSS é memória do processo, não VRAM. As medianas de decode usam somente observações não nulas; o GenAI pode omitir o EOS.
 
-O profiling confirmou kernels DirectML e registrou operações auxiliares em CPU nos dois modelos. A comparação permanece `proxy: true`, `qualified: false`, sem execução do JavaScript gerado ou homologação na IDE. Nano CPU int4 continua como padrão da IDE. A validação dos LLMs NPU/QNN permanece incompleta.
+O profiling confirmou kernels DirectML e registrou operações auxiliares em CPU nos dois modelos. A comparação permanece `proxy: true`, `qualified: false`, sem execução do JavaScript gerado ou homologação na IDE. Nano CPU int4 continua como padrão da IDE. Os dois LLMs NPU/QNN corrigidos também passaram na avaliação e na transferência final descritas abaixo.
 
 ```powershell
 # Baixa os snapshots de origem fixados e verifica identidade e manifesto dos exports.
@@ -147,6 +149,40 @@ env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py -
 
 A transferência privada final foi verificada no commit `a42805ec7740e84dd392e316eab3486dd4e130d7`, prefixo `nano/htp-fim-exact-v1`, manifesto SHA-256 `0720f8859521628fc43aea38d73c5cc6d7e32156e1bcb98c9ecff3199ecf4abe`; download, origem original e smoke NPU passaram. `configs/snapdragon.json` já contém os pins verificados: use `npu_exports.nano.repo_id`, `revision`, `subfolder` e `manifest_sha256` para o download final, com `download_qnn_prepared.py --source <snapshot-original> --require-original-tokenizer`. Não reutilize os pins do pacote legado abaixo como se fossem da revisão corrigida. A receita completa está em `docs/snapdragon-qnn.md`.
 
+## Comparação atual das quatro variantes
+
+Todos os resultados usam os mesmos 200 casos e permanecem `proxy:true`, `qualified:false`. GPU usa FP16 DirectML; NPU usa a calibração corrigida `fim-exact-tail-v1` com transformer HTP e embeddings/head CPU. Cada variante passou o boundary de 2016+32.
+
+| Variante | Protocolo | Match / BF16 | Prefixo aceito / BF16 | TTFT p50 | TTFT p95 | Decode mediano | Pico RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Nano GPU | 1 processo, 200 | 39,5% / 40% | 2,57 / 2,585 | 1233,471 ms | 1982,475 ms | 3,691 tokens/s | 8813236224 bytes |
+| Nano NPU corrigido | 1 processo, 200 | 39% / 40% | 2,46 / 2,585 | 190,184 ms | 303,207 ms | 57,613 tokens/s | 946950144 bytes |
+| Small GPU | 8 processos × 25 | 42% / 42% | 2,57 / 2,55 | 2202,518 ms | 3134,338 ms | 2,822 tokens/s | 6238363648 bytes por filho |
+| Small NPU corrigido | 1 processo, 200 | 41% / 42% | 2,585 / 2,55 | 372,960 ms | 579,178 ms | 25,833 tokens/s | 1971896320 bytes |
+
+RSS é memória do processo, não VRAM. Small GPU não comprovou estabilidade contínua: a tentativa em processo único falhou após 175 casos. As medianas de decode GPU usam observações não nulas; o GenAI pode omitir EOS. Os resultados NPU corrigidos incluem os eventos EOS registrados pelo executor. As releases privadas Nano e Small passaram na conferência de todos os arquivos por download e na geração NPU das cópias baixadas.
+
+## Small NPU corrigido: 200 casos e boundary validados
+
+O pacote avaliado é `C:/dev/models/KapiCoder-Mongo-Small-QNN-Compiled/mixed-htp-fim-exact-v1`; sua cópia entregue é `validated-fim-exact-v1` na mesma raiz, com os mesmos bytes de runtime avaliados. Passou 200 casos em processo único e o boundary de 2016+32. Os perfis registram 1667 kernels QNN no context e 2363 no iterator, sem kernels CPU nesses estágios; embeddings/head usam CPU.
+
+Evidências sob `reports/snapdragon/`: `small-npu-fim-exact-200.json`, `small-npu-fim-exact-vs-bf16.json`, `small-npu-fim-exact-stage-summary.json`, `small-npu-fim-exact-boundary-2048.json` e `small-qnn-fim-exact-compile.json`. As sondas físicas `small-fim-exact-htp-context-probe/report.json` e `small-fim-exact-htp-iterator-probe/report.json` produziram CSV HTP; seus timings sintéticos não são métricas de geração.
+
+A preparação privada está em `esilva/KapiCoder-Mongo-Snapdragon-Transfer`, commit `2c6f3ce72c4ffdf7ff1f4eb449efd1f565b9fd95`, prefixo `small/qnn-fim-exact-v3-prepared`, manifesto SHA-256 `db2be4555d5b501afa8782f8d270bcb304ffb2fadc747f6e26da7a270653f450`. Sua auditoria comprovou 256 IDs/máscaras FIM exatos, 61273 tokens GPTQ, 30 blocos incluindo a cauda de 1881 e hashes idênticos nos dois hooks downstream; ativações QUInt16 e KV head 128. Os arquivos originais do tokenizer e de geração foram preservados.
+
+```powershell
+# Reproduzir inferência do pacote Small avaliado, sem sobrescrever evidências.
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py --model C:/dev/models/KapiCoder-Mongo-Small-QNN-Compiled/mixed-htp-fim-exact-v1 --corpus data/calib/snapdragon-20261026/evaluation.jsonl --backend qnn --out reports/snapdragon/small-npu-fim-exact-repeat.json
+
+# Obter os pins finais verificados do Small no config.
+$smallConfig = Get-Content configs/snapdragon.json -Raw | ConvertFrom-Json
+$smallExport = $smallConfig.npu_exports.small
+$smallRawRevision = $smallConfig.models.small.revision
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id $smallExport.repo_id --revision $smallExport.revision --subfolder $smallExport.subfolder --manifest-sha256 $smallExport.manifest_sha256 --source "C:/dev/models/KapiCoder-Mongo-Small/$smallRawRevision" --require-original-tokenizer
+```
+
+O comando de download final exige que `npu_exports.small` já contenha os pins verificados da release compilada; os pins da preparação acima são de outro artefato. A release final privada é o commit `54e169e170f6f3ba51eb0ebc3a37f8f83268a08a`, prefixo `small/htp-fim-exact-v1`, manifesto SHA-256 `e82e3cc5f6bcd0ffc3b31d5a4ed76cf3fb122726537d68b48742cde8dcc15ebb`. Passou download completo, identidade da origem/tokenizer e geração real NPU da cópia baixada. Não há homologação na IDE nem execução do JavaScript gerado. Nano CPU int4 continua padrão da IDE.
+
 ## Histórico legado: Nano QNN preparado
 
 A preparação completa está no commit imutável Hugging Face `39a55f1c17411d8d2cfa0167095bff5250f7c98e`, prefixo `qnn-prepared`, branch `experimental/snapdragon-qnn-rx7800xt-20261027`. É uma publicação intermediária para compilação HTP no Snapdragon, com qualified=false. Nano CPU int4 continua como padrão da IDE. O download público dos 31 arquivos foi verificado por tamanho e SHA-256.
@@ -176,7 +212,7 @@ env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/run_sample.py -
 
 O pipeline é misto: context e iterator usam QNN HTP com zero kernels CPU nas etapas transformer; embeddings e lm_head usam CPU. Os eventos ORT e a configuração real HTP comprovam atribuição das etapas. O CSV QNN solicitado não apareceu no teste completo; não há timings HTP em CSV do LLM. O teste micro GQA dispõe de CSV próprio, limitado ao microteste.
 
-A receita de compilação e montagem está em `docs/snapdragon-qnn.md`: `--affinity-htp --free-dim past_sequence_length=2048 --weight-sharing`. O assembler restaura os arquivos originais exatos do tokenizer e usa `disable_cpu_ep_fallback='1'` como string nas sessões context/iterator. Permanecem FIM, greedy, até 32 novos tokens, cache QNN com `max_length=2048` fixo e limite manual de geração. São resultados sintéticos `proxy: true`, `qualified: false`; o JavaScript não foi executado e a IDE não foi homologada. Nano CPU int4 continua padrão da IDE. Small NPU está em preparação remota.
+A receita de compilação e montagem está em `docs/snapdragon-qnn.md`: `--affinity-htp --free-dim past_sequence_length=2048 --weight-sharing`. O assembler restaura os arquivos originais exatos do tokenizer e usa `disable_cpu_ep_fallback='1'` como string nas sessões context/iterator. Permanecem FIM, greedy, até 32 novos tokens, cache QNN com `max_length=2048` fixo e limite manual de geração. São resultados sintéticos `proxy: true`, `qualified: false`; o JavaScript não foi executado e a IDE não foi homologada. Nano CPU int4 continua padrão da IDE. Small NPU corrigido passou 200 casos, boundary e verificação da transferência final privada.
 
 A janela 64 é histórica: passou 200 casos com 39,5% de match, 2,495 tokens de prefixo aceito, TTFT mediano 156,76 ms e decode mediano 56,63 tokens/s, mas não aceita 2016+32 devido ao padding. Seus relatórios `nano-npu-compiled-window64-200.json`, `nano-npu-window64-vs-bf16.json` e `nano-npu-window64-200-stage-summary.json` permanecem preservados.
 
@@ -194,7 +230,7 @@ env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_pr
 
 O comando acima reproduz o pacote intermediário de janela 64. O destino padrão é `C:/dev/models/<repo>/<commit>/qnn-prepared`. Para outra revisão, use seus pins efetivos e acrescente `--require-original-tokenizer`. O verificador não alega ter validado IDs de prompts; essa verificação ocorre na execução dos exemplos.
 
-A comparação consolidada atual está em `reports/snapdragon/delivery-summary-nano-fim-exact-20261027.json`, com três das quatro variantes validadas. Para regenerá-la após conferir as evidências, escolhendo uma saída nova:
+A comparação consolidada das quatro variantes está em `reports/snapdragon/delivery-summary-fim-exact-final-v3-20261027.json`. Os resumos anteriores registram suas respectivas revisões históricas. Para regenerá-la após conferir as evidências, escolhendo uma saída nova:
 
 ```powershell
 env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/summarize_delivery.py --root C:/dev/KapibaraStudio.MongoIA --out reports/snapdragon/delivery-summary-repeat.json
@@ -211,4 +247,4 @@ env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_pr
 
 ## Estado da revisão de calibração NPU
 
-Os resultados NPU legados foram preservados, mas não servem ao aceite final: a auditoria encontrou `None`/EOS na calibração de ativações e perda da cauda JOIN GPTQ. O Nano corrigido acima já tem calibração e inferência reais; o Small segue em calibração CPU remota, na última observação com 91/256 entradas. A meta das quatro variantes continua pendente. As variantes GPU FP16 não mudaram.
+Os resultados NPU legados foram preservados, mas não servem ao aceite final: a auditoria encontrou `None`/EOS na calibração de ativações e perda da cauda JOIN GPTQ. O Nano corrigido acima já tem calibração e inferência reais; o Small corrigido também passou calibração, 200 casos e boundary. As quatro variantes passaram nos testes locais; a integração na IDE continua fora desta etapa. As variantes GPU FP16 não mudaram.
