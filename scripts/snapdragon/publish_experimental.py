@@ -57,8 +57,16 @@ def publish(plan_path, report_path, cache_dir):
     cache = Path(cache_dir).resolve()
     if not cache.is_relative_to(Path('C:/dev').resolve()):
         raise ValueError('Verification cache must be under C:/dev')
-    report = {'repo_id': plan['repo_id'], 'branch': branch, 'base_commit': BASE,
-              'path_in_repo': SUBFOLDER, 'manifest_sha256': plan['manifest_sha256'], 'verified': {}, 'status': 'preparing'}
+    base = plan.get('base_commit', BASE)
+    subfolder = plan.get('path_in_repo', SUBFOLDER)
+    if not re.fullmatch(r'[0-9a-fA-F]{40}', base):
+        raise ValueError('Invalid base commit')
+    rel = PurePosixPath(subfolder)
+    if not subfolder or '\\' in subfolder or rel.is_absolute() or '..' in rel.parts or not rel.parts or any(c in subfolder for c in ':'):
+        raise ValueError('Unsafe path_in_repo')
+    base = base.lower()
+    report = {'repo_id': plan['repo_id'], 'branch': branch, 'base_commit': base,
+              'path_in_repo': subfolder, 'manifest_sha256': plan['manifest_sha256'], 'verified': {}, 'status': 'preparing'}
     api = HfApi()
     if report_path.exists():
         previous = json.loads(report_path.read_text(encoding='utf-8'))
@@ -71,13 +79,13 @@ def publish(plan_path, report_path, cache_dir):
         if not re.fullmatch(r'[0-9a-f]{40}', commit):
             raise ValueError('Invalid recorded immutable commit')
     else:
-        api.create_branch(repo_id=plan['repo_id'], branch=branch, revision=BASE, exist_ok=True)
+        api.create_branch(repo_id=plan['repo_id'], branch=branch, revision=base, exist_ok=True)
         head = api.repo_info(plan['repo_id'], revision=branch).sha
-        if head != BASE:
+        if head != base:
             raise ValueError('Existing branch has advanced; refusing overwrite without a saved publication report')
         report.update(status='uploading', parent_commit=head)
         write_report(report_path, report)
-        info = api.upload_folder(repo_id=plan['repo_id'], folder_path=root, path_in_repo=SUBFOLDER,
+        info = api.upload_folder(repo_id=plan['repo_id'], folder_path=root, path_in_repo=subfolder,
             revision=branch, parent_commit=head, commit_message='Add experimental Snapdragon RMSNorm FP16 package')
         commit = info.oid
         if not re.fullmatch(r'[0-9a-f]{40}', commit):
@@ -86,7 +94,7 @@ def publish(plan_path, report_path, cache_dir):
         write_report(report_path, report)
     remote_files = set(api.list_repo_files(plan['repo_id'], revision=commit))
     for name, expected_hash in expected.items():
-        remote_name = f'{SUBFOLDER}/{name}'
+        remote_name = f'{subfolder}/{name}'
         if remote_name not in remote_files:
             raise ValueError('Remote file missing: ' + remote_name)
         path = hf_hub_download(plan['repo_id'], filename=remote_name, revision=commit, cache_dir=cache)

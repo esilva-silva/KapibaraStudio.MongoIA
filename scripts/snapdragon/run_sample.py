@@ -107,6 +107,11 @@ def generation_budget(prompt_count, context_length=CONTEXT, window_size=1, new_t
     return padded, maximum
 
 
+def requested_generation_length(prompt_count, context_length, window_size, backend):
+    padded, minimum = generation_budget(prompt_count, context_length, window_size)
+    return padded, minimum, context_length if backend == 'qnn' else minimum
+
+
 class HFRunner:
     def __init__(self, model, device, expected_gpu=None):
         import torch
@@ -162,6 +167,76 @@ class HFRunner:
         result['generator_creation_ms'] = 0.0
         return trim_suffix(result, item)
 
+def pipeline_stages(decoder):
+    stages = []
+    for index, group in enumerate(decoder.get('pipeline') or []):
+        if not isinstance(group, dict):
+            raise ValueError('Invalid pipeline stage')
+        if 'filename' in group:
+            stages.append((group.get('name', f'stage-{index}'), group))
+        else:
+            for name, stage in group.items():
+                if not isinstance(stage, dict) or 'filename' not in stage:
+                    raise ValueError('Invalid grouped pipeline stage: ' + name)
+                stages.append((name, stage))
+    return stages
+
+
+def stage_providers(stage):
+    options = stage.get('session_options') or {}
+    entries = options.get('provider_options') or []
+    return [name.lower() for entry in entries for name in entry] or ['cpu']
+
+
+def genai_session_overlay(original, profile_prefix, backend):
+    import copy
+    decoder = original['model']['decoder']
+    session = copy.deepcopy(decoder.get('session_options') or {})
+    mixed = bool(decoder.get('pipeline'))
+    if backend == 'qnn' and mixed and 'qnn' in stage_providers({'session_options': session}):
+        raise ValueError('Mixed pipeline decoder default must not be QNN')
+    if backend == 'qnn' and not mixed:
+        session['disable_cpu_ep_fallback'] = '1'
+    if profile_prefix:
+        session['enable_profiling'] = str(profile_prefix)
+    overlay = {'session_options': session}
+    if mixed:
+        pipeline = copy.deepcopy(decoder['pipeline'])
+        stages = pipeline_stages({'pipeline': pipeline})
+        qnn_count = 0
+        for index, (name, stage) in enumerate(stages):
+            providers = stage_providers(stage)
+            is_qnn = 'qnn' in providers
+            is_transformer = (stage.get('run_on_token_gen') is False or stage.get('run_on_prompt') is False
+                              or name.lower().startswith(('context', 'iterator', 'ctx', 'iter')))
+            if backend == 'qnn' and is_transformer and not is_qnn:
+                raise ValueError('Transformer pipeline stage must use QNN: ' + name)
+            options = stage.setdefault('session_options', {})
+            if backend == 'qnn' and is_qnn:
+                qnn_count += 1
+                options['disable_cpu_ep_fallback'] = '1'
+                if profile_prefix:
+                    for entry in options.get('provider_options', []):
+                        for provider, provider_options in entry.items():
+                            if provider.lower() == 'qnn':
+                                provider_options['profiling_level'] = 'basic'
+                                provider_options['profiling_file_path'] = f'{profile_prefix}-{index}.qnn.csv'
+            if profile_prefix:
+                options['enable_profiling'] = f'{profile_prefix}-{index}'
+        if backend == 'qnn' and not qnn_count:
+            raise ValueError('QNN pipeline has no QNN stage')
+        overlay['pipeline'] = pipeline
+    return {'model': {'decoder': overlay}}
+
+
+def validate_qnn_options(options, htp_path):
+    for key, value in (options or {}).items():
+        if key == 'backend_path' and str(value).lower() != str(htp_path).lower():
+            raise ValueError('QNN backend_path must be the HTP library')
+        if key == 'backend_type' and str(value).lower() != 'htp':
+            raise ValueError('QNN backend_type must be htp')
+
+
 class GenAIRunner:
     def __init__(self, model, backend, profile_prefix=None, qnn_options=None):
         try:
@@ -170,29 +245,44 @@ class GenAIRunner:
             raise RuntimeError(f'ORT GenAI {backend} unavailable on {platform.machine()}; no CPU fallback: {exc}') from exc
         if backend == 'dml' and (not hasattr(og, 'is_dml_available') or not og.is_dml_available()):
             raise RuntimeError('ORT GenAI build cannot confirm DirectML availability; no fallback')
+        original = json.loads((Path(model) / 'genai_config.json').read_text(encoding='utf-8'))
+        decoder = original['model']['decoder']
+        mixed = bool(decoder.get('pipeline'))
+        stages = pipeline_stages(decoder) if mixed else []
+        intended_stages = [{'name': name, 'providers': stage_providers(stage)} for name, stage in stages]
         cfg = og.Config(str(model))
-        cfg.clear_providers()
+        if not mixed:
+            cfg.clear_providers()
         if backend == 'qnn':
             import onnxruntime_qnn as qnn
             og.register_execution_provider_library(qnn.get_ep_name(), qnn.get_library_path())
-            cfg.append_provider('QNN')
-            cfg.set_provider_option('QNN', 'backend_path', qnn.get_qnn_htp_path())
-            for key, value in (qnn_options or {}).items():
-                cfg.set_provider_option('QNN', key, str(value))
-            cfg.overlay(json.dumps({'model': {'decoder': {'session_options': {'disable_cpu_ep_fallback': True}}}}))
-        elif backend == 'dml':
+            htp = qnn.get_qnn_htp_path()
+            validate_qnn_options(qnn_options, htp)
+            def validate_embedded(value):
+                if isinstance(value, dict):
+                    for key, child in value.items():
+                        if key.lower() == 'qnn' and isinstance(child, dict):
+                            validate_qnn_options(child, htp)
+                        validate_embedded(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        validate_embedded(child)
+            validate_embedded(decoder)
+            if not mixed:
+                cfg.append_provider('QNN')
+                cfg.set_provider_option('QNN', 'backend_path', htp)
+                for key, value in (qnn_options or {}).items():
+                    if key not in ('backend_path', 'backend_type'):
+                        cfg.set_provider_option('QNN', key, str(value))
+                if profile_prefix:
+                    cfg.set_provider_option('QNN', 'profiling_level', 'basic')
+                    cfg.set_provider_option('QNN', 'profiling_file_path', str(profile_prefix) + '.qnn.csv')
+        elif backend == 'dml' and not mixed:
             cfg.append_provider('dml')
         self.profile_prefix = profile_prefix
         self.backend = backend
-        if profile_prefix:
-            original = json.loads((Path(model) / 'genai_config.json').read_text(encoding='utf-8'))
-            decoder = {'session_options': {'enable_profiling': str(profile_prefix)}}
-            pipeline = original['model']['decoder'].get('pipeline')
-            if pipeline:
-                for i, stage in enumerate(pipeline):
-                    stage.setdefault('session_options', {})['enable_profiling'] = f'{profile_prefix}-{i}'
-                decoder['pipeline'] = pipeline
-            cfg.overlay(json.dumps({'model': {'decoder': decoder}}))
+        if profile_prefix or backend == 'qnn':
+            cfg.overlay(json.dumps(genai_session_overlay(original, profile_prefix, backend)))
         self.og, self.model = og, og.Model(cfg)
         self.tok = og.Tokenizer(self.model)
         self.stops = stop_ids(self.tok.encode)
@@ -203,7 +293,7 @@ class GenAIRunner:
         eos = config['model'].get('eos_token_id')
         self.eos = set(eos if isinstance(eos, list) else [eos])
         self.evidence = {'requested': {'dml': 'DmlExecutionProvider', 'qnn': 'QNNExecutionProvider', 'cpu': 'CPUExecutionProvider'}[backend], 'available': True, 'configured': backend,
-                         'effective': None, 'verified': False,
+                         'effective': None, 'verified': False, 'intended_stages': intended_stages,
                          'reason': 'ORT GenAI Python does not expose per-node execution provider profiling here; availability and explicit configuration do not prove GPU execution'}
 
     def close(self):
@@ -221,6 +311,8 @@ class GenAIRunner:
                             counts[provider] = counts.get(provider, 0) + 1
                 except Exception as exc:
                     errors.append(str(exc))
+        qnn_csv = sorted(self.profile_prefix.parent.glob(self.profile_prefix.name + '*.csv')) if self.profile_prefix and self.backend == 'qnn' else []
+        self.evidence['qnn_profile_files'] = [str(p) for p in qnn_csv]
         requested = {'dml': 'DmlExecutionProvider', 'qnn': 'QNNExecutionProvider', 'cpu': 'CPUExecutionProvider'}[self.backend]
         self.evidence.update(effective=list(counts), verified=counts.get(requested, 0) > 0,
                              kernel_events_by_provider=counts, cpu_kernel_events=counts.get('CPUExecutionProvider', 0),
@@ -234,7 +326,7 @@ class GenAIRunner:
             raise ValueError('Corpus prompt_ids differ from ORT tokenizer')
         check_ids(ids)
         p = self.og.GeneratorParams(self.model)
-        padded_prompt, maximum = generation_budget(len(ids), self.context_length, self.prefill_window)
+        padded_prompt, minimum, maximum = requested_generation_length(len(ids), self.context_length, self.prefill_window, self.backend)
         p.set_search_options(do_sample=False, max_length=maximum, batch_size=1)
         start = time.perf_counter()
         g = self.og.Generator(self.model, p)
@@ -261,6 +353,7 @@ class GenAIRunner:
         result['generator_creation_ms'] = creation_ms
         result['padded_prompt_tokens'] = padded_prompt
         result['max_length_requested'] = maximum
+        result['minimum_length_for_padding'] = minimum
         return trim_suffix(result, item)
 
 def measurement(tokens, text, start, first, end, stop, prompt_count):

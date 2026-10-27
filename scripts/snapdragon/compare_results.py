@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import statistics
+from collections import Counter
 
 
 def percentile(values, fraction):
@@ -53,6 +54,13 @@ def summarize(report, corpus, tokenizer):
     return {"n": len(actual), "accepted_prefix_tokens": statistics.mean(prefix),
             "trimmed_exact_match": statistics.mean(exact), "ttft_p50_ms": percentile(ttft, .5),
             "ttft_p95_ms": percentile(ttft, .95), "decode_tokens_per_second_median": statistics.median(speed) if speed else None,
+            "ttft_observations": len(ttft), "decode_rate_observations": len(speed),
+            "stop_reasons": dict(Counter(row.get("stop_reason", "not_recorded") for row in actual.values())),
+            "observed_eos_count": sum(bool(row.get("eos")) for row in actual.values()),
+            "generated_tokens_total": sum(len(row.get("generated_ids", [])) for row in actual.values()),
+            "execution_protocol": {"executor": report.get("executor", "single_process"),
+                "single_session": report.get("single_session", True), "batch_size": report.get("batch_size"),
+                "model_loads_count": report.get("model_loads_count", 1), "model_load_seconds": report.get("model_load_seconds")},
             "provider_evidence": report.get("provider_evidence"), "memory": report.get("memory_after")}
 
 
@@ -75,7 +83,9 @@ def main():
               "corpus_sha256": hashlib.sha256(args.corpus.read_bytes()).hexdigest(),
               "baseline": baseline, "candidate": candidate,
               "delta_accepted_prefix_tokens": candidate["accepted_prefix_tokens"] - baseline["accepted_prefix_tokens"],
-              "limitations": ["Small synthetic sample; no IDE qualification", "Generated JavaScript was not executed"]}
+              "limitations": ["Small synthetic sample; no IDE qualification", "Generated JavaScript was not executed", "Decode rate uses only recorded non-null observations; EOS may be omitted by GenAI"]}
+    if not candidate["execution_protocol"]["single_session"]:
+        result["limitations"].append(f"Candidate reloads the model every {candidate['execution_protocol']['batch_size']} requests; this does not establish single-session stability")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 

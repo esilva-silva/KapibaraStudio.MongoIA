@@ -22,6 +22,46 @@ with patch.dict(sys.modules, {'run_sample': runner}):
     remote = load('remote_prepare')
 
 class RunnerTests(unittest.TestCase):
+    def test_qnn_overlay_preserves_two_stages_and_disables_fallback(self):
+        original = {'model': {'decoder': {'session_options': {'existing': 1}, 'pipeline': [
+            {'filename': 'ctx.onnx', 'session_options': {'provider_options': [{'qnn': {'enable_htp_weight_sharing': '1'}}]}},
+            {'filename': 'embed.onnx', 'session_options': {'custom': 'keep'}}]}}}
+        overlay = runner.genai_session_overlay(original, 'profile', 'qnn')['model']['decoder']
+        self.assertNotIn('disable_cpu_ep_fallback', overlay['session_options'])
+        self.assertEqual(overlay['session_options']['existing'], 1)
+        for index, stage in enumerate(overlay['pipeline']):
+            self.assertEqual(stage['session_options'].get('disable_cpu_ep_fallback'), '1' if index == 0 else None)
+            self.assertEqual(stage['session_options']['enable_profiling'], f'profile-{index}')
+        self.assertEqual(overlay['pipeline'][0]['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
+        self.assertNotIn('disable_cpu_ep_fallback', original['model']['decoder']['pipeline'][0]['session_options'])
+        cpu = runner.genai_session_overlay(original, None, 'cpu')['model']['decoder']
+        self.assertNotIn('disable_cpu_ep_fallback', cpu['session_options'])
+
+    def test_grouped_olive_pipeline_preserves_cpu_and_qnn(self):
+        original = {'model': {'decoder': {'pipeline': [{'embeddings': {'filename': 'emb.onnx'},
+            'context': {'filename': 'ctx.onnx', 'run_on_token_gen': False, 'session_options': {'provider_options': [{'qnn': {'enable_htp_weight_sharing': '1'}}]}},
+            'iterator': {'filename': 'iter.onnx', 'run_on_prompt': False, 'session_options': {'provider_options': [{'qnn': {}}]}},
+            'lm_head': {'filename': 'head.onnx', 'is_lm_head': True}}]}}}
+        dec = runner.genai_session_overlay(original, 'profile', 'qnn')['model']['decoder']
+        group = dec['pipeline'][0]
+        self.assertNotIn('session_options', group)
+        self.assertNotIn('disable_cpu_ep_fallback', group['embeddings']['session_options'])
+        self.assertNotIn('disable_cpu_ep_fallback', group['lm_head']['session_options'])
+        self.assertEqual(group['context']['session_options']['disable_cpu_ep_fallback'], '1')
+        self.assertEqual(group['iterator']['session_options']['disable_cpu_ep_fallback'], '1')
+        self.assertEqual(group['context']['session_options']['provider_options'][0]['qnn']['enable_htp_weight_sharing'], '1')
+        broken = json.loads(json.dumps(original)); broken['model']['decoder']['pipeline'][0]['context']['session_options'] = {}
+        with self.assertRaises(ValueError): runner.genai_session_overlay(broken, None, 'qnn')
+
+    def test_monolithic_qnn_disables_fallback(self):
+        result = runner.genai_session_overlay({'model': {'decoder': {}}}, None, 'qnn')
+        self.assertEqual(result['model']['decoder']['session_options']['disable_cpu_ep_fallback'], '1')
+
+    def test_qnn_rejects_non_htp_backend(self):
+        with self.assertRaises(ValueError): runner.validate_qnn_options({'backend_type': 'cpu'}, 'QnnHtp.dll')
+        with self.assertRaises(ValueError): runner.validate_qnn_options({'backend_path': 'QnnGpu.dll'}, 'QnnHtp.dll')
+        runner.validate_qnn_options({'backend_path': 'QnnHtp.dll'}, 'QnnHtp.dll')
+
     def test_single_item_records_phases_and_new_convention(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -64,6 +104,14 @@ class RunnerTests(unittest.TestCase):
         for window in (0, -1, True, '64'):
             with self.subTest(window=window), self.assertRaises(ValueError):
                 runner.generation_budget(361, 2048, window)
+
+    def test_qnn_cache_length_keeps_budget_and_padding(self):
+        self.assertEqual(runner.requested_generation_length(361, 2048, 32, 'qnn'), (384, 416, 2048))
+        self.assertEqual(runner.requested_generation_length(2016, 2048, 32, 'qnn'), (2016, 2048, 2048))
+        self.assertEqual(runner.requested_generation_length(361, 2048, 1, 'cpu'), (361, 393, 393))
+        self.assertEqual(runner.requested_generation_length(361, 2048, 1, 'dml'), (361, 393, 393))
+        with self.assertRaises(ValueError): runner.requested_generation_length(2017, 2048, 32, 'qnn')
+        self.assertEqual(runner.LIMIT, 32)
 
     def test_timing_excludes_first_token_from_decode_rate(self):
         r = runner.measurement([1, 2, 3], 'x', 10, 11, 13, 'eos', 5)
