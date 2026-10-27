@@ -1,3 +1,5 @@
+> **Reconciliacao de 26/10/2026:** este documento contem estado historico. C3 e Generic-JS apresentam ganhos (perda negativa = ganho), nao regressoes; PRs 1–3 possuem implementacao/evidencias parciais na IDE. A meta ideal do T0 continua pendente. Decisao atual: corrigir EOS somente na IDE, sem eosfix, cache CPU opt-in e avaliar atualizacao GenAI. Veja [relatorio consolidado](../reports/student/correcoes-coordenadas-20261026.md) para numeros com fontes e pendencias. Nenhum novo treino/upload autorizado.
+
 # Handoff para o Codex — correções pendentes (KapiCoder-Mongo)
 
 Estado de partida: branch `master`, último commit `58b42cb` (D1–D5 do mapa de GPU). Leia primeiro `docs/resumo-executivo.md` (desatualizado, ver C1), `docs/mapa-compatibilidade-gpu.md` e `docs/prs/`.
@@ -22,7 +24,7 @@ Regras de orquestração:
 
 - **Nada de upload ao Hugging Face** nem criação de repositório. `scripts/publish/upload_to_hf.py` só imprime comandos e exige `--i-have-user-approval`; o usuário roda.
 - Não ler `data/homolog` fora da API autorizada (`homolog_guard`, com access log). Schemas `hom` (28) nunca entram em treino.
-- `F:\source\esilva-silva\EsilvaSoft.KapibaraStudio` (IDE) é **somente leitura**. PRs para a IDE são apenas rascunhos em `docs/prs/`.
+- `F:\source\esilva-silva\EsilvaSoft.KapibaraStudio` (IDE) fazia parte do escopo historico somente leitura. O pedido atual do usuario autoriza corrigir IDE e MongoIA, preservando os AGENTS.md e ADRs vigentes.
 - Sem downloads da internet sem aprovação. MongoDB só leitura e só bancos `kapi_fx_*`.
 - Não ler o token em `~/.cache/huggingface/token`.
 - Não declarar qualidade fora do conjunto sintético: o cego humano foi descartado; a homologação é gerada por LLM/gramática (família Qwen), não humana.
@@ -45,9 +47,9 @@ Regras de orquestração:
 
 **B1 — T0 v3: campos inexistentes (full) 10,81% vs meta ≤ base+1 pp (8,02%).** A meta ideal não foi atingida (o GO veio pelos critérios C1–C4). Investigar causa (análise de erros por `cut_kind`/domínio) e propor correção de dados antes de gastar GPU. Entregar relatório + proposta; **não** iniciar treino sem aprovação do usuário.
 
-**B2 — Regressão em Generic-JS** (−19 pp T0, −20 pp T1 vs zero-shot, no val v2c). Decidir se é aceitável (o produto é Mongo) ou se exige mistura de replay. Entregar análise e recomendação com números.
+**B2 — Generic-JS: correcao de leitura concluida.** O sinal legado e perda = base - novo: T0 34,0% → 53,0% (+19 pp), T1 40,6% → 60,6% (+20 pp). Nao propor replay para corrigir uma regressao inexistente. Fontes: summaries generic-js dos modelos base e sft_v3, com mesmo hash de dataset.
 
-**B3 — Guarda de homologação** mostra perda de FIM acc (−9,24 pp T0, −8,4 pp T1) e exec÷teto (−11,74 / −4,82 pp) frente ao critério C3 de 1 pp. Verificar a definição do C3 em `scripts/student/decide_v3.py` e esclarecer por que o veredito é GO com essas perdas (a comparação parece ser contra o modelo anterior em conjunto diferente). Se o critério estiver mal formulado, corrigir `decide_v3.py` + teste e reemitir `v3_decision_*.md`. **Não alterar o veredito sem mostrar a conta ao usuário.**
+**B3 — Guarda C3: GO coerente com ganhos.** FIM T0 0,3310 → 0,4234 e T1 0,3697 → 0,4537; exec/teto T0 0,7443 → 0,8617 e T1 0,8444 → 0,8926. As perdas negativas indicam ganhos. Relatorios reemitidos com valores anterior/novo/delta e GO preservado. Metricas obrigatorias ausentes/invalidas nao podem aprovar silenciosamente; portao GO antigo e removido antes da reavaliacao.
 
 **B4 — `configs/gates.yaml` (rascunho, 128 gates).** Preencher os 4–5 limiares sem número e o de paridade tokenizer/prompt/greedy; criar o baseline `base_v1_0.5b` na suíte v2 (hoje `T0.apt_*` e `exec_match` ficam sem avaliação). Propor valores com justificativa; **o congelamento é decisão do usuário**.
 
@@ -55,7 +57,7 @@ Regras de orquestração:
 
 ### Bloco C — Exportação e hardware [serial entre C1→C2; C3–C5 paralelos, Lua]
 
-**C1 — Pacotes `-eosfix`.** O bug do EOS na IDE (`GetSequence(0)[^1]` duplica o último token; concordância IDE×Python 12–13%) reprova `python_agreement`. Implementar a flag `--eos-workaround` no export, gerando variante `-eosfix` **sem remover** a variante padrão. Aceite: concordância ≥ gate em teste Python que reproduz o comportamento da IDE; saída idêntica na variante padrão.
+**C1 — EOS somente na IDE (decisao do usuario).** Corrigir a leitura do token apenas quando a sequencia cresce; nao gerar variantes eosfix. `scripts/export/generation_reference.py` fornece IDs independentes via get_next_tokens e aceita --ort-library para usar a MESMA DLL ORT da IDE, registrando seu hash. Nao confundir paridade de pacotes diferentes ou builds ORT diferentes com falha de EOS.
 
 **C2 — Cache de prefixo (PR 4).** Os gates de TTFT em CPU só passam com cache de prefixo por aba (T0 105/208 ms, T1 246/526 ms com cache; sem cache T0 301/506, T1 768/1281). Manter o protótipo Python como referência e fechar o rascunho `docs/prs/pr-4-prefix-cache-onnx.md` (taxa de acerto mínima ~95%, política B). Não implementar na IDE.
 
@@ -75,9 +77,9 @@ Regras de orquestração:
 
 ## 3. Itens que dependem de decisão do usuário (não resolver sozinho)
 
-1. EOS: corrigir na IDE, usar `-eosfix`, ou ambos.
+1. EOS decidido: corrigir somente na IDE, sem eosfix.
 2. Gate de TTFT em CPU: "gate de sessão com hit ≥ 95%" (exige PR 4) ou manter sem cache (reprova).
-3. Variante T0: int4 (392 MB) ou int8-emb4 (633 MB). Recomendado int4.
+3. Variante T0 decidida: int4.
 4. Congelar `configs/gates.yaml` e confirmar `configs/rounds.yaml`.
 5. Token de GPU do KapiLab (gates oficiais); Vivobook X1-26-100 (NPU/T3).
 6. Q1: T1/T2 treinam o chat curto?

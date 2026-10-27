@@ -1,110 +1,56 @@
-# KapiCoder-Mongo — resumo executivo do estado (2026-10-22)
+# KapiCoder-Mongo — resumo executivo (26/10/2026)
 
-Documento de leitura rápida sobre onde o programa está, o que foi provado, o que **não** foi provado e o que depende de decisões ou da IDE.
-Os números abaixo vêm dos relatórios em `reports/` e `Repos/*/reports/`; cada seção aponta a fonte.
+T0 e T1 v3 possuem avaliacao sintetica e pacotes ONNX locais. A correcao de EOS pertence a IDE; nao serao geradas variantes eosfix. Qualidade real, latencia nativa em sessao e selecao efetiva de GPU continuam exigindo homologacao propria.
 
-## 1. Em uma frase
+## 1. Estado e fontes
 
-Os modelos de autocomplete de MongoDB **T0 (0.5B)** e **T1 (1.5B)** foram treinados com dados sintéticos validados por execução, destilados de um professor 7B,
-exportados para ONNX e medidos; **funcionam bem no conjunto sintético**, mas **ainda não há prova de qualidade em dados reais nem medição na IDE**, e três mudanças
-na IDE (cache de prefixo, correção do EOS e contrato do agente) bloqueiam os gates de latência e a Fase 04.
-
-## 2. Estado por fase
-
-| Fase | Estado | Evidência |
+| Frente | Estado comprovado / pendencia | Fonte |
 |---|---|---|
-| 00 Visão e estrutura | Concluída (workspace Git, 25 commits) | `docs/fase-00-*.md` |
-| 01 Modelos base | Parcial: bake-off FIM e professor 7B decididos; sondas de atenção do T4 e exportabilidade feitas; falta tool calling/raciocínio do Qwen3 e piloto de KD | `reports/teacher_choice.json`, `reports/probe/` |
-| 02 Professor | **Concluída com exceções** (ver §4) | `reports/teacher_adoption.json` |
-| 03 Dataset de autocomplete | **Concluída tecnicamente** (v2c); faltam cego humano, revisão e licenças | `reports/datasets/v2c-validation-report.md` |
-| 04 Dataset do agente (T4) | **Não iniciada**: depende dos PRs 2 e 3 na IDE | `docs/prs/` |
-| 05 Treinamento | Professor, T0 e T1 treinados; T4 só sondado (16k reprovado, plano B 8k+12k r32) | `Repos/*/reports/` |
-| 06 Avaliação | Harness estatístico pronto; gates em rascunho; cego não selado | `configs/gates.yaml`, `scripts/eval/` |
-| 07 Exportação ONNX | **T0 e T1 exportados** (14 pacotes) e medidos em proxy; NPU/QNN não feita | `reports/export/onnx_export_t0_t1.md` |
-| 08 Integração na IDE | Não iniciada; 4 PRs especificados, nenhum implementado | `docs/prs/pr-1..4-*.md` |
+| Treino | T0/T1 sft_v3 executados; uma semente | `Repos/*/reports/sft_v3/run_manifest.json` |
+| Avaliacao | GO v3 preservado; a meta ideal T0 nao foi atingida | `reports/student/v3_decision_t0.json`, `v3_decision_t1.json` |
+| Exportacao | Pacotes v3 locais; evidencia proxy separada da IDE | `reports/export/`, `scripts/export/README.md` |
+| Hardware | D1–D5 documentadas; latencias ruidosas precisam nova sessao ociosa | `docs/mapa-compatibilidade-gpu.md`, `reports/hwmap/phase2_measurements.md` |
+| IDE PR1 | Aceite de catalogo/paridade existente | IDE: `docs/phases/phase-07b-kapilab/aceite-pr-1.md` |
+| IDE PR2 | Contrato local-agent-qwen3-v1 existente | IDE: `docs/architecture/local-agent-qwen3-v1.md`, ADR-072 |
+| IDE PR3 | Host/catalogo/replay implementados; sucesso Atlas e paridade externa pendentes | IDE: `docs/phases/phase-07b-kapilab/aceite-pr-3.md` |
+| Fase 04 / T4 | Nao iniciar enquanto os aceites externos estiverem pendentes | Fontes PR2/PR3 acima |
+| Publicacao | Cards/manifests verificados localmente; nenhum upload nesta rodada | `tmp/corrections-stage-validation.log`, `scripts/publish/verify_card_numbers.py` |
 
-## 3. Resultados principais
+## 2. Resultados v3 [M]
 
-### Dataset (v2c, `data/validated/v2c`, fora do Git)
-- Treino 1.247.125 · val 45.381 · test 28.455 · bench 16.938; 110 schemas sintéticos em 14 domínios (education e legal só em avaliação).
-- Validado por execução real no MongoDB 8.0.32 (WSL); decontaminação por conteúdo (`ngram_min_content: 2`); **G3.3 passa**.
-- **Pendentes:** conjunto cego escrito por humano (há 40 rascunhos de agente, não selados), revisão humana (G3.7), licenças (G3.9).
+| Tier | FIM anterior → v3 | Exec/teto anterior → v3 | Campos full v3 / base | Meta ideal |
+|---|---|---|---|---|
+| T0 | 0.3310 → 0.4234 | 0.7443 → 0.8617 | 10.81% / 7.02% | nao atingida |
+| T1 | 0.3697 → 0.4537 | 0.8444 → 0.8926 | 7.50% / 7.15% | atingida |
 
-### Professor KapiTeacher-Mongo-7B (adapter `sft_v2d/final`)
-- FIM acc +19,85 p.p. sobre o 7B base, Generic-JS +15,2 p.p., contaminação 0, campos inexistentes com schema visível 1,88% (limite 2%, margem de 0,12 p.p.).
-- **v2d é estatisticamente equivalente ao v2c**; a escolha se apoia em margem mínima.
+Fontes de cada linha: `reports/datasets/homolog-v3-eval-t0.json` e `homolog-v3-eval-t1.json`; criterios em `reports/student/v3_decision_t{0,1}.json`. Delta = novo - anterior: positivo e ganho. Os campos legados *_loss_pp usam sinal inverso.
 
-### Alunos (val v2c, n=2.000, mesmos ids)
+| Generic-JS | Base → v3 | Delta [M] |
+|---|---|---|
+| KapiCoder-Mongo-Nano | 34.0% → 53.0% | +19.0 pp |
+| KapiCoder-Mongo-Small | 40.6% → 60.6% | +20.0 pp |
 
-| | FIM acc | Exec-valid | Exec ÷ teto | Campos `full` | Generic-JS |
-|---|---:|---:|---:|---:|---:|
-| 0.5B base | 0,076 | 0,213 | — | 4,13% | 0,340 |
-| **T0 Nano** (distilado) | 0,403 | 0,582 | 0,931 | 2,06% | 0,518 |
-| 1.5B base | 0,142 | 0,316 | — | 3,76% | 0,406 |
-| **T1 Small** (distilado) | 0,411 | 0,595 | **0,951** | **1,58%** | 0,632 |
-| Professor 7B v2d | 0,410 | 0,576 | 0,921 | 1,88% | 0,710 (7B base 0,558) |
+Fontes: `Repos/*/reports/eval/{base-qwen2.5-coder-*-generic-js,sft_v3-generic-js}/summary.json`: mesmos 500 itens e hash de dataset. Nao ha evidencia da regressao de −19/−20 pp mencionada no handoff antigo.
 
-- T1 × T0: exec-valid +1,3 p.p. (p=0,0016); FIM acc +0,75 p.p., **não significativo**.
-- Distilado × controle gold (T0): exec-valid +1,7 p.p. (Holm p=0,019); FIM acc −0,85 p.p. n.s.
-- **G2.4 do professor reprova (−0,15 p.p.)**: um 0,5B treinado direto no gold iguala o professor 7B neste conjunto. O papel do professor passou a **filtro/validação**.
+## 3. Limitacoes de independencia
 
-### Exportação ONNX (onnxruntime-genai 0.15.2, `model.type=qwen2`)
-- Melhores variantes: **T0 int4** (392 MB, CPU), **T0/T1 dml-fp16** (GPU; T1: TTFT 148/170 ms, 104 tok/s). T1 int4 perde qualidade e fica fora.
-- Qualidade ONNX × HF bf16 indistinguível no T0 e no T1 int8/fp16; T1 int4 perde 1,4–1,8 p.p.
-- **TTFT em CPU (proxy):** sem cache, reprova (T0 258/474 ms; T1 667/1.101 ms). Com **cache de prefixo por aba** o protótipo passa (T0 92/221; T1 250/497), com saída idêntica,
-  desde que a taxa de acerto do cache fique ≥ ~95%.
+Tudo acima e sintetico. A correcao historica do guard v1/v1 e a falta de decontaminacao J18 ate a reconstrucao v3 foram relatadas no handoff A4. O v3 continua usando gerador Qwen e templates de gramatica compartilhados. Nao ha cego humano nem prova de generalizacao real. Fontes e limites historicos: `reports/student/correcoes-coordenadas-20261026.md`; nao atribuir uma porcentagem de otimismo sem medir.
 
-## 4. O que NÃO está provado (leia antes de decidir)
+## 4. Integracao e decisoes
 
-1. **Tudo foi medido em dado sintético** (templates + fixtures). O 0,5B treinado no gold iguala o professor 7B, o que indica que o conjunto satura por dados, não por tamanho.
-   O **cego humano foi descartado por decisão do usuário (2026-10-22)**: a generalização para consultas reais **continua não medida** (G3.6/G3.7 ficam `unevaluated`; os 40 rascunhos de agente em `data/eval/blind/draft` não são usados).
-2. **G2.2 do professor não está aprovado:** exec-valid ÷ teto = 0,92 (< 0,95). O aceite é uma exceção registrada; o limite de campos foi recalibrado para `context_kind=full` **depois** de ver a análise de erros (decisão registrada antes do retreino, mas é recalibração).
-3. **O teto do validador é 0,6255:** o parser do Console cobre só um subconjunto; parte do que parece erro do modelo é limite do validador.
-4. **Sem schema visível o erro de campo continua em 11–14%**; o treino não resolveu isso. A melhoria real depende de a IDE enviar o schema da coleção.
-5. **O cache de prefixo só foi validado em protótipo Python;** a taxa de acerto real depende do uso na IDE (o dataset sintético embaralha o contexto e dá só ~0 pares reutilizáveis no envelope inteiro).
-6. **Gates oficiais de TTFT/RAM/paridade não foram medidos pelo KapiLab** (exige token de GPU que só o usuário pode liberar); os números acima são proxy e `qualified=false`.
-7. **`gates.yaml` está em rascunho** (4–5 limiares sem número; o de paridade tokenizer/prompt/greedy está em aberto) e o baseline `base_v1_0.5b` na suíte v2 não existe, então `T0.apt_*` e `exec_match` ficam sem avaliação.
+- T0 int4 e o padrao escolhido. EOS sera corrigido somente na IDE; sem eosfix.
+- Cache CPU e opt-in e exige homologacao declarada no pacote. A prova inicial de cauda de um token divergiu; a IDE passou a reprocessar no minimo 32 tokens. Prompts curtos fazem prefill completo. Paridade sintetica nao basta para aprovar qualidade/TTFT em sessao.
+- Gate CPU exige hit real >=95%, com hit/miss/mistura reportados. Sem essa evidencia o gate continua nao avaliado; nao promover pelo prototipo Python.
+- GenAI 0.16/0.17 sao candidatos a avaliacao; selecao efetiva de GPU exige prova por contadores. Nenhuma mudanca de versao e aprovada apenas por aceitar device_id.
+- Gates/rounds, segunda semente, chat T1/T2, hardware indisponivel, contato/model-index/nome no card e upload continuam como decisoes posteriores. Nenhum treino/upload nesta rodada.
 
-## 5. Bloqueios e quem desbloqueia
+## 5. Rastreabilidade e proximos passos
 
-| # | Bloqueio | Efeito | Quem |
-|---|---|---|---|
-| B1 | **Bug do EOS na IDE** (`OnnxLocalModelRuntime` duplica o último token; concordância IDE×Python 12–13%) | Reprova `python_agreement` em todos os pacotes | IDE (PR) ou contorno no pacote (decisão do usuário) |
-| B2 | **Cache de prefixo por aba** (`docs/prs/pr-4-*.md`) | Sem ele os gates de TTFT em CPU reprovam | IDE (PR) |
-| B3 | **PR 1** (catálogo de conhecimento e paridade byte a byte), **PR 2** (contrato do agente), **PR 3** (execução real de tools) | Paridade `contract diff`; **Fase 04 e o T4 inteiros** | IDE (PRs) |
-| B4 | ~~Conjunto cego (400 itens humanos) e revisão de 200 amostras~~ — **descartado por decisão do usuário (2026-10-22)** | G3.6/G3.7 e a única medida fora do sintético ficam sem avaliação | — |
-| B5 | **Token de GPU do KapiLab** | Gates oficiais de GPU | Usuário |
-| B6 | **Vivobook X1-26-100** (NPU, QNN) | T3 inteiro | Usuário (hardware) |
-| B7 | **Q1:** T1/T2 ainda treinam o chat curto? | Escopo do chat (hoje fora) | Usuário |
+Erros T0 por dominio/corte, propostas de dados, limiares e custo da segunda semente: `reports/student/correcoes-coordenadas-20261026.md`. READMEs dos jobs apontam ao sft_v3 e ao hash real da configuracao; o v1 foi preservado como historico.
 
-## 6. Decisões em aberto do usuário
+Os relatorios de decisao foram reemitidos a partir dos agregados existentes, preservando GO. O lock possui --require-clean; nao declarar scripts_dirty=false nem commitar alteracoes de terceiros para fabricar limpeza. scripts_commit deve identificar o commit que contem os scripts, anterior ao commit que grava o lock. O lock final depende dos commits revisados.
 
-1. Corrigir o EOS na IDE, aplicar o contorno no `genai_config.json` do pacote, ou os dois.
-2. Redefinir o gate de TTFT em CPU como "gate de sessão com hit ≥ 95%" (exige B2) ou manter o gate sem cache (reprova).
-3. Variante do T0: int4 (392 MB) ou int8-emb4 (633 MB); recomendado int4.
-4. Q1 (chat curto), e se o KD por logits (adiado) entra no ciclo seguinte.
-5. Confirmar `configs/rounds.yaml` (rascunho) e congelar `configs/gates.yaml`.
-6. Qual tier vai primeiro para o usuário final: **T1 DML FP16** (GPU, passa os gates proxy) e **T0 int4** (CPU, depende do cache).
 
-## 7. Incidentes e lições registrados
+## 6. Contexto historico preservado para os cards
 
-- **Uso da GPU integrada:** o J12b rodou horas na iGPU por confiar no índice `Vulkan0`; a seleção do dispositivo agora é por nome com guarda de velocidade (`scripts/distill/generate_teacher.py`).
-  Todo job de GPU deve confirmar o adaptador (RX 7800 XT, LUID verificável por contadores).
-- **Reinício da máquina** matou o treino do professor uma vez; a retomada por checkpoint funcionou sem perda (loss reproduzida).
-- **Fila da GPU** (`scripts/gpu_queue.ps1`): bug do heartbeat corrigido; `-Status` só funciona no PowerShell 7 (`pwsh`).
-- **Limites de uso** derrubaram subagentes várias vezes; os trabalhos foram retomados sem refazer o que estava íntegro.
-
-## 8. Recursos e reprodutibilidade
-
-- **Código e relatórios:** Git local, 25 commits (último: protótipo do cache de prefixo). Pesos, dumps, GGUF, pacotes ONNX e `data/` ficam fora do Git.
-- **Disco:** ~650 GB livres em C: após merged (15 GB), 3 GGUF (28 GB) e pacotes ONNX.
-- **Horas de GPU gastas (aprox.):** professor SFT v2c 21 h + v2d 8 h, destilação ~20 h, T0 3,4 h (+3,4 h controle), T1 11,8 h, avaliações ~6 h (estimativas a partir dos logs da fila, não somadas por job).
-- **Para reproduzir:** `Repos/*/README_job.md`, `scripts/*/README*.md`, `configs/gpu_queue.yaml` e `reports/` guardam comandos, seeds e hashes.
-
-## 9. Próximos passos recomendados (ordem)
-
-1. ~~Cego humano~~ — descartado pelo usuário em 2026-10-22; sem ele, nenhuma afirmação de qualidade vale além do conjunto sintético. Alternativa a considerar: avaliar em consultas reais do próprio usuário (sem selar) ou na IDE em uso.
-2. **IDE:** abrir os PRs de EOS e do cache de prefixo (B1/B2), e o PR 1 (paridade); sem eles os gates de CPU e a Fase 08 não avançam.
-3. **Decidir** as seis questões de §6 e congelar `gates.yaml`.
-4. **Depois do PR 1 e de qualquer medida em uso real:** reavaliar a decisão T0 × T1 e, se o desempenho real for menor que o sintético, voltar ao corpus (schemas visíveis, mais variedade) antes de gastar GPU.
-5. **Só então** iniciar a Fase 04 (T4 agente), que depende dos PRs 2 e 3.
+O registro anterior deste resumo descreve o v2c como **110 schemas sintéticos em 14 domínios**; esta rodada nao recontou schemas. Fonte historica: versao Git anterior deste documento; o relatorio `reports/datasets/v2c-validation-report.md` detalha dominios e splits. O teto do validador é 0,6255 no val v2c usado para essas comparacoes; fonte medida: `Repos/KapiCoder-Mongo-Nano/reports/eval/sft_v3/summary.json`, campo reference_ceiling.exec_valid. Nao misturar esse teto com a homologacao v1.

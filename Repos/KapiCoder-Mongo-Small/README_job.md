@@ -1,8 +1,26 @@
+# Job atual — KapiCoder-Mongo-Small / sft_v3
+
+Configuracao vigente: `Repos/KapiCoder-Mongo-Small/configs/sft_v3.yaml`; SHA256 `20a67dc5334c753dc161cfbade0b8fb6eddf7bc57ff252855981e4731c39847c`. Seed `20261018`; base e corpus sao os da configuracao, sem iniciar de pesos v1.
+
+Comando de reproducao (somente apos autorizacao de GPU/treino):
+
+```powershell
+& 'C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe' '-I' 'scripts/student/train_student.py' '--config' 'Repos/KapiCoder-Mongo-Small/configs/sft_v3.yaml' '--total-steps' '4617' '--resume' 'auto'
+```
+
+Comando extraido do job `J21-T1-v3` em `configs/gpu_queue.yaml` (inclui cortes CLI vigentes, quando aplicaveis). Usar a fila `scripts/gpu_queue.ps1` e confirmar a RX 7800 XT por contadores; nunca selecionar por indice. O comando acima identifica o job, nao autoriza executa-lo. Relatorios: `Repos/KapiCoder-Mongo-Small/reports/sft_v3/run_manifest.json`, `reports/student/v3_decision_t1.json` e `reports/datasets/homolog-v3-eval-t1.json`.
+
+Limitacoes de independencia, criterios e pendencias: `reports/student/correcoes-coordenadas-20261026.md`.
+
+---
+
+## Historico v1 (nao usar para reproduzir o v3)
+
 # Job de treino do KapiCoder-Mongo-Small (T1, Qwen2.5-Coder-1.5B): distilado x controle (J15 x J10)
 
 Estado: **preparado e enfileirado, NAO iniciado** (so smoke de 20 passos + retomada; `reports\student\smoke_report.md` na raiz). Base `BaseRepos\Qwen2.5-Coder-1.5B`
 (rev. `df3ce67c…`), workspace `Repos\KapiCoder-Mongo-Small`. Escopo: **autocomplete FIM** `editor-context-v1` (chat curto fora ate a Q1; KD por logits adiado).
-Spec: `docs\fase-05-treinamento.md` §6.2/§7/§9, gates `configs\gates.yaml` (T1) e `configs\gates.teacher.yaml` (G2.4), regra `configs\rounds.yaml` (draft).
+Spec: `docs\fase-05-treinamento.md` Â§6.2/Â§7/Â§9, gates `configs\gates.yaml` (T1) e `configs\gates.teacher.yaml` (G2.4), regra `configs\rounds.yaml` (draft).
 Python (venv ROCm): `$PY = "C:\SlopStudio.MongoAI-artifacts\.venv\Scripts\python.exe"`, sempre com `-I`.
 
 ## 0. O que existe
@@ -28,7 +46,7 @@ Corte: `--total-steps 3422` (1,5 epoca) nos DOIS bracos = -3,9 a -4,4 h por brac
 
 ## 2. Antes de iniciar
 
-Igual ao Nano (`Repos\KapiCoder-Mongo-Nano\README_job.md` §2): GPU livre, commitar `gates.yaml`/`rounds.yaml`/`student_corpus.yaml`/`sft_*_v1.yaml`, confirmar `rounds.yaml`,
+Igual ao Nano (`Repos\KapiCoder-Mongo-Nano\README_job.md` Â§2): GPU livre, commitar `gates.yaml`/`rounds.yaml`/`student_corpus.yaml`/`sft_*_v1.yaml`, confirmar `rounds.yaml`,
 `build_student_corpus.py --verify-only`, `train_student.py --config ...\sft_distill_v1.yaml --dry-run --tok-s 2290`, MongoDB no WSL (+ `wsl -d Ubuntu -e sleep infinity`) e Node para as avaliacoes.
 
 ## 3. Iniciar / monitorar / retomar
@@ -43,7 +61,7 @@ Igual ao Nano (`Repos\KapiCoder-Mongo-Nano\README_job.md` §2): GPU livre, commi
 Manual: `& $PY -I scripts\student\train_student.py --config Repos\KapiCoder-Mongo-Small\configs\sft_distill_v1.yaml --resume auto` (idem `sft_gold_v1.yaml`).
 Monitorar: `Get-Content Repos\KapiCoder-Mongo-Small\reports\sft_distill_v1\metrics.jsonl -Tail 3` (~13 s/passo, ~2.300 tok/s, pico ~9,2 GB), `...\eval_history.jsonl -Tail 1` (a cada 10% dos passos),
 `Get-Content logs\gpu_queue\J15-T1-distill.log -Wait -Tail 20`. Pausa cooperativa: `.\scripts\gpu_queue.ps1 -Pause` (codigo 75) / `-Resume`; queda/kill: relanca com `--resume auto` (fingerprint identico; perda <= 30 min).
-Como o T1 e longo, comece numa sexta a noite (Fase 05 §9.8) e deixe a janela diaria livre para uso (`-Pause`).
+Como o T1 e longo, comece numa sexta a noite (Fase 05 Â§9.8) e deixe a janela diaria livre para uso (`-Pause`).
 
 ## 4. Avaliar
 
@@ -59,7 +77,7 @@ Mesma amostra do professor (2.000 ids do val v2c + 500 Generic-JS), `measures.js
 
 ## 5. Criterios de decisao distilado x controle
 
-Os de `Repos\KapiCoder-Mongo-Nano\README_job.md` §7 / `configs\rounds.yaml` (exec-valid / teto +2 p.p. com IC95% > 0; FIM acc nao-inferior -2 p.p.; campos inexistentes em `full` <= gold + 0,5 p.p.; Generic-JS <= -3 p.p.
+Os de `Repos\KapiCoder-Mongo-Nano\README_job.md` Â§7 / `configs\rounds.yaml` (exec-valid / teto +2 p.p. com IC95% > 0; FIM acc nao-inferior -2 p.p.; campos inexistentes em `full` <= gold + 0,5 p.p.; Generic-JS <= -3 p.p.
 vs zero-shot). Adotar o distilado so se todos valerem; senao, rotulo gold com o professor so como filtro (e o J10 vira o T1 de referencia). Sem o J10 o G2.4 do professor fica sem referencia: nao cortar.
 
 ## 6. Decisoes pendentes do usuario

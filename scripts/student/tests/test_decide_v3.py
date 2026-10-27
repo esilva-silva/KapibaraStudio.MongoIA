@@ -92,3 +92,38 @@ def test_cli_writes_gate_only_on_go(tmp_path, monkeypatch):
     hom.write_text(json.dumps(_hom(new_full=0.16, ci_low=-0.05)), encoding="utf-8")
     dv.main(["--tier", "t0", "--hom-json", str(hom), "--out-dir", str(out)])
     assert not (out / "v3_gate_t0.go").exists()          # o portao some se uma reavaliacao nao for GO
+
+
+@pytest.mark.parametrize("value", [None, float("nan"), float("inf"), -0.1, 1.1, True])
+def test_invalid_required_generic_metric_never_approves(value):
+    gen = copy.deepcopy(GEN)
+    gen["new"]["headline"]["normalized_match"] = value
+    with pytest.raises(ValueError, match="obrigatoria"):
+        dv.decide("t0", _hom(), VAL, gen)
+
+
+def test_missing_generic_or_ceiling_never_approves():
+    with pytest.raises(ValueError):
+        dv.decide("t0", _hom(), VAL, {})
+    val = copy.deepcopy(VAL)
+    val["new"]["reference_ceiling"] = {}
+    with pytest.raises(ValueError):
+        dv.decide("t0", _hom(), val, GEN)
+
+
+def test_exact_guard_boundaries_and_explicit_gain_sign():
+    d = dv.decide("t0", _hom(fim_new=0.321, eoc_new=0.734), VAL, GEN)
+    assert d["checks"]["C3_hom_guardrail_loss_le_1pp"]
+    improved = dv.decide("t0", _hom(fim_new=0.4234, eoc_new=0.8617), VAL, GEN)
+    assert improved["numbers"]["comparisons"]["hom_fim_acc"]["delta_pp"] == pytest.approx(9.24)
+    assert "positivo significa ganho" in dv.render_md(improved)
+
+
+@pytest.mark.parametrize("changes", [{"ci_high": None}, {"ci_low": True}, {"ci_high": 0.01}, {"delta": float("nan")}])
+def test_incomplete_or_invalid_paired_interval_is_not_confirmed(changes):
+    hom = _hom()
+    metric = hom["pairs"]["t0_v3_vs_t0_distill"]["context_kind"]["groups"]["full"]["metrics"][0]
+    metric.update(changes)
+    result = dv.decide("t0", hom, VAL, GEN)
+    assert not result["checks"]["C2_improvement_confirmed_ci95"]
+    assert not result["go"]

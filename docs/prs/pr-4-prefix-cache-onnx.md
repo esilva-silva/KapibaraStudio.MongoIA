@@ -1,3 +1,5 @@
+> **Estado reconciliado em 26/10/2026:** especificacao historica; consultar codigo/ADRs e aceites atuais da IDE antes de implementar. PR1 atendido no aceite da IDE; PR2 contrato local-agent-qwen3-v1; PR3 com pendencias Atlas e paridade externa. EOS sera corrigido na IDE, sem eosfix. Cache CPU fica opt-in ate homologacao; GPU exige avaliacao de atualizacao GenAI, sem adotar versao por suposicao. [Evidencias e limites](../../reports/student/correcoes-coordenadas-20261026.md).
+
 # PR 4 — Sessão por aba com cache de prefixo (KV) no `OnnxLocalModelRuntime` para o autocomplete em CPU
 
 > Especificação (rascunho) para outra IA implementar no repositório do Kapibara Studio. É autocontida: leia-a inteira antes de começar. **Nada foi implementado na IDE**; o checkout de referência só foi lido.

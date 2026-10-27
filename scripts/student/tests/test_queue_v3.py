@@ -1,4 +1,4 @@
-"""Fila e configs do retreino v3: hiperparametros iguais ao sft_distill_v1, run-name distinto, inicio do zero, jobs enfileirados sem iniciar."""
+"""Fila e configs do retreino v3: hiperparametros iguais ao sft_distill_v1, run-name distinto, inicio do zero, contrato estatico de dependencias; nao depende do estado vivo da fila."""
 import json
 from pathlib import Path
 
@@ -37,7 +37,7 @@ def _jobs():
     return {j["id"]: j for j in cfg["jobs"]}
 
 
-def test_v3_jobs_are_queued_not_started_with_expected_dependencies():
+def test_v3_jobs_have_expected_dependency_and_approval_contract():
     jobs = _jobs()
     for jid in ("J20-T0-v3", "J21-T1-v3", "J22-T0-v3-eval", "J23-T1-v3-eval"):
         assert jid in jobs, jid
@@ -47,10 +47,9 @@ def test_v3_jobs_are_queued_not_started_with_expected_dependencies():
     assert "J22-T0-v3-eval" in jobs["J21-T1-v3"]["depends_on"]                       # o T1 so depois da decisao do T0
     assert "reports/student/v3_gate_t0.go" in jobs["J21-T1-v3"]["requires_files"]    # sem GO no T0 a fila NAO inicia o T1
     assert jobs["J23-T1-v3-eval"]["depends_on"] == ["J21-T1-v3"]
-    st = ROOT / "reports" / "gpu_queue" / "state.json"
-    if st.exists():
-        state = json.loads(st.read_text(encoding="utf-8"))
-        assert not any(j in state for j in ("J20-T0-v3", "J21-T1-v3", "J22-T0-v3-eval", "J23-T1-v3-eval")), "algum job v3 ja foi iniciado"
+    # state.json e historico local ignorado pelo Git: jobs v3 ja foram executados.
+    # A seguranca testada aqui e o DAG + requires_files, nao a ausencia historica de jobs.
+
 
 
 def test_v3_job_commands_point_to_v3_configs_and_scripts():

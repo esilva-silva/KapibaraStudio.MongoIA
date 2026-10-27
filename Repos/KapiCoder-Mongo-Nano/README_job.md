@@ -1,8 +1,26 @@
+# Job atual — KapiCoder-Mongo-Nano / sft_v3
+
+Configuracao vigente: `Repos/KapiCoder-Mongo-Nano/configs/sft_v3.yaml`; SHA256 `54fc8718fb07857ded4cf8937c6b785ef4599545cb001924d8cb67cc41b7ecdc`. Seed `20261018`; base e corpus sao os da configuracao, sem iniciar de pesos v1.
+
+Comando de reproducao (somente apos autorizacao de GPU/treino):
+
+```powershell
+& 'C:/SlopStudio.MongoAI-artifacts/.venv/Scripts/python.exe' '-I' 'scripts/student/train_student.py' '--config' 'Repos/KapiCoder-Mongo-Nano/configs/sft_v3.yaml' '--resume' 'auto'
+```
+
+Comando extraido do job `J20-T0-v3` em `configs/gpu_queue.yaml` (inclui cortes CLI vigentes, quando aplicaveis). Usar a fila `scripts/gpu_queue.ps1` e confirmar a RX 7800 XT por contadores; nunca selecionar por indice. O comando acima identifica o job, nao autoriza executa-lo. Relatorios: `Repos/KapiCoder-Mongo-Nano/reports/sft_v3/run_manifest.json`, `reports/student/v3_decision_t0.json` e `reports/datasets/homolog-v3-eval-t0.json`.
+
+Limitacoes de independencia, criterios e pendencias: `reports/student/correcoes-coordenadas-20261026.md`.
+
+---
+
+## Historico v1 (nao usar para reproduzir o v3)
+
 # Job de treino do KapiCoder-Mongo-Nano (T0, Qwen2.5-Coder-0.5B): distilado x controle
 
 Estado: **preparado e enfileirado, NAO iniciado** (nenhum treino completo foi executado; so smoke de 20 passos + retomada, `reports\student\smoke_report.md` na raiz).
 Base `BaseRepos\Qwen2.5-Coder-0.5B` (rev. `8123ea2e…`), workspace `Repos\KapiCoder-Mongo-Nano`. Escopo: **autocomplete FIM** `editor-context-v1` (chat fora ate a Q1;
-KD por logits adiado). Spec: `docs\fase-05-treinamento.md` §6.2/§7/§9, gates `configs\gates.yaml` (T0) e `configs\gates.teacher.yaml` (G2.4), regra `configs\rounds.yaml` (draft).
+KD por logits adiado). Spec: `docs\fase-05-treinamento.md` Â§6.2/Â§7/Â§9, gates `configs\gates.yaml` (T0) e `configs\gates.teacher.yaml` (G2.4), regra `configs\rounds.yaml` (draft).
 
 Python (venv ROCm; nao instalar torch novo): `$PY = "C:\SlopStudio.MongoAI-artifacts\.venv\Scripts\python.exe"`, sempre com `-I`.
 

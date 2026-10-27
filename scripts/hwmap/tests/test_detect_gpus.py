@@ -320,3 +320,45 @@ def test_live_enumeration_smoke():
     if not ads:
         pytest.skip("DXGI indisponivel")
     json.dumps(dg.decide(ads, CPU12, CFG))
+
+
+@pytest.mark.parametrize("cores,threads", [(8,8), (8,16), (8,12), (24,32), (12,24)])
+def test_physical_cores_are_wmi_measurements_not_half_threads(monkeypatch, cores, threads):
+    monkeypatch.setattr(dg.os, "cpu_count", lambda: threads)
+    assert dg.detect_cpu({"cpu": [{"NumberOfCores": cores, "Name": "fixture"}]})["physical_cores"] == cores
+
+
+def test_unknown_topology_is_not_invented(monkeypatch):
+    monkeypatch.setattr(dg.os, "cpu_count", lambda: 16)
+    assert dg.detect_cpu(None)["physical_cores"] is None
+
+
+def test_missing_device_id_can_use_name_or_unknown_rule():
+    adapter = ad("AMD Radeon RX 7800 XT", 0x1002, None, 16368)
+    assert dg.decide([adapter], CPU12, CFG)["chosen_adapter"]["device_id"] is None
+    adapter["name"] = "Unknown adapter"
+    assert dg.decide([adapter], CPU12, CFG)["needs_microbench"]
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_wmi_controllers_without_luids_are_still_a_multi_adapter_machine(reverse):
+    wmi = {"video": [
+        {"Name": "NVIDIA GeForce GTX 1650", "PNPDeviceID": "PCI\\VEN_10DE&DEV_1F82", "AdapterRAM": 4096 * 1024 * 1024},
+        {"Name": "Intel(R) UHD Graphics 630", "PNPDeviceID": "PCI\\VEN_8086&DEV_3E92", "AdapterRAM": 128 * 1024 * 1024}
+    ]}
+    adapters = dg.adapters_from_wmi(wmi)
+    assert all(adapter["luid"] is None for adapter in adapters)
+    if reverse:
+        adapters.reverse()
+    result = dg.decide(adapters, CPU12, CFG)
+    assert result["chosen_adapter"]["name"] == "NVIDIA GeForce GTX 1650"
+    assert result["adapter_selection"]["multi_adapter_machine"] is True
+    assert result["adapter_selection"]["effective_adapter_check_required"] is True
+
+
+def test_single_wmi_controller_without_luid_is_not_a_multi_adapter_machine():
+    adapters = dg.adapters_from_wmi({"video": [
+        {"Name": "NVIDIA GeForce GTX 1650", "PNPDeviceID": "PCI\\VEN_10DE&DEV_1F82", "AdapterRAM": 4096 * 1024 * 1024}
+    ]})
+    result = dg.decide(adapters, CPU12, CFG)
+    assert result["adapter_selection"]["multi_adapter_machine"] is False

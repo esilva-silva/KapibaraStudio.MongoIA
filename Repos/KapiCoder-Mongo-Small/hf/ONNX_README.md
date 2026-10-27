@@ -38,7 +38,7 @@ Each folder holds `model.onnx` (with `model.onnx.data` when the weights are exte
 ## Notes before using
 
 - **The `kapi` metadata serves the Kapibara Studio application.** `kapibarastudio-model.json` (schema `kapilab-kapi-model-v1`) and `kapicoder_manifest.json` (schema `kapilab-kapicoder-manifest-v1`) are read by that editor to load and verify a model; other applications can ignore them.
-- **EOS problem in onnxruntime-genai 0.15.2, also affecting the IDE.** The step that generates `<|endoftext|>` does not append that token to the sequence, so code that reads the last element of `GetSequence(0)` repeats the previous token (for example `1` becomes `11`). Read `get_next_tokens()` or check `is_done()` first. The packages are published as exported, without a workaround.
+- **EOS integration requirement (GenAI 0.15.2):** EOS may finish generation without appending a token. The corrected IDE consumes a token only when `GetSequence(0)` grows after `GenerateNextToken`; this prevents repeating the preceding token and preserves a valid last token. Checking `IsDone()` alone after generating can discard a valid token. Python references use `get_next_tokens()`. Use the corrected IDE runtime; these are the standard exports, without alternate EOS packages.
 - **Quantised and converted builds can differ from the bf16 weights**, in accuracy and in the text they generate. Measure on your own prompts before relying on one. Latency depends on the host and was not measured for this card.
 - The prompt format is the `editor-context-v1` header described in the main model card. The model only suggests text and never executes anything; validate field names before running a suggestion.
 
@@ -54,5 +54,12 @@ Each folder holds `model.onnx` (with `model.onnx.data` when the weights are exte
 
 **Status: PREVIEW / experimental, preview público, não qualificado.** Builds ONNX do `esilva/KapiCoder-Mongo-Small` (versão v3) para o `onnxruntime-genai`, feitos para o editor Kapibara Studio.
 Este repositório não tem avaliação própria: os números do card principal vêm dos pesos safetensors bf16. Pastas autocontidas por variante: `cpu-int8/`, `dml-fp16/`.
-Os arquivos `kapibarastudio-model.json` e `kapicoder_manifest.json` (metadado `kapi`) servem ao Kapibara Studio; outros usos podem ignorá-los. O ORT GenAI 0.15.2 tem um problema de EOS (repete o último token se a aplicação ler `GetSequence(0)[^1]`), que afeta também a IDE.
+Os arquivos `kapibarastudio-model.json` e `kapicoder_manifest.json` (metadado `kapi`) servem ao Kapibara Studio; outros usos podem ignorá-los. A IDE corrigida consome somente tokens efetivamente anexados à sequência, evitando duplicação no EOS do GenAI 0.15.2 sem perder um último token válido. Usar apenas `IsDone()` após gerar não basta. Os pacotes permanecem os exports padrão.
 Licença Apache-2.0 com aviso de modificação (derivado do Qwen2.5-Coder-1.5B, sem endosso da equipe Qwen).
+
+
+## Installation in the IDE
+
+The remote catalog uses this dedicated ONNX repository and downloads one complete variant folder, pinned to a Hub commit and verified by file hashes. Nano `cpu-int4` is the default; Small `cpu-int8` is an optional CPU alternative. Keep `editor-context-v1` and greedy autocomplete (32 output tokens, recommended context 2048). Prefix cache remains disabled pending latency and memory qualification. DirectML folders are experimental: successful packaging does not establish adapter selection or GPU performance.
+
+For an offline preview, select the desired complete variant folder through the local ONNX model directory setting. Do not select the Safetensors root or mix files from different variants. Public download requires publication of this staged repository; a local staging folder is not a published release.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Micro-benchmark de primeira execucao (docs/mapa-compatibilidade-gpu.md §6): prefill de ~270 tokens + 32 tokens de decodificacao.
+"""Micro-benchmark de primeira execucao (docs/mapa-compatibilidade-gpu.md Â§6): prefill de ~270 tokens + 32 tokens de decodificacao.
 
-STATUS: o executor (`run_candidate`) foi executado de verdade na fase 2 (reports/hwmap/phase2_measurements.md §C); `total_s` no JSON = import+carga+4 geracoes
+STATUS: o executor (`run_candidate`) foi executado de verdade na fase 2 (reports/hwmap/phase2_measurements.md Â§C); `total_s` no JSON = import+carga+4 geracoes
 (sem o custo de iniciar o Python). Um processo por candidato; nao use o indice DXGI: confirme o adaptador por LUID/contadores
 (scripts/export/gpu_probe.ps1) como o onnx_run.py --mode verify.
 
@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import statistics
 import sys
 import time
@@ -30,21 +31,42 @@ def cache_key(adapter: dict, driver_version: str, genai_version: str, package_ha
 
 
 def evaluate(tier: str, gpu: dict, cpu: dict | None, cfg_mb: dict) -> dict:
-    """gpu/cpu: {"ttft_ms_p50", "decode_tok_s", "ok"}; `cpu` = SEMPRE o T0 int4 na CPU do mesmo PC (baseline unico, fase 2 §C). -> {"accept": bool, "reasons": [...]}  (criterios [E] do YAML)."""
+    """gpu/cpu: {"ttft_ms_p50", "decode_tok_s", "ok"}; `cpu` = SEMPRE o T0 int4 na CPU do mesmo PC (baseline unico, fase 2 Â§C). -> {"accept": bool, "reasons": [...]}  (criterios [E] do YAML)."""
     reasons = []
     if not gpu or not gpu.get("ok", True):
         return {"accept": False, "reasons": ["falha na execucao da GPU"]}
+    if gpu.get("adapter_verified") is not True:
+        reasons.append("adaptador efetivo sem prova por contador (indisponivel ou divergente)")
+
+    def positive_finite(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            return False
+        try:
+            return math.isfinite(value)
+        except OverflowError:
+            return False
+
+    invalid_metrics = False
+    for key in ("ttft_ms_p50", "decode_tok_s"):
+        if not positive_finite(gpu.get(key)):
+            reasons.append(f"metrica GPU obrigatoria ausente/invalida: {key}")
+            invalid_metrics = True
+    if not cpu or not cpu.get("ok", True) or not positive_finite(cpu.get("ttft_ms_p50")):
+        reasons.append("baseline CPU obrigatorio ausente/invalido: ttft_ms_p50")
+        invalid_metrics = True
+    if invalid_metrics:
+        return {"accept": False, "reasons": reasons}
+
     ttft_max = cfg_mb["t1_accept_ttft_ms_p50_max"] if tier == "t1" else cfg_mb["accept_ttft_ms_p50_max"]
     tok_min = cfg_mb["t1_accept_decode_tok_s_min"] if tier == "t1" else cfg_mb["accept_decode_tok_s_min"]
     if gpu["ttft_ms_p50"] > ttft_max:
         reasons.append(f"TTFT {gpu['ttft_ms_p50']:.0f} ms > {ttft_max}")
     if gpu["decode_tok_s"] < tok_min:
         reasons.append(f"decode {gpu['decode_tok_s']:.1f} tok/s < {tok_min}")
-    if cpu and cpu.get("ttft_ms_p50"):
-        ratio = gpu["ttft_ms_p50"] / cpu["ttft_ms_p50"]
-        ratio_max = cfg_mb.get("t1_accept_ttft_vs_cpu_ratio_max", cfg_mb["accept_ttft_vs_cpu_ratio_max"]) if tier == "t1" else cfg_mb["accept_ttft_vs_cpu_ratio_max"]
-        if ratio > ratio_max:
-            reasons.append(f"TTFT GPU/CPU {ratio:.2f} > {ratio_max}")
+    ratio = gpu["ttft_ms_p50"] / cpu["ttft_ms_p50"]
+    ratio_max = cfg_mb.get("t1_accept_ttft_vs_cpu_ratio_max", cfg_mb["accept_ttft_vs_cpu_ratio_max"]) if tier == "t1" else cfg_mb["accept_ttft_vs_cpu_ratio_max"]
+    if ratio > ratio_max:
+        reasons.append(f"TTFT GPU/CPU {ratio:.2f} > {ratio_max}")
     return {"accept": not reasons, "reasons": reasons or ["ok"]}
 
 
@@ -65,8 +87,15 @@ def select_adapter(spec: str, allow_igpu: bool) -> dict:
     return dxgi_select.install(ven, dev)
 
 
+def warmup_rejected(tier: str, ttft_ms: float, config: dict) -> bool:
+    """[E] Limite de aborto antes das repeticoes; igualdade com o teto ainda e aceita."""
+    import math
+    ceiling = config["t1_accept_ttft_ms_p50_max"] if tier == "t1" else config["accept_ttft_ms_p50_max"]
+    return not math.isfinite(ttft_ms) or ttft_ms > ceiling * config["abort_warmup_ttft_factor"]
+
+
 def run_candidate(pkg: str, provider: str, prompt_tokens: int = 270, decode_tokens: int = 32, repeats: int = 3, adapter: str | None = None,
-                  allow_igpu: bool = False, threads: int = 0) -> dict:
+                  allow_igpu: bool = False, threads: int = 0, tier: str = "t0") -> dict:
     import numpy as np
     import onnxruntime_genai as og
     t_load = time.perf_counter()
@@ -94,6 +123,11 @@ def run_candidate(pkg: str, provider: str, prompt_tokens: int = 270, decode_toke
         g.append_tokens(np.array(ids, dtype=np.int32))
         g.generate_next_token()
         ttft = time.perf_counter() - t
+        if k == 0:
+            import detect_gpus
+            if warmup_rejected(tier, ttft * 1000, detect_gpus.load_config()["microbench"]):
+                del g
+                return {"ok": False, "provider": provider, "adapter_verified": False, "reason": "warmup_ttft_limit", "warmup_ttft_ms": round(ttft * 1000, 1)}
         t1 = time.perf_counter()
         n = 1
         while n < decode_tokens and not g.is_done():
@@ -104,7 +138,8 @@ def run_candidate(pkg: str, provider: str, prompt_tokens: int = 270, decode_toke
         if k:
             ttfts.append(ttft * 1000)
             rates.append((n - 1) / dec if dec > 0 else 0.0)
-    return {"ok": True, "provider": provider, "load_s": round(load_s, 2), "ttft_ms_p50": round(statistics.median(ttfts), 1),
+    # This process collects timings only; selecting an adapter is not counter evidence.
+    return {"ok": True, "provider": provider, "adapter_verified": False, "load_s": round(load_s, 2), "ttft_ms_p50": round(statistics.median(ttfts), 1),
             "ttft_ms_all": [round(x, 1) for x in ttfts], "decode_tok_s": round(statistics.median(rates), 1)}
 
 
@@ -120,9 +155,9 @@ def main() -> int:
     a = ap.parse_args()
     t_start = time.perf_counter()
     try:
-        res = run_candidate(a.pkg, a.provider, adapter=a.adapter, allow_igpu=a.allow_igpu, threads=a.threads)
+        res = run_candidate(a.pkg, a.provider, adapter=a.adapter, allow_igpu=a.allow_igpu, threads=a.threads, tier=a.tier)
     except Exception as e:  # noqa: BLE001  - qualquer falha => candidato reprovado, o orquestrador cai no CPU
-        res = {"ok": False, "provider": a.provider, "error": f"{type(e).__name__}: {e}"[:400]}
+        res = {"ok": False, "provider": a.provider, "adapter_verified": False, "error": f"{type(e).__name__}: {e}"[:400]}
     res["tier"] = a.tier
     res.update(adapter_requested=a.adapter, allow_igpu=a.allow_igpu, threads=a.threads, total_s=round(time.perf_counter() - t_start, 2))
     Path(a.out).write_text(json.dumps(res, indent=2), encoding="utf-8")

@@ -172,8 +172,8 @@ def detect_cpu(wmi: dict | None) -> dict:
             cores = sum(int(c.get("NumberOfCores") or 0) for c in cs) or None
             name = cs[0].get("Name")
     logical = os.cpu_count() or 0
-    return {"name": name, "physical_cores": cores or max(1, logical // 2), "logical_cores": logical, "ram_gb": ram_gb,
-            "physical_cores_source": "wmi" if cores else "estimado(logico/2)"}
+    return {"name": name, "physical_cores": cores, "logical_cores": logical, "ram_gb": ram_gb,
+            "physical_cores_source": "wmi" if cores else "unknown (nao inferir SMT)"}
 
 
 def merge_driver(adapters: list[dict], wmi: dict | None) -> None:
@@ -205,7 +205,7 @@ def match_rule(a: dict, cfg: dict) -> dict | None:
             continue
         m = r.get("match", {})
         for lo, hi in m.get("device_id_ranges", []):
-            if lo <= a["device_id"] <= hi:
+            if isinstance(a.get("device_id"), int) and lo <= a["device_id"] <= hi:
                 return r
         rx = m.get("name_regex")
         if rx and re.search(rx, a["name"], re.I):
@@ -263,7 +263,7 @@ def decide(adapters: list[dict], cpu: dict, cfg: dict) -> dict:
         is_igpu = bool(rule.get("integrated")) or rule.get("kind") == "igpu"
         rv = resolve_variant(rule, a, cfg, is_igpu)
         variant, why = rv["variant"], rv["why"]
-        ev = {"luid": a.get("luid"), "name": a["name"], "vendor_id": f"0x{a['vendor_id']:04X}", "device_id": f"0x{a['device_id']:04X}",
+        ev = {"luid": a.get("luid"), "name": a["name"], "vendor_id": f"0x{a['vendor_id']:04X}", "device_id": (f"0x{a['device_id']:04X}" if isinstance(a.get("device_id"), int) else None),
               "dxgi_index": a.get("dxgi_index"), "dedicated_vram_mb": a["dedicated_vram_mb"], "shared_mb": a.get("shared_mb"), "driver_version": a.get("driver_version"),
               "is_software": bool(a.get("is_software")), "is_integrated": is_igpu, "rule": rule["id"], "family": rule["family"],
               "supported": rule.get("supported"), "variant_if_chosen": variant, "context_cap_tokens": rv["context_cap_tokens"],
@@ -310,7 +310,9 @@ def decide(adapters: list[dict], cpu: dict, cfg: dict) -> dict:
         chain.append("t0-dml-fp16")
     chain.append(rule.get("fallback", cpu_variant))
     needs = ev["needs_microbench"] or rule.get("supported") == "unknown"
-    others = [e for e in evaluated if e["luid"] != ev["luid"] and not e["is_software"]]
+    # WMI fallback has no LUIDs: distinct entries still represent other controllers.
+    others = [e for e in evaluated if e is not ev and not e["is_software"]
+              and (e["luid"] is None or ev["luid"] is None or e["luid"] != ev["luid"])]
     res.update(chosen_adapter={k: ev[k] for k in ("luid", "name", "vendor_id", "device_id", "dxgi_index", "dedicated_vram_mb", "shared_mb", "driver_version",
                                                   "is_integrated", "rule", "family")},
                recommended_variant=variant, context_cap_tokens=rv["context_cap_tokens"], context_capped=rv["capped"],
