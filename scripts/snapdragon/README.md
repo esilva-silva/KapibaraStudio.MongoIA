@@ -136,3 +136,7 @@ O runner precisa reservar geração após o padding estático: 361 tokens com ja
 A derivação `derive_static_window.py` usa somente StaticLLM sobre uma cópia do SplitModel anterior, sem repetir GPTQ ou calibração. Não altera a IDE ou o pacote publicado de janela 64. A nova janela 32 permite 2016 tokens de entrada mais 32 de saída no contexto 2048. Isso foi validado por geração em CPU até a sequência 2048, além de controle curto idêntico em 32 IDs à janela anterior.
 
 Use `inspect_qnn_prepared.py --expected-window 32` para essa derivação; o padrão 64 permanece para auditar o pacote anterior. Relatórios e plano de publicação estão em reports/snapdragon/nano-qnn-window32-*. A publicação da nova derivação está bloqueada por revisão automática até autorização explícita do payload; não há commit Hugging Face de janela 32 disponível ainda.
+
+Para preservar os arquivos do tokenizer do snapshot em uma nova cópia local, use `prepare_qnn_transfer.py --preserve-tokenizer-source`. O flag confere a proveniência e copia tokenizer.json/config mais auxiliares disponíveis; não substitui config.json do modelo derivado. Audite com `inspect_qnn_prepared.py --expected-window 32 --require-original-tokenizer`.
+
+A cópia local v2 foi aprovada nesse gate, mantendo 456 IDs e o controle2016+32 na CPU. Seu plano de publicação substitui o v1: `reports/snapdragon/nano-qnn-window32-original-tokenizer-publication-plan-rx7800xt.json`. A publicação continua pendente de aprovação específica após a rejeição automática; os pacotes anteriores permanecem preservados.

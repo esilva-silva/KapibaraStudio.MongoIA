@@ -243,6 +243,42 @@ def validate_interfaces(components, genai, expected_window=64):
     return failures
 
 
+def tokenizer_byte_parity(directory, source, required=False):
+    """Optionally require the original tokenizer files byte-for-byte, independently of ID parity.
+
+    config.json/generation_config.json describe the derived model and are deliberately
+    not compared against the source model. Optional tokenizer files are required only
+    when they are present in the original snapshot.
+    """
+    report = {"required": required, "checked": False, "passed": True, "files": [],
+              "optional_not_present_in_source": []}
+    if not required:
+        return report
+    directory, source = Path(directory).resolve(), Path(source).resolve()
+    mandatory = ("tokenizer.json", "tokenizer_config.json")
+    optional = ("merges.txt", "vocab.json", "added_tokens.json", "special_tokens_map.json", "chat_template.jinja")
+    selected = list(mandatory)
+    for name in optional:
+        if (source / name).is_file():
+            selected.append(name)
+        else:
+            report["optional_not_present_in_source"].append(name)
+    for name in selected:
+        entry = {"path": name, "source_sha256": None, "artifact_sha256": None, "matches": False}
+        for root, label in ((source, "source"), (directory, "artifact")):
+            try:
+                path = safe_file(root, name)
+                entry[label + "_sha256"] = sha256(path)
+                entry[label + "_bytes"] = path.stat().st_size
+            except (OSError, ValueError) as exc:
+                entry[label + "_error"] = str(exc)
+        entry["matches"] = entry["source_sha256"] is not None and entry["source_sha256"] == entry["artifact_sha256"]
+        report["files"].append(entry)
+    report["checked"] = True
+    report["passed"] = all(entry["matches"] for entry in report["files"])
+    return report
+
+
 def tokenizer_parity(directory, source, sample_directory):
     original = Tokenizer.from_file(str(source / "tokenizer.json"))
     exported = Tokenizer.from_file(str(directory / "tokenizer.json"))
@@ -268,7 +304,7 @@ def tokenizer_parity(directory, source, sample_directory):
             "passed": not mismatch and not corpus_mismatch}
 
 
-def inspect(directory, source, samples, expected_window=64):
+def inspect(directory, source, samples, expected_window=64, require_original_tokenizer=False):
     started = time.monotonic()
     directory, source, samples = Path(directory).resolve(), Path(source).resolve(), Path(samples).resolve()
     report = {"schema": "qnn-prepared-artifact-validation-v1", "artifact_directory": str(directory),
@@ -278,6 +314,9 @@ def inspect(directory, source, samples, expected_window=64):
               "components": {}, "failures": [], "limitations": ["No generation, HTP compilation, device profiling or quality measurement.",
                   "Symbolic KV sequence dimensions do not independently prove runtime capacity2048."]}
     try:
+        report["byte_parity"] = tokenizer_byte_parity(directory, source, require_original_tokenizer)
+        if not report["byte_parity"]["passed"]:
+            report["failures"].append("Original tokenizer byte parity failed")
         composite = json.loads((directory / "model_config.json").read_text(encoding="utf-8"))
         genai = json.loads((directory / "genai_config.json").read_text(encoding="utf-8"))
         cfg = composite["config"]
@@ -319,6 +358,7 @@ def inspect(directory, source, samples, expected_window=64):
         external_names = {location for component in report["components"].values() for location in component["external_data_locations"]}
         required = {"model_config.json", "genai_config.json", "config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja", *external_names}
         required.update(component["file"] for component in report["components"].values())
+        required.update(entry["path"] for entry in report["byte_parity"]["files"] if entry["artifact_sha256"] is not None)
         report["artifact_files"] = [{"path": name, "size": safe_file(directory, name).stat().st_size, "sha256": sha256(safe_file(directory, name))} for name in sorted(required)]
     except Exception as exc:
         report["failures"].append(type(exc).__name__ + ": " + str(exc))
@@ -336,10 +376,12 @@ def main(argv=None):
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--expected-window", type=int, choices=(32, 64), default=64,
                         help="Explicit expected prefill window; metadata and context boundaries must match")
+    parser.add_argument("--require-original-tokenizer", action="store_true",
+                        help="Require source tokenizer bytes and all tokenizer auxiliaries present in the source snapshot")
     args = parser.parse_args(argv)
     if args.out.resolve().is_relative_to(args.artifact_dir.resolve()):
         parser.error("Report must be outside the read-only artifact directory")
-    report = inspect(args.artifact_dir, args.source, args.samples, args.expected_window)
+    report = inspect(args.artifact_dir, args.source, args.samples, args.expected_window, args.require_original_tokenizer)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"passed": report["passed"], "transfer_ready": report["transfer_ready"], "components": list(report["components"]),

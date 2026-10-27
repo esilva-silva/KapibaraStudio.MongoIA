@@ -1,5 +1,7 @@
 """CPU metadata/interface regressions for an explicitly requested static prefill window."""
 import copy
+import json
+import tempfile
 import importlib.util
 from pathlib import Path
 import unittest
@@ -118,6 +120,89 @@ class ExpectedWindowTests(unittest.TestCase):
                 inspector.main(args)
             self.assertEqual(error.exception.code, 2)
             inspect.assert_not_called()
+
+
+class TokenizerByteParityTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.source, self.artifact = self.root / "source", self.root / "artifact"
+        self.source.mkdir(); self.artifact.mkdir()
+        for name in ("tokenizer.json", "tokenizer_config.json"):
+            for directory in (self.source, self.artifact):
+                (directory / name).write_bytes(b'{"version":"1.0"}\n')
+
+    def test_default_does_not_require_byte_identity_or_new_auxiliary_files(self):
+        (self.artifact / "tokenizer.json").write_bytes(b'{"version":"2.0"}\n')
+        (self.artifact / "tokenizer_config.json").unlink()
+        result = inspector.tokenizer_byte_parity(self.artifact, self.source)
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["required"])
+        self.assertFalse(result["checked"])
+
+    def test_strict_compares_required_and_all_auxiliaries_that_exist_in_source(self):
+        auxiliaries = ("merges.txt", "vocab.json", "added_tokens.json", "special_tokens_map.json", "chat_template.jinja")
+        for name in auxiliaries:
+            for directory in (self.source, self.artifact):
+                (directory / name).write_bytes(("original-" + name).encode())
+        result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
+        self.assertTrue(result["passed"])
+        self.assertTrue(result["required"])
+        self.assertTrue(result["checked"])
+        self.assertEqual(len(result["files"]), 7)
+        self.assertTrue(all(entry["source_sha256"] == entry["artifact_sha256"] for entry in result["files"]))
+
+    def test_single_changed_byte_fails_even_when_sizes_stay_identical(self):
+        for name in ("tokenizer.json", "tokenizer_config.json"):
+            with self.subTest(name=name):
+                original = (self.source / name).read_bytes()
+                (self.artifact / name).write_bytes(original.replace(b"1.0", b"2.0"))
+                result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
+                entry = next(entry for entry in result["files"] if entry["path"] == name)
+                self.assertFalse(result["passed"])
+                self.assertFalse(entry["matches"])
+                self.assertEqual(entry["source_bytes"], entry["artifact_bytes"])
+                self.assertNotEqual(entry["source_sha256"], entry["artifact_sha256"])
+                (self.artifact / name).write_bytes(original)
+
+    def test_missing_auxiliary_present_in_source_fails(self):
+        for name in ("merges.txt", "vocab.json", "added_tokens.json", "special_tokens_map.json", "chat_template.jinja"):
+            with self.subTest(name=name):
+                (self.source / name).write_bytes(b"original auxiliary")
+                result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
+                entry = next(entry for entry in result["files"] if entry["path"] == name)
+                self.assertFalse(result["passed"])
+                self.assertIsNone(entry["artifact_sha256"])
+                self.assertIn("artifact_error", entry)
+                (self.source / name).unlink()
+
+    def test_each_mandatory_file_is_required_in_both_source_and_artifact(self):
+        for directory in (self.source, self.artifact):
+            for name in ("tokenizer.json", "tokenizer_config.json"):
+                with self.subTest(directory=directory.name, name=name):
+                    original = (directory / name).read_bytes()
+                    (directory / name).unlink()
+                    self.assertFalse(inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)["passed"])
+                    (directory / name).write_bytes(original)
+
+    def test_derived_model_configuration_is_not_compared_or_modified(self):
+        (self.source / "config.json").write_text('{"max_position_embeddings":32768}', encoding="utf-8")
+        derived = '{"max_position_embeddings":2048,"quantization":"derived"}'
+        (self.artifact / "config.json").write_text(derived, encoding="utf-8")
+        result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
+        self.assertTrue(result["passed"])
+        self.assertNotIn("config.json", [entry["path"] for entry in result["files"]])
+        self.assertEqual((self.artifact / "config.json").read_text(encoding="utf-8"), derived)
+
+    def test_cli_keeps_old64_default_and_forwards_strict32_flag(self):
+        base = ["--artifact-dir", str(self.artifact), "--source", str(self.source), "--samples", str(self.root / "samples"), "--out", str(self.root / "report.json")]
+        result = {"passed": True, "transfer_ready": True, "components": {}, "failures": []}
+        for flags, window, strict in (([], 64, False), (["--expected-window", "32", "--require-original-tokenizer"], 32, True)):
+            with self.subTest(flags=flags), patch.object(inspector, "inspect", return_value=result) as call:
+                self.assertEqual(inspector.main(base + flags), 0)
+                call.assert_called_once_with(self.artifact, self.source, self.root / "samples", window, strict)
+                self.assertTrue(json.loads((self.root / "report.json").read_text())["passed"])
 
 
 if __name__ == "__main__":
