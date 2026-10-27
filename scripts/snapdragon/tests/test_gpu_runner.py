@@ -102,6 +102,14 @@ class RunnerTests(unittest.TestCase):
             with self.subTest(window=window), self.assertRaises(ValueError):
                 runner.generation_budget(361, 2048, window)
 
+    def test_qnn_cache_length_keeps_budget_and_padding(self):
+        self.assertEqual(runner.requested_generation_length(361, 2048, 32, 'qnn'), (384, 416, 2048))
+        self.assertEqual(runner.requested_generation_length(2016, 2048, 32, 'qnn'), (2016, 2048, 2048))
+        self.assertEqual(runner.requested_generation_length(361, 2048, 1, 'cpu'), (361, 393, 393))
+        self.assertEqual(runner.requested_generation_length(361, 2048, 1, 'dml'), (361, 393, 393))
+        with self.assertRaises(ValueError): runner.requested_generation_length(2017, 2048, 32, 'qnn')
+        self.assertEqual(runner.LIMIT, 32)
+
     def test_timing_excludes_first_token_from_decode_rate(self):
         r = runner.measurement([1, 2, 3], 'x', 10, 11, 13, 'eos', 5)
         self.assertEqual(r['ttft_ms'], 1000)

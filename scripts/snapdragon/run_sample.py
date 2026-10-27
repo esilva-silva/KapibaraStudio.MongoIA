@@ -107,6 +107,11 @@ def generation_budget(prompt_count, context_length=CONTEXT, window_size=1, new_t
     return padded, maximum
 
 
+def requested_generation_length(prompt_count, context_length, window_size, backend):
+    padded, minimum = generation_budget(prompt_count, context_length, window_size)
+    return padded, minimum, context_length if backend == 'qnn' else minimum
+
+
 class HFRunner:
     def __init__(self, model, device, expected_gpu=None):
         import torch
@@ -321,7 +326,7 @@ class GenAIRunner:
             raise ValueError('Corpus prompt_ids differ from ORT tokenizer')
         check_ids(ids)
         p = self.og.GeneratorParams(self.model)
-        padded_prompt, maximum = generation_budget(len(ids), self.context_length, self.prefill_window)
+        padded_prompt, minimum, maximum = requested_generation_length(len(ids), self.context_length, self.prefill_window, self.backend)
         p.set_search_options(do_sample=False, max_length=maximum, batch_size=1)
         start = time.perf_counter()
         g = self.og.Generator(self.model, p)
@@ -348,6 +353,7 @@ class GenAIRunner:
         result['generator_creation_ms'] = creation_ms
         result['padded_prompt_tokens'] = padded_prompt
         result['max_length_requested'] = maximum
+        result['minimum_length_for_padding'] = minimum
         return trim_suffix(result, item)
 
 def measurement(tokens, text, start, first, end, stop, prompt_count):
