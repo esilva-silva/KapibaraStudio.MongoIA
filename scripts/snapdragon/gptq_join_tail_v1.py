@@ -62,7 +62,7 @@ def build_blocks(rows, tokenizer, max_seq_len=2048, joiner='\n\n', expected_coun
                     'scope': 'Full token coverage; prompts may cross block boundaries; not indivisible prompt batching'}
 
 
-def kapi_gptq_join_tail_v1(dataset, model_name, audit_path, expected_stream_sha256, expected_count=256):
+def kapi_gptq_join_tail_v1(dataset, model_name, audit_path, expected_stream_sha256, expected_count=256, **olive_parameters):
     import numpy as np
     from tokenizers import Tokenizer
     tokenizer = Tokenizer.from_file(str(Path(model_name) / 'tokenizer.json'))
@@ -74,7 +74,8 @@ def kapi_gptq_join_tail_v1(dataset, model_name, audit_path, expected_stream_sha2
     if out.exists():
         raise ValueError('Runtime calibration audit path must be new')
     report.update(tokenizer_sha256=sha(Path(model_name) / 'tokenizer.json'), helper_sha256=sha(__file__),
-                  scope_runtime='Actual preprocessor output before Olive DataLoader/GPTQ; not downstream consumption capture')
+                  scope_runtime='Actual preprocessor output before Olive DataLoader/GPTQ; not downstream consumption capture',
+                  forwarded_parameter_names=sorted(olive_parameters))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     return [({'input_ids': np.array(block, dtype=np.int64),
