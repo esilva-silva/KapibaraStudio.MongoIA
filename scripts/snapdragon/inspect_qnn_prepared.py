@@ -190,7 +190,18 @@ def resource_diagnostics(config, directory):
             "relocation_required": bool(outside), "paths_modified": False}
 
 
-def validate_interfaces(components, genai):
+def validate_expected_window(genai, expected_window=64):
+    """Require the explicitly requested supported window; never infer acceptance from the artifact."""
+    if type(expected_window) is not int or expected_window not in (32, 64):
+        raise ValueError("Expected window must be 32 or 64")
+    actual = genai["model"]["decoder"]["sliding_window"]["window_size"]
+    if type(actual) is not int or actual != expected_window:
+        raise ValueError(f"GenAI window mismatch: requested {expected_window}, artifact {actual}")
+    return expected_window
+
+
+def validate_interfaces(components, genai, expected_window=64):
+    window = validate_expected_window(genai, expected_window)
     failures = []
     decoder = genai["model"]["decoder"]
     layers, heads, head_size = decoder["num_hidden_layers"], decoder["num_key_value_heads"], decoder["head_size"]
@@ -205,7 +216,7 @@ def validate_interfaces(components, genai):
         failures.append("Head input must be UINT16 [B,S,hidden]")
     if components["lm_head"]["outputs"] != [{"name": "logits", "dtype": "FLOAT", "shape": ["batch_size", "sequence_length", vocab]}]:
         failures.append("Head logits must be FLOAT [B,S,vocab]")
-    for name, sequence in (("context", 64), ("iterator", 1)):
+    for name, sequence in (("context", window), ("iterator", 1)):
         ins = {v["name"]: v for v in components[name]["inputs"]}
         outs = {v["name"]: v for v in components[name]["outputs"]}
         if len(embedding_out) == 1 and ins.get(embedding_out[0]["name"]) != {"name": embedding_out[0]["name"], "dtype": "UINT16", "shape": [1, sequence, hidden]}:
@@ -257,11 +268,12 @@ def tokenizer_parity(directory, source, sample_directory):
             "passed": not mismatch and not corpus_mismatch}
 
 
-def inspect(directory, source, samples):
+def inspect(directory, source, samples, expected_window=64):
     started = time.monotonic()
     directory, source, samples = Path(directory).resolve(), Path(source).resolve(), Path(samples).resolve()
     report = {"schema": "qnn-prepared-artifact-validation-v1", "artifact_directory": str(directory),
               "scope": "structural, numeric and tokenizer audit only", "inference_executed": False, "qualified": False,
+              "expected_window": expected_window,
               "versions": {name: importlib.metadata.version(name) for name in ("onnx", "numpy", "tokenizers")},
               "components": {}, "failures": [], "limitations": ["No generation, HTP compilation, device profiling or quality measurement.",
                   "Symbolic KV sequence dimensions do not independently prove runtime capacity2048."]}
@@ -278,7 +290,8 @@ def inspect(directory, source, samples):
         expected = {"type": genai["model"]["type"], "context_length": genai["model"]["context_length"],
                     "window_size": decoder["sliding_window"]["window_size"], "kv_heads": decoder["num_key_value_heads"], "head_size": decoder["head_size"]}
         report["genai"] = expected
-        if expected != {"type": "decoder-pipeline", "context_length": 2048, "window_size": 64, "kv_heads": 2, "head_size": 64}:
+        validate_expected_window(genai, expected_window)
+        if expected != {"type": "decoder-pipeline", "context_length": 2048, "window_size": expected_window, "kv_heads": 2, "head_size": 64}:
             raise ValueError("GenAI pipeline/context/window/KV metadata mismatch")
         if genai["search"]["max_length"] != 2048 or genai["search"]["past_present_share_buffer"] is not True:
             raise ValueError("Expected max_length2048 and shared past/present buffer")
@@ -299,7 +312,7 @@ def inspect(directory, source, samples):
             except Exception as exc:
                 report["failures"].append(name + ": " + type(exc).__name__ + ": " + str(exc))
         if set(report["components"]) == set(COMPONENTS):
-            report["failures"].extend(validate_interfaces(report["components"], genai))
+            report["failures"].extend(validate_interfaces(report["components"], genai, expected_window))
         report["tokenizer"] = tokenizer_parity(directory, source, samples)
         if not report["tokenizer"]["passed"]:
             report["failures"].append("Tokenizer or stored corpus IDs differ")
@@ -321,10 +334,12 @@ def main(argv=None):
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--samples", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--expected-window", type=int, choices=(32, 64), default=64,
+                        help="Explicit expected prefill window; metadata and context boundaries must match")
     args = parser.parse_args(argv)
     if args.out.resolve().is_relative_to(args.artifact_dir.resolve()):
         parser.error("Report must be outside the read-only artifact directory")
-    report = inspect(args.artifact_dir, args.source, args.samples)
+    report = inspect(args.artifact_dir, args.source, args.samples, args.expected_window)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"passed": report["passed"], "transfer_ready": report["transfer_ready"], "components": list(report["components"]),

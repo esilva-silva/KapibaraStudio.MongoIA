@@ -51,3 +51,13 @@ Antes de compilar no ARM, verificar o manifesto e preservar pipeline/model_confi
 Os relatórios dentro de audit registram os estados observados durante a preparação; o relatório estrutural aprovado e o manifesto de transferência são as evidências finais dessa cópia. A avaliação de qualidade publicada é a referência GPTQ, não uma avaliação do pipeline ONNX na NPU.
 
 Suíte dos scripts: 62 testes passaram e um foi ignorado por ausência do wheel opcional de inspeção. Benchmarks permanecem manuais. Os repositórios originais IDE b2164ab e MongoIA d01e04b estavam limpos na conferência.
+
+## Derivação de janela 32 e limite 2016+32
+
+A janela 64 exige padding de 2016 para 2048 antes de gerar e, portanto, não preserva o contrato lógico de 2016 tokens de entrada mais 32 de saída. Uma nova derivação executou apenas StaticLLM sobre uma cópia do SplitModel existente, com janela 32, sem repetir GPTQ ou calibração. Saída e cache novos preservam o pacote v7 e o source anterior.
+
+Os hashes de context.onnx.data, embeddings.onnx e lm_head.onnx são idênticos aos da janela 64. A auditoria parametrizada --expected-window 32 aprovou quatro grafos, interfaces context[1,32,896]/iterator[1,1,896], contexto configurado 2048, KV2x64 e paridade dos 456 prompts.
+
+O controle curto gerou os mesmos 32 IDs da janela 64. Um controle sintético separado, fora do corpus de qualidade, recebeu exatamente 2016 tokens e gerou 32 novos até sequência 2048, sem padding adicional ou truncamento. Não é qualificação na NPU. Suíte atual:71 testes passaram e um foi ignorado.
+
+Pacote local: C:/IA/models/KapiSnapdragonArtifacts/nano-qnn-window32-transfer-v1. O manifesto e os 27 itens foram verificados. Plano exato em nano-qnn-window32-publication-plan-rx7800xt.json. A tentativa de publicar essa derivação foi rejeitada pela revisão automática por exigir autorização específica para o payload experimental; nenhum upload da janela 32 ocorreu. Publicação e verificação pública aguardam aprovação humana. O pacote anterior permanece publicado em 39a55f1c17411d8d2cfa0167095bff5250f7c98e.

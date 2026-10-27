@@ -56,6 +56,9 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(runner.generation_budget(384, 2048, 64), (384, 416))
         self.assertEqual(runner.generation_budget(361), (361, 393))
         self.assertEqual(runner.generation_budget(1984, 2048, 64), (1984, 2016))
+        self.assertEqual(runner.generation_budget(2016, 2048, 32), (2016, 2048))
+        with self.assertRaisesRegex(ValueError, 'Padded prompt'):
+            runner.generation_budget(2017, 2048, 32)
         with self.assertRaisesRegex(ValueError, 'Padded prompt'):
             runner.generation_budget(1985, 2048, 64)
         for window in (0, -1, True, '64'):
