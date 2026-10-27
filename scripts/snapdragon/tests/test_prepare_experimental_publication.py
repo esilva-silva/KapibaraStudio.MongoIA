@@ -21,9 +21,11 @@ class PublicationTest(unittest.TestCase):
             files.append({'path': 'kapicoder_manifest.json', 'sha256': mod.sha(source / 'kapicoder_manifest.json')})
             (source / 'export_manifest.json').write_text(json.dumps({'files': files, 'source': {'revision': 'abc'}}), encoding='utf-8')
             comparison = root / 'comparison.json'
-            comparison.write_text(json.dumps({'qualified': False, 'proxy': True, 'baseline': {'trimmed_exact_match': .4}, 'candidate': {'n': 200, 'trimmed_exact_match': .395}, 'limitations': ['proxy']}), encoding='utf-8')
+            comparison.write_text(json.dumps({'qualified': False, 'proxy': True, 'baseline': {'n': 200, 'trimmed_exact_match': .4}, 'candidate': {'n': 200, 'trimmed_exact_match': .395, 'provider_evidence': {'requested': 'DmlExecutionProvider', 'verified': True}}, 'limitations': ['proxy']}), encoding='utf-8')
             before = mod.sha(source / 'model.onnx')
-            plan = mod.prepare(source, root / 'out', comparison, 'esilva/test', 'experimental/rmsnorm')
+            plan = mod.prepare(source, root / 'out', comparison, 'esilva/test', 'experimental/rmsnorm', '913ef5fc78e70000e118d4384cadb401fcac4f4f', 'dml-fp16-split')
+            self.assertEqual(plan['base_commit'], '913ef5fc78e70000e118d4384cadb401fcac4f4f')
+            self.assertEqual(plan['path_in_repo'], 'dml-fp16-split')
             self.assertEqual(plan['status'], 'not_published')
             self.assertEqual(mod.sha(root / 'out/model.onnx'), before)
             self.assertEqual((source / 'RMSNORM_TRANSFORM.md').read_text(), 'pending')
@@ -33,6 +35,12 @@ class PublicationTest(unittest.TestCase):
                 self.assertEqual(item['sha256'], mod.sha(root / 'out' / item['path']))
             self.assertEqual(manifest['validation_parent_export_manifest_sha256'], mod.sha(source / 'export_manifest.json'))
             self.assertEqual(mod.sha(root / 'out/model.onnx.data'), mod.sha(source / 'model.onnx.data'))
+
+    def test_rejects_unsafe_subfolder(self):
+        with tempfile.TemporaryDirectory(dir=path.parent) as tmp:
+            root = Path(tmp); (root / 'source').mkdir(); (root / 'comp').write_text('{}')
+            with self.assertRaises(ValueError):
+                mod.prepare(root / 'source', root / 'out', root / 'comp', 'esilva/test', 'experimental/test', subfolder='../escape')
 
     def test_refuses_main(self):
         with tempfile.TemporaryDirectory(dir=path.parent) as tmp:

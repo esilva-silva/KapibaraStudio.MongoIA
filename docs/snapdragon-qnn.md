@@ -42,3 +42,15 @@ A sonda usa um Qwen2 aleatório de uma camada e até quatro prompts truncados em
 Por padrão, a sonda exige que o dispositivo CUDA/ROCm de índice 0 seja a **RX 7800 XT**. O relatório enumera os dispositivos visíveis e sua VRAM; se o índice 0 for a GPU integrada, a sonda para antes da quantização. Selecione a GPU discreta usando `HIP_VISIBLE_DEVICES` antes de iniciar um novo processo e confira a enumeração. `--expected-gpu` permite configurar outro identificador explícito quando apropriado.
 
 A preparação mantém o target `QNNExecutionProvider` para selecionar `get_qnn_qdq_config` no Olive 0.13, enquanto a execução da calibração de ativações usa `CPUExecutionProvider`. Informe `--prepare-python <diretorio-do-python-qnn-x64>` se o ambiente QNN da máquina de preparação diferir do ambiente indicado por `--qnn-python`. O ambiente e o provider precisam ser reconhecidos pelo Olive; a geração da configuração não comprova que o fluxo executou. O GPTQ usa estratégia `join`, até 128 blocos de 2048 tokens, que não equivalem a 128 prompts; a calibração de ativações usa até 256 exemplos linha a linha. A capacidade real de contexto de 2048 ainda exige inspeção dos shapes de KV e teste de geração.
+
+
+## Compilação direta no notebook
+
+O helper `scripts/snapdragon/compile_qnn_context.py` usa ORT/QNN ARM64 diretamente, sem Torch ou Olive completos. Ele seleciona apenas dispositivos NPU do plugin, usa HTP e desativa fallback CPU. A lógica de contexto deriva do Olive 0.13; a composição do pipeline GenAI continua dependendo dos artefatos estáticos reais.
+
+```powershell
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/compile_qnn_context.py --smoke --out-dir tmp/qnn-context-smoke-20261027
+env/.venv-snapdragon-arm64/Scripts/python.exe scripts/snapdragon/compile_qnn_context.py --model <prefill.onnx> --model <iterator.onnx> --manifest <manifesto-transferencia.json> --weight-sharing --out-dir <nova-pasta-contextos>
+```
+
+O manifesto deve cobrir ONNX e dados externos com `path`, `bytes` e `sha256`. O diretório de saída precisa ser novo. O helper verifica os binários referenciados pelo EPContext; compilação de LLM é registrada como `compiled_not_inference_validated`. Apenas o smoke recarrega o contexto e verifica a saída fixa, com fallback desabilitado. Nem o código nem um smoke aprovado substituem geração e comparação dos LLMs completos no HTP.
