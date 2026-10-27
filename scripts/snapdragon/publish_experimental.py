@@ -86,7 +86,8 @@ def publish(plan_path, report_path, cache_dir):
         report.update(status='uploading', parent_commit=head)
         write_report(report_path, report)
         info = api.upload_folder(repo_id=plan['repo_id'], folder_path=root, path_in_repo=subfolder,
-            revision=branch, parent_commit=head, commit_message='Add experimental Snapdragon RMSNorm FP16 package')
+            revision=branch, parent_commit=head,
+            commit_message=plan.get('commit_message', 'Add experimental Snapdragon RMSNorm FP16 package'))
         commit = info.oid
         if not re.fullmatch(r'[0-9a-f]{40}', commit):
             raise ValueError('Upload did not return an immutable commit SHA')

@@ -248,3 +248,23 @@ env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_pr
 ## Estado da revisão de calibração NPU
 
 Os resultados NPU legados foram preservados, mas não servem ao aceite final: a auditoria encontrou `None`/EOS na calibração de ativações e perda da cauda JOIN GPTQ. O Nano corrigido acima já tem calibração e inferência reais; o Small corrigido também passou calibração, 200 casos e boundary. As quatro variantes passaram nos testes locais; a integração na IDE continua fora desta etapa. As variantes GPU FP16 não mudaram.
+
+
+## Publicação pública dos NPUs corrigidos
+
+Os dois pacotes finais também estão públicos, com os mesmos bytes e manifestos das releases privadas validadas. Foram conferidos por download (33 arquivos por modelo) e consulta sem autenticação. Nenhum peso ou teste de geração mudou nesta publicação.
+
+| Modelo | Revisão pública imutável | Pasta | Manifesto SHA-256 |
+| --- | --- | --- | --- |
+| [Nano](https://huggingface.co/esilva/KapiCoder-Mongo-Nano-ONNX/tree/a85d11c9f8db2f4388836c991b292b1cdb160d39/htp-fim-exact-v1) | `a85d11c9f8db2f4388836c991b292b1cdb160d39` | `htp-fim-exact-v1` | `0720f8859521628fc43aea38d73c5cc6d7e32156e1bcb98c9ecff3199ecf4abe` |
+| [Small](https://huggingface.co/esilva/KapiCoder-Mongo-Small-ONNX/tree/c03ba2339ba263a3881134d0acd3ee24e1a80717/htp-fim-exact-v1) | `c03ba2339ba263a3881134d0acd3ee24e1a80717` | `htp-fim-exact-v1` | `e82e3cc5f6bcd0ffc3b31d5a4ed76cf3fb122726537d68b48742cde8dcc15ebb` |
+
+Branch pública nos dois repositórios: `experimental/snapdragon-htp-fim-exact-20261027`. Os pins privados em `configs/snapdragon.json` continuam válidos. Os recibos públicos estão em `reports/snapdragon/{nano,small}-npu-fim-exact-publication-result.json`; o inventário público foi confirmado em `fim-exact-publication-public-access-verification.json`.
+
+```powershell
+# Download público do Nano; o verificador confere arquivos, origem e tokenizer.
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Nano-ONNX --revision a85d11c9f8db2f4388836c991b292b1cdb160d39 --subfolder htp-fim-exact-v1 --source C:/dev/models/KapiCoder-Mongo-Nano/c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1 --manifest-sha256 0720f8859521628fc43aea38d73c5cc6d7e32156e1bcb98c9ecff3199ecf4abe --require-original-tokenizer
+
+# Download público do Small.
+env/.venv-snapdragon-tools/Scripts/python.exe scripts/snapdragon/download_qnn_prepared.py --repo-id esilva/KapiCoder-Mongo-Small-ONNX --revision c03ba2339ba263a3881134d0acd3ee24e1a80717 --subfolder htp-fim-exact-v1 --source C:/dev/models/KapiCoder-Mongo-Small/4ba57bc1f56a5b3cbe486dd314321ce4cdb2cae6 --manifest-sha256 e82e3cc5f6bcd0ffc3b31d5a4ed76cf3fb122726537d68b48742cde8dcc15ebb --require-original-tokenizer
+```
