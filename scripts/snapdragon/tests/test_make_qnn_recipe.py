@@ -19,13 +19,22 @@ class RecipeTest(unittest.TestCase):
         self.source = self.root / 'source'
         self.source.mkdir()
         entries = []
-        for name, contents in [('config.json', '{}'), ('tokenizer.json', '{}'), ('model.safetensors', 'weights')]:
+        for name, contents in [('config.json', '{"hidden_size":896,"num_attention_heads":14}'), ('tokenizer.json', '{}'), ('model.safetensors', 'weights')]:
             path = self.source / name
             path.write_text(contents, encoding='utf-8')
             entries.append({'path': name, 'size': path.stat().st_size, 'sha256': recipe.sha256(path)})
         (self.source / 'snapshot_manifest.json').write_text(json.dumps({'revision': 'a' * 40, 'files': entries}), encoding='utf-8')
         self.cal = self.root / 'samples.jsonl'
         self.cal.write_text('{"prompt":"db.test.find()"}\n{"prompt_text":"db.x.countDocuments()"}\n', encoding='utf-8')
+
+    def update_source_config(self, metadata):
+        path = self.source / 'config.json'
+        path.write_text(json.dumps(metadata), encoding='utf-8')
+        manifest_path = self.source / 'snapshot_manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        entry = next(x for x in manifest['files'] if x['path'] == 'config.json')
+        entry.update(size=path.stat().st_size, sha256=recipe.sha256(path))
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
 
     def tearDown(self):
         self.temp.cleanup()
@@ -35,6 +44,8 @@ class RecipeTest(unittest.TestCase):
         self.assertNotIn('cb', config['passes'])
         self.assertEqual(config['target'], 'qnn_system')
         self.assertEqual(config['systems']['qnn_system']['accelerators'][0]['execution_providers'], ['QNNExecutionProvider'])
+        self.assertNotIn('task', config['data_configs'][0])
+        self.assertEqual(config['data_configs'][0]['pre_process_data_config']['type'], 'text_generation_huggingface_pre_process')
         self.assertEqual(config['data_configs'][0]['pre_process_data_config']['max_samples'], 128)
         self.assertEqual(config['data_configs'][1]['pre_process_data_config']['max_samples'], 256)
         self.assertEqual(config['passes']['sq']['calibration_providers'], ['CPUExecutionProvider'])
@@ -42,6 +53,25 @@ class RecipeTest(unittest.TestCase):
         self.assertEqual(config['passes']['st']['context_length'], 64)
         self.assertEqual(config['data_configs'][0]['pre_process_data_config']['model_name'], str(self.source))
         self.assertEqual(json.loads((self.root / 'out/calibration.jsonl').read_text(encoding='utf-8').splitlines()[0]), {'text': 'db.test.find()'})
+
+    def test_kv_head_axis_is_fixed_without_freezing_cache_sequence(self):
+        config = recipe.generate(self.source, self.cal, self.root, self.root / 'out', 'prepare')
+        fix = config['passes']['kv_shape']
+        self.assertEqual(fix['dim_param'], ['kv_cache_dim'])
+        self.assertEqual(fix['dim_value'], [64])
+        self.assertLess(list(config['passes']).index('kv_shape'), list(config['passes']).index('sq'))
+
+    def test_explicit_head_dim_overrides_hidden_ratio(self):
+        self.update_source_config({'hidden_size': 1536, 'num_attention_heads': 12, 'head_dim': 128})
+        config = recipe.generate(self.source, self.cal, self.root, self.root / 'out', 'prepare')
+        self.assertEqual(config['passes']['kv_shape']['dim_value'], [128])
+
+    def test_missing_or_invalid_head_metadata_is_not_silently_guessed(self):
+        for metadata in ({}, {'head_dim': 0}, {'head_dim': True}, {'hidden_size': 10, 'num_attention_heads': 3}):
+            with self.subTest(metadata=metadata):
+                self.update_source_config(metadata)
+                with self.assertRaisesRegex(ValueError, 'KV head dimension'):
+                    recipe.generate(self.source, self.cal, self.root, self.root / 'out', 'prepare')
 
     def test_prepare_python_and_olive_qnn_selector(self):
         import zipfile

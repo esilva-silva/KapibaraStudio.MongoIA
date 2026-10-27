@@ -96,6 +96,17 @@ def check_ids(ids):
     if len(ids) + LIMIT > CONTEXT:
         raise ValueError(f'Prompt exceeds {CONTEXT - LIMIT} token input budget; no implicit truncation')
 
+def generation_budget(prompt_count, context_length=CONTEXT, window_size=1, new_tokens=LIMIT):
+    """Reserve generated tokens after static prefill padding, with no truncation."""
+    if any(type(v) is not int or v <= 0 for v in (prompt_count, context_length, window_size, new_tokens)):
+        raise ValueError('Generation budget values must be positive integers')
+    padded = ((prompt_count + window_size - 1) // window_size) * window_size
+    maximum = padded + new_tokens
+    if maximum > context_length:
+        raise ValueError('Padded prompt leaves insufficient context for generation; no implicit truncation')
+    return padded, maximum
+
+
 class HFRunner:
     def __init__(self, model, device, expected_gpu=None):
         import torch
@@ -271,6 +282,9 @@ class GenAIRunner:
         self.tok = og.Tokenizer(self.model)
         self.stops = stop_ids(self.tok.encode)
         config = json.loads((Path(model) / 'genai_config.json').read_text(encoding='utf-8'))
+        self.context_length = config['model'].get('context_length', CONTEXT)
+        decoder = config['model']['decoder']
+        self.prefill_window = decoder.get('sliding_window', {}).get('window_size', 1) if decoder.get('pipeline') else 1
         eos = config['model'].get('eos_token_id')
         self.eos = set(eos if isinstance(eos, list) else [eos])
         self.evidence = {'requested': {'dml': 'DmlExecutionProvider', 'qnn': 'QNNExecutionProvider', 'cpu': 'CPUExecutionProvider'}[backend], 'available': True, 'configured': backend,
@@ -307,7 +321,8 @@ class GenAIRunner:
             raise ValueError('Corpus prompt_ids differ from ORT tokenizer')
         check_ids(ids)
         p = self.og.GeneratorParams(self.model)
-        p.set_search_options(do_sample=False, max_length=len(ids) + LIMIT, batch_size=1)
+        padded_prompt, maximum = generation_budget(len(ids), self.context_length, self.prefill_window)
+        p.set_search_options(do_sample=False, max_length=maximum, batch_size=1)
         start = time.perf_counter()
         g = self.og.Generator(self.model, p)
         creation_ms = (time.perf_counter() - start) * 1000
@@ -331,6 +346,8 @@ class GenAIRunner:
         result = measurement(tokens, self.tok.decode(content), start, first, end, stop, len(ids))
         result['content_tokens_before_suffix_trim'] = len(content)
         result['generator_creation_ms'] = creation_ms
+        result['padded_prompt_tokens'] = padded_prompt
+        result['max_length_requested'] = maximum
         return trim_suffix(result, item)
 
 def measurement(tokens, text, start, first, end, stop, prompt_count):

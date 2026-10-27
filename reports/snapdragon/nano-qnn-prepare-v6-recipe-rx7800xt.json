@@ -1,0 +1,179 @@
+{
+  "input_model": {
+    "type": "hfmodel",
+    "config": {
+      "model_path": "C:\\IA\\models\\KapiSnapdragonArtifacts\\nano-qnn-prepare-rx7800xt\\gptq-model-context2048",
+      "adapter_path": null,
+      "test_model_path": null,
+      "task": "text-generation-with-past",
+      "load_kwargs": {},
+      "test_model_config": null,
+      "model_attributes": {
+        "split_assignments": {
+          "model.embed_tokens": 0,
+          "model.layers.0": 1,
+          "model.layers.1": 1,
+          "model.layers.2": 1,
+          "model.layers.3": 1,
+          "model.layers.4": 1,
+          "model.layers.5": 1,
+          "model.layers.6": 1,
+          "model.layers.7": 1,
+          "model.layers.8": 1,
+          "model.layers.9": 1,
+          "model.layers.10": 1,
+          "model.layers.11": 1,
+          "model.layers.12": 1,
+          "model.layers.13": 1,
+          "model.layers.14": 1,
+          "model.layers.15": 1,
+          "model.layers.16": 1,
+          "model.layers.17": 1,
+          "model.layers.18": 1,
+          "model.layers.19": 1,
+          "model.layers.20": 1,
+          "model.layers.21": 1,
+          "model.layers.22": 1,
+          "model.layers.23": 1,
+          "lm_head": 2
+        }
+      },
+      "io_config": null
+    }
+  },
+  "systems": {
+    "qnn_system": {
+      "type": "PythonEnvironment",
+      "python_environment_path": "C:\\IA\\models\\KapibaraStudio.MongoIA-snapdragon-rx7800xt\\env\\.venv-snapdragon-qnn-cpu\\Scripts",
+      "accelerators": [
+        {
+          "execution_providers": [
+            "QNNExecutionProvider"
+          ]
+        }
+      ]
+    }
+  },
+  "data_configs": [
+    {
+      "name": "wikitext2_train_joined",
+      "type": "HuggingfaceContainer",
+      "load_dataset_config": {
+        "data_name": "json",
+        "data_files": "C:\\IA\\models\\KapiSnapdragonArtifacts\\nano-qnn-prepare-rx7800xt\\calibration.jsonl",
+        "split": "train"
+      },
+      "pre_process_data_config": {
+        "strategy": "join",
+        "add_special_tokens": false,
+        "max_seq_len": 2048,
+        "max_samples": 128,
+        "type": "text_generation_huggingface_pre_process",
+        "model_name": "C:\\IA\\models\\KapiPublishedSnapshots\\KapiCoder-Mongo-Nano\\c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1",
+        "text_cols": [
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "wikitext2_train_act",
+      "type": "HuggingfaceContainer",
+      "load_dataset_config": {
+        "data_name": "json",
+        "data_files": "C:\\IA\\models\\KapiSnapdragonArtifacts\\nano-qnn-prepare-rx7800xt\\calibration.jsonl",
+        "split": "train"
+      },
+      "pre_process_data_config": {
+        "strategy": "line-by-line",
+        "add_special_tokens": true,
+        "max_samples": 256,
+        "max_seq_len": 2048,
+        "type": "text_generation_huggingface_pre_process",
+        "model_name": "C:\\IA\\models\\KapiPublishedSnapshots\\KapiCoder-Mongo-Nano\\c03bfe15ba1ff4e5b58a4b0953349eca82bb43f1",
+        "text_cols": [
+          "text"
+        ]
+      }
+    }
+  ],
+  "passes": {
+    "mb": {
+      "type": "ModelBuilder",
+      "precision": "int4",
+      "int4_block_size": 32,
+      "int4_accuracy_level": 4,
+      "int4_op_types_to_quantize": [
+        "Gather"
+      ],
+      "search": {
+        "max_length": 2048
+      }
+    },
+    "mq": {
+      "type": "MatMulNBitsToQDQ",
+      "use_int4": true,
+      "add_zero_point": true,
+      "nodes_to_exclude": [
+        "/lm_head/MatMulNBits"
+      ],
+      "save_as_external_data": true
+    },
+    "gs": {
+      "type": "GraphSurgeries",
+      "surgeries": [
+        {
+          "surgeon": "RemoveRopeMultiCache"
+        },
+        {
+          "surgeon": "AttentionMaskToSequenceLengths"
+        },
+        {
+          "surgeon": "RemoveGidxFromMatMulNBits"
+        },
+        {
+          "surgeon": "SimplifiedLayerNormToL2Norm"
+        }
+      ],
+      "save_as_external_data": true
+    },
+    "kv_shape": {
+      "type": "DynamicToFixedShape",
+      "dim_param": [
+        "kv_cache_dim"
+      ],
+      "dim_value": [
+        64
+      ],
+      "save_as_external_data": true
+    },
+    "sq": {
+      "type": "OnnxStaticQuantization",
+      "data_config": "wikitext2_train_act",
+      "activation_type": "uint16",
+      "precision": "uint8",
+      "calibration_providers": [
+        "CPUExecutionProvider"
+      ],
+      "quant_preprocess": true,
+      "op_types_to_exclude": [
+        "GatherBlockQuantized",
+        "GroupQueryAttention",
+        "MatMulNBits"
+      ],
+      "save_as_external_data": true
+    },
+    "sp": {
+      "type": "SplitModel"
+    },
+    "st": {
+      "type": "StaticLLM",
+      "batch_size": 1,
+      "context_length": 64
+    }
+  },
+  "target": "qnn_system",
+  "log_severity_level": 1,
+  "output_dir": "C:\\IA\\models\\KapiSnapdragonArtifacts\\nano-qnn-prepare-rx7800xt\\qnn-output-v6",
+  "cache_dir": "C:\\IA\\models\\KapiSnapdragonArtifacts\\nano-qnn-prepare-rx7800xt\\qnn-cache-v5",
+  "no_artifacts": false
+}
