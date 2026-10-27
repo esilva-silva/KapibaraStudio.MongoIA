@@ -60,4 +60,14 @@ class SummaryTests(unittest.TestCase):
     def test_private_release_missing_identity_rejected(self):
         self.assertFalse(mod.private_release_ok({'npu_exports': {'nano': {}}}, {}, {}, {}, {}))
 
+    def test_activation_helper_status_is_not_completion(self):
+        trace={'status':'completed','activation_type':'QUInt16','calibration_providers':['CPUExecutionProvider']}
+        self.assertFalse(mod.activation_trace_ok(trace,256,64))
+        trace.update(calibration_status='input_complete',calibration_inputs_seen=254)
+        self.assertFalse(mod.activation_trace_ok(trace,256,64))
+        trace['calibration_inputs_seen']=256
+        self.assertTrue(mod.activation_trace_ok(trace,256,64))
+        trace['first_input_shapes']={'past_key_values.0.key':{'shape':[1,2,0,128]}}
+        self.assertFalse(mod.activation_trace_ok(trace,256,64))
+
 if __name__=='__main__':unittest.main()

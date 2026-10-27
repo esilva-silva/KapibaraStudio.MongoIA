@@ -3,7 +3,7 @@ import argparse
 import hashlib
 import json
 import re
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 def sha(path):
@@ -194,6 +194,51 @@ def summarize_npu32(root, config, model, corpus, ids, boundary_hash):
         return {'status': 'not_validated', 'prefill_window': 32, 'error': 'Invalid window32 evidence: ' + str(exc)}, sources
 
 
+def activation_trace_ok(trace, expected_count, head_size):
+    if (trace.get('calibration_status') != 'input_complete'
+            or trace.get('calibration_inputs_seen') != expected_count
+            or trace.get('activation_type') != 'QUInt16'
+            or trace.get('calibration_providers') != ['CPUExecutionProvider']):
+        return False
+    shapes = trace.get('first_input_shapes') or {}
+    for name, info in shapes.items():
+        if name.startswith('past_key_values.'):
+            shape = info.get('shape')
+            if not isinstance(shape, list) or len(shape) != 4 or shape[-1] != head_size:
+                return False
+    return True
+
+
+def calibration_phases(root, config):
+    summary, source = read(root, 'gptq-calibration-token-summary-rx7800xt.json')
+    if summary.get('historical_runtime_token_hashes_captured') is not False:
+        raise ValueError('Unexpected GPTQ reconstruction provenance')
+    jobs = summary.get('jobs') or []
+    phases = {'gptq_reconstruction': {'source': source,
+        'historical_runtime_token_hashes_captured': False, 'scope': summary.get('scope'), 'jobs': jobs},
+        'activation': {}}
+    for model, head_size in [('nano',64), ('small',128)]:
+        revision = config['models'][model]['revision']
+        matched = [j for j in jobs if PureWindowsPath(j.get('source_snapshot','')).name.lower() == revision.lower()]
+        if len(matched) != 1:
+            raise ValueError('GPTQ reconstruction source revision mismatch: ' + model)
+        trace_path = root / 'reports/snapdragon' / f'{model}-qnn-cpu-calibration-trace-rx7800xt.json'
+        if not trace_path.is_file():
+            phases['activation'][model] = {'status': 'pending', 'source_revision': revision}
+            continue
+        trace, evidence = read(root, trace_path.name)
+        recipe_name = 'nano-qnn-prepare-v6-recipe-rx7800xt.json' if model == 'nano' else 'small-qnn-prepare-recipe-rx7800xt.json'
+        recipe, recipe_evidence = read(root, recipe_name)
+        configs = [c for c in recipe.get('data_configs', []) if c.get('name') == 'wikitext2_train_act']
+        source_ok = (len(configs) == 1 and PureWindowsPath(configs[0]['pre_process_data_config'].get('model_name','')).name.lower() == revision.lower())
+        valid = source_ok and activation_trace_ok(trace,config['samples']['calibration_count'],head_size)
+        phases['activation'][model] = {'status': 'input_complete' if valid else 'not_validated',
+            'source_revision': revision, 'expected_kv_head_size':head_size, 'trace':evidence, 'recipe':recipe_evidence, 'recipe_source_revision_matches':source_ok,
+            'inputs_seen':trace.get('calibration_inputs_seen'), 'provider':trace.get('calibration_providers'),
+            'activation_type':trace.get('activation_type')}
+    return phases
+
+
 def summarize(root):
     root=Path(root).resolve(strict=True)
     config_path=root/'configs/snapdragon.json';config=json.loads(config_path.read_text(encoding='utf-8-sig'))
@@ -235,13 +280,20 @@ def summarize(root):
         if variant is not None:
             delivery[model + '_npu'] = variant
         sources.update(evidence)
+    phases = calibration_phases(root, config)
+    for model in ('nano', 'small'):
+        if phases['activation'][model]['status'] != 'input_complete':
+            current = delivery[model + '_npu']
+            if current.get('status') == 'validated_200_boundary_passed':
+                current['status'] = 'not_validated'
+                current['calibration_error'] = 'Activation calibration trace is incomplete or invalid'
     completion = delivery_complete(delivery)
     failure=data['small_gpu_single_failure']
     failed_rows=[row for row in failure.get('items',[]) if row.get('error')]
     delivery['small_gpu']['single_session_attempt']={'status':failure.get('status'),'failed_items':len(failed_rows),
         'memory_after':failure.get('memory_after'),'note':'Separate failed single-session attempt; successful result used fresh batches.'}
     return {'schema':'kapi-snapdragon-delivery-summary-v1','completion':completion,
-        'scope':'proxy evaluation; not IDE qualified', 'corpus_sha256':corpus, 'dataset_audit':dataset,
+        'scope':'proxy evaluation; not IDE qualified', 'corpus_sha256':corpus, 'dataset_audit':dataset, 'calibration_phases':phases,
         'samples':{'calibration_expected':config['samples']['calibration_count'],'evaluation_expected':config['samples']['evaluation_count']},
         'raw_models':config['models'],'published_exports':config.get('published_exports',{}),
         'experimental_exports':config.get('experimental_exports',{}),'npu_exports':config.get('npu_exports',{}),'delivery':delivery,'sources':sources}

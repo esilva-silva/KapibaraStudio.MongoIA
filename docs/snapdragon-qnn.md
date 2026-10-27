@@ -85,3 +85,13 @@ $env32 = 'env/.venv-snapdragon-arm64/Scripts/python.exe'
 O diretório `local-window32-shapes-v1` já existe nesta máquina; para reproduzir a derivação, escolha outro diretório novo e ajuste `$prepared32`. A avaliação registra a execução QNN dos estágios de transformer e as partes CPU separadamente.
 
 A janela 64 permanece como histórico: passou 200 casos com 56,63 tokens/s e TTFT mediano de 156,76 ms, mas não atende ao limite 2016+32 porque o padding arredonda o prompt para 2048 antes da geração. O relatório é `reports/snapdragon/nano-npu-compiled-window64-200.json`. O Small NPU continua em calibração CPU na preparação remota; não há ainda resultado NPU de 200 casos para ele.
+
+## Conjunto selecionado e consumo por fase
+
+A amostra comum contém 256 exemplos de calibração e 200 de avaliação, com grupos separados. A contagem selecionada não representa automaticamente a cobertura efetiva de cada pré-processador.
+
+A reconstrução de dados em `reports/snapdragon/gptq-calibration-token-summary-rx7800xt.json`, validada contra as funções instaladas do Olive/GPTQ, encontrou o mesmo comportamento para Nano e Small: 29 blocos de 2048 tokens, 59.392 tokens consumidos de 61.273 concatenados. Isso cobre 248 prompts integralmente, um parcialmente e omite sete na cauda descartada. Vinte e oito dos prompts cobertos atravessam fronteiras de bloco. É uma reconstrução determinística dos dados, versões e receitas fixados; os jobs históricos não capturaram hashes dos tokens de entrada em tempo de execução.
+
+A calibração de ativações QNN é uma fase distinta. No Nano, o trace registra `calibration_inputs_seen=256` e `calibration_status=input_complete`; no Small ela continua em execução. O campo genérico `status=completed` do helper QNN, sozinho, só indica que a configuração foi criada e não comprova que as 256 entradas terminaram. A auditoria final exige a contagem e o estado de consumo dessa fase, além dos testes do modelo compilado.
+
+A quantização atual não foi refeita por essa auditoria. Uma política futura que preserve a cauda do JOIN alterará os dados efetivos do GPTQ e exigirá novos pesos quantizados, calibração de ativações e avaliação. O relatório detalhado por ID e bloco está em `gptq-calibration-token-attribution-rx7800xt.json`.
