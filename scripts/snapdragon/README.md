@@ -130,3 +130,13 @@ python scripts/snapdragon/verify_manifest.py <diretorio-novo>/qnn-prepared
 `prepare_qnn_transfer.py` preserva a fonte, copia todos os dados externos, normaliza o Composite relativo e verifica atribuições contra o snapshot fixado. `inspect_qnn_prepared.py` audita grafos, valores numéricos, interfaces e IDs sem criar sessões. A cópia passou os quatro checkers e os 456 prompts. Erros de hardlinks e caminhos do source estão preservados em relatório separado.
 
 O runner precisa reservar geração após o padding estático: 361 tokens com janela de 64 viram 384; 32 novos exigem max_length=416. A correção está em generation_budget e rejeita orçamento acima da capacidade sem truncar. O controle manual `probe_qnn_static_cpu.py --model <pacote> --out <relatorio>` confirmou 32 tokens na CPU. Qualidade completa do pipeline QNN, compilação HTP e geração próxima da capacidade ainda pendem.
+
+## Janela 32 para preservar entrada máxima
+
+A derivação `derive_static_window.py` usa somente StaticLLM sobre uma cópia do SplitModel anterior, sem repetir GPTQ ou calibração. Não altera a IDE ou o pacote publicado de janela 64. A nova janela 32 permite 2016 tokens de entrada mais 32 de saída no contexto 2048. Isso foi validado por geração em CPU até a sequência 2048, além de controle curto idêntico em 32 IDs à janela anterior.
+
+Use `inspect_qnn_prepared.py --expected-window 32` para essa derivação; o padrão 64 permanece para auditar o pacote anterior. Relatórios e plano de publicação estão em reports/snapdragon/nano-qnn-window32-*. A publicação da nova derivação está bloqueada por revisão automática até autorização explícita do payload; não há commit Hugging Face de janela 32 disponível ainda.
+
+Para preservar os arquivos do tokenizer do snapshot em uma nova cópia local, use `prepare_qnn_transfer.py --preserve-tokenizer-source`. O flag confere a proveniência e copia tokenizer.json/config mais auxiliares disponíveis; não substitui config.json do modelo derivado. Audite com `inspect_qnn_prepared.py --expected-window 32 --require-original-tokenizer`.
+
+A cópia local v2 foi aprovada nesse gate, mantendo 456 IDs e o controle2016+32 na CPU. Seu plano de publicação substitui o v1: `reports/snapdragon/nano-qnn-window32-original-tokenizer-publication-plan-rx7800xt.json`. A publicação continua pendente de aprovação específica após a rejeição automática; os pacotes anteriores permanecem preservados.

@@ -32,7 +32,7 @@ def source_file(root, name):
     return result
 
 
-def prepare(source, destination, provenance, reports, source_snapshot):
+def prepare(source, destination, provenance, reports, source_snapshot, preserve_tokenizer_source=False):
     import onnx
     source = Path(source).resolve(strict=True)
     destination = Path(destination).resolve()
@@ -103,6 +103,25 @@ def prepare(source, destination, provenance, reports, source_snapshot):
         if path.stat().st_size != record.get('size') or digest(path) != record.get('sha256'):
             raise ValueError('attribution differs from pinned provenance: ' + name)
         attribution[name] = (path, record['size'], record['sha256'])
+    tokenizer = {}
+    if preserve_tokenizer_source:
+        required = ('tokenizer.json', 'tokenizer_config.json')
+        optional = ('merges.txt', 'vocab.json', 'added_tokens.json', 'special_tokens_map.json', 'chat_template.jinja')
+        for name in required + optional:
+            if name in optional and not (snapshot/name).exists(): continue
+            matches = [item for item in provenance_data['source']['files'] if item.get('path') == name]
+            if len(matches) != 1: raise ValueError('missing or duplicate tokenizer provenance: ' + name)
+            path = source_file(snapshot, name)
+            record = matches[0]
+            if path.stat().st_size != record.get('size') or digest(path) != record.get('sha256'):
+                raise ValueError('tokenizer differs from pinned provenance: ' + name)
+            tokenizer[name] = (path, record['size'], record['sha256'])
+        # Olive resource lists must carry every available tokenizer auxiliary after rebasing.
+        for attributes in [config.setdefault('model_attributes', {})] + [c['config'].setdefault('model_attributes', {}) for c in components]:
+            if attributes is None: raise ValueError('component model_attributes must be an object')
+            refs = attributes.setdefault('additional_files', [])
+            for name in tokenizer:
+                if name not in refs: refs.append(name)
     destination.mkdir(parents=True, exist_ok=False)
     try:
         for name in sorted(files):
@@ -114,6 +133,10 @@ def prepare(source, destination, provenance, reports, source_snapshot):
             shutil.copyfile(path, destination/name)
             if (destination/name).stat().st_size != size or digest(destination/name) != sha256:
                 raise ValueError('copied attribution differs from pinned provenance: ' + name)
+        for name, (path, size, sha256) in tokenizer.items():
+            shutil.copyfile(path, destination/name)
+            if (destination/name).stat().st_size != size or digest(destination/name) != sha256:
+                raise ValueError('copied tokenizer differs from pinned provenance: ' + name)
         (destination/'model_config.source.json').write_bytes(original)
         (destination/'model_config.json').write_text(json.dumps(model, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
         audit = destination/'audit'; audit.mkdir()
@@ -138,7 +161,8 @@ def main():
     p.add_argument('--source', required=True); p.add_argument('--destination', required=True)
     p.add_argument('--provenance', required=True); p.add_argument('--report', action='append', default=[])
     p.add_argument('--source-snapshot', required=True)
-    a = p.parse_args(); prepare(a.source, a.destination, a.provenance, a.report, a.source_snapshot)
+    p.add_argument('--preserve-tokenizer-source', action='store_true')
+    a = p.parse_args(); prepare(a.source, a.destination, a.provenance, a.report, a.source_snapshot, a.preserve_tokenizer_source)
 
 
 if __name__ == '__main__': main()

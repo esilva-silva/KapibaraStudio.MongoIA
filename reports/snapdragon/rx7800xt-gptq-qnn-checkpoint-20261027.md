@@ -51,3 +51,23 @@ Antes de compilar no ARM, verificar o manifesto e preservar pipeline/model_confi
 Os relatórios dentro de audit registram os estados observados durante a preparação; o relatório estrutural aprovado e o manifesto de transferência são as evidências finais dessa cópia. A avaliação de qualidade publicada é a referência GPTQ, não uma avaliação do pipeline ONNX na NPU.
 
 Suíte dos scripts: 62 testes passaram e um foi ignorado por ausência do wheel opcional de inspeção. Benchmarks permanecem manuais. Os repositórios originais IDE b2164ab e MongoIA d01e04b estavam limpos na conferência.
+
+## Derivação de janela 32 e limite 2016+32
+
+A janela 64 exige padding de 2016 para 2048 antes de gerar e, portanto, não preserva o contrato lógico de 2016 tokens de entrada mais 32 de saída. Uma nova derivação executou apenas StaticLLM sobre uma cópia do SplitModel existente, com janela 32, sem repetir GPTQ ou calibração. Saída e cache novos preservam o pacote v7 e o source anterior.
+
+Os hashes de context.onnx.data, embeddings.onnx e lm_head.onnx são idênticos aos da janela 64. A auditoria parametrizada --expected-window 32 aprovou quatro grafos, interfaces context[1,32,896]/iterator[1,1,896], contexto configurado 2048, KV2x64 e paridade dos 456 prompts.
+
+O controle curto gerou os mesmos 32 IDs da janela 64. Um controle sintético separado, fora do corpus de qualidade, recebeu exatamente 2016 tokens e gerou 32 novos até sequência 2048, sem padding adicional ou truncamento. Não é qualificação na NPU. Suíte atual:71 testes passaram e um foi ignorado.
+
+Pacote local: C:/IA/models/KapiSnapdragonArtifacts/nano-qnn-window32-transfer-v1. O manifesto e os 27 itens foram verificados. Plano exato em nano-qnn-window32-publication-plan-rx7800xt.json. A tentativa de publicar essa derivação foi rejeitada pela revisão automática por exigir autorização específica para o payload experimental; nenhum upload da janela 32 ocorreu. Publicação e verificação pública aguardam aprovação humana. O pacote anterior permanece publicado em 39a55f1c17411d8d2cfa0167095bff5250f7c98e.
+
+## Janela 32 com tokenizer original: pacote local v2
+
+O empacotador agora oferece --preserve-tokenizer-source, mantendo compatibilidade com os experimentos anteriores. Quando habilitado, verifica e copia byte a byte tokenizer.json, tokenizer_config.json e os auxiliares presentes no snapshot fixado. No Nano c03, merges.txt e vocab.json também foram preservados. Os quatro arquivos conferem por tamanho e SHA-256. Arquivos originais de modelo/configuração de geração não são copiados sobre a configuração derivada.
+
+O inspetor oferece --require-original-tokenizer, mantendo os 456 checks de IDs e exigindo hashes iguais dos arquivos originais. O pacote v2 passou no gate estrito, nos quatro checkers ONNX e nas interfaces de janela 32. config.json.max_position_embeddings, genai.model.context_length e search.max_length permanecem 2048. O model_max_length32768 do tokenizer original não substitui a capacidade do runtime. O template extraído corresponde ao texto do original.
+
+Controles novos na CPU: 32 IDs idênticos no caso curto; o caso sintético com 2016 tokens gerou os mesmos 32 IDs do controle anterior e terminou em 2048. Nenhum novo GPTQ ou lote de calibração foi executado. Pesos e pacotes anteriores foram preservados. Suíte:80 testes passaram e um foi ignorado.
+
+Pacote final local para aprovação: C:/IA/models/KapiSnapdragonArtifacts/nano-qnn-window32-transfer-v2.31 arquivos,436014016bytes; manifesto a5f13fa94f3ef449c79bbb3c59bf725728d21b31d14c961b5ac160bfd9bc1b72. O plano nano-qnn-window32-original-tokenizer-publication-plan-rx7800xt.json substitui o plano v1. Nenhum upload desse pacote foi tentado; a publicação permanece bloqueada pela revisão automática anterior, aguardando autorização específica do payload experimental atualizado. Compilação e homologação HTP seguem pendentes.
