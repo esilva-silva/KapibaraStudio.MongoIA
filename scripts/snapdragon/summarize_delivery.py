@@ -204,6 +204,21 @@ def apply_calibration_policy_gate(delivery, config, root):
             variant['status'] = 'calibration_revision_pending'
 
 
+def evaluated_model_path(config, model):
+    model_root = Path(config['models_root']).resolve()
+    spec = config.get('npu_exports', {}).get(model) or {}
+    value = spec.get('evaluated_path', str(model_root / f'KapiCoder-Mongo-{model.title()}-QNN-Compiled/mixed-htp-window32-v1'))
+    if not isinstance(value, str) or not value:
+        raise ValueError('evaluated_path must be a nonempty path')
+    expected = Path(value)
+    if not expected.is_absolute():
+        expected = model_root / expected
+    expected = expected.resolve()
+    if not expected.is_relative_to(model_root) or expected == model_root:
+        raise ValueError('evaluated_path must remain inside models_root')
+    return expected
+
+
 def summarize_npu32(root, config, model, corpus, ids, boundary_hash):
     names = {'comparison': f'{model}-npu-window32-vs-bf16.json',
              'run': f'{model}-npu-compiled-window32-200.json',
@@ -213,8 +228,33 @@ def summarize_npu32(root, config, model, corpus, ids, boundary_hash):
              'transfer': f'{model}-npu-private-transfer-result.json',
              'source': f'{model}-npu-private-source-verification.json',
              'smoke': f'{model}-npu-private-download-smoke.json'}
+    spec = config.get('npu_exports', {}).get(model) or {}
+    customized = 'evidence_files' in spec
+    if 'evaluated_path' in spec:
+        try:
+            evaluated_model_path(config, model)
+        except (KeyError, ValueError, TypeError) as exc:
+            return {'status': 'not_validated', 'error': 'Invalid evaluated_path: ' + str(exc)}, {}
+    if customized:
+        try:
+            configured = spec['evidence_files']
+            if not isinstance(configured, dict) or set(configured) != set(names):
+                raise ValueError('evidence_files requires exactly all eight proof keys')
+            validated = {}
+            report_root = (root / 'reports/snapdragon').resolve()
+            for key, value in configured.items():
+                if not isinstance(value, str) or not value or '\\' in value or ':' in value:
+                    raise ValueError('Evidence paths must be relative POSIX paths under reports/snapdragon')
+                relative = Path(value)
+                path = (root / relative).resolve()
+                if relative.is_absolute() or '..' in relative.parts or not path.is_relative_to(report_root) or path == report_root:
+                    raise ValueError('Evidence path outside reports/snapdragon')
+                validated[key] = path.relative_to(report_root).as_posix()
+            names = validated
+        except (ValueError, TypeError) as exc:
+            return {'status': 'not_validated', 'error': 'Invalid evidence_files: ' + str(exc)}, {}
     available = {key for key, name in names.items() if (root / 'reports/snapdragon' / name).is_file()}
-    if not available:
+    if not available and not customized:
         return (None if model == 'nano' else {'status': 'pending_remote_preparation'}), {}
     if available != set(names):
         try:
@@ -229,7 +269,7 @@ def summarize_npu32(root, config, model, corpus, ids, boundary_hash):
         for key, name in names.items():
             data[key], sources[f'{model}_npu32_{key}'] = read(root, name)
         run = data['run']; comparison = data['comparison']
-        expected_model = Path(config['models_root']) / f'KapiCoder-Mongo-{model.title()}-QNN-Compiled/mixed-htp-window32-v1'
+        expected_model = evaluated_model_path(config, model)
         passed = assess_window32(comparison, run, data['stage'], data['boundary'], corpus, ids,
                                  sources[f'{model}_npu32_run']['sha256'], boundary_hash)
         passed = passed and Path(run['model']).resolve() == expected_model.resolve() and Path(data['boundary']['model']).resolve() == expected_model.resolve()

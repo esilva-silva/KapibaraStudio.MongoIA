@@ -6,6 +6,35 @@ import json
 scripts=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('delivery',scripts/'summarize_delivery.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 class SummaryTests(unittest.TestCase):
+    def test_explicit_evidence_set_never_falls_back_to_legacy(self):
+        with tempfile.TemporaryDirectory(dir=scripts) as directory:
+            root = Path(directory); reports = root / 'reports/snapdragon'; reports.mkdir(parents=True)
+            keys = ('comparison', 'run', 'stage', 'boundary', 'compile', 'transfer', 'source', 'smoke')
+            mapping = {key: 'reports/snapdragon/new-' + key + '.json' for key in keys}
+            config = {'npu_exports': {'nano': {'evidence_files': mapping}}}
+            # Invalid legacy file must not be selected for the explicit new revision.
+            (reports / 'nano-npu-window32-vs-bf16.json').write_text('{legacy-invalid')
+            result, _ = mod.summarize_npu32(root, config, 'nano', 'a' * 64, [], None)
+            self.assertEqual(result['status'], 'pending_evidence')
+            self.assertEqual(len(result['missing']), 8)
+            (reports / 'new-run.json').write_text('{invalid-new')
+            result, _ = mod.summarize_npu32(root, config, 'nano', 'a' * 64, [], None)
+            self.assertEqual(result['status'], 'not_validated')
+            mapping['run'] = 'reports/snapdragon/../../escape.json'
+            result, _ = mod.summarize_npu32(root, config, 'nano', 'a' * 64, [], None)
+            self.assertEqual(result['status'], 'not_validated')
+            del mapping['run']
+            result, _ = mod.summarize_npu32(root, config, 'nano', 'a' * 64, [], None)
+            self.assertEqual(result['status'], 'not_validated')
+
+    def test_evaluated_path_is_confined_to_models_root(self):
+        with tempfile.TemporaryDirectory(dir=scripts) as directory:
+            root = Path(directory).resolve()
+            config = {'models_root': str(root), 'npu_exports': {'small': {'evaluated_path': 'corrected-v3'}}}
+            self.assertEqual(mod.evaluated_model_path(config, 'small'), root / 'corrected-v3')
+            config['npu_exports']['small']['evaluated_path'] = '../escape'
+            with self.assertRaises(ValueError): mod.evaluated_model_path(config, 'small')
+
     def test_required_policy_preserves_history_and_cannot_pass_by_label(self):
         with tempfile.TemporaryDirectory(dir=scripts) as directory:
             root = Path(directory)
