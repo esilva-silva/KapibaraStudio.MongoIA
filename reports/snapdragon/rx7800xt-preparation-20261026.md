@@ -34,3 +34,7 @@ A documentação/fonte oficial do Fast Hadamard Transform não forneceu uma rota
 A alternativa limitada scripts/snapdragon/probe_gptq_cpu_alternative.py passou em4,39s com quatro prompts de64tokens, modelo aleatório, rotação=None, lm_head=False, backend Torch, cache GPU desabilitado e todas as saídas/tensores em CPU. HIP_VISIBLE_DEVICES=-1 foi aplicado antes do import; torch confirmou zero GPUs. É uma receita diferente: não comprova Hadamard/W4A16 QNN, qualidade ou custo de Nano/Small completos. Não extrapolar esse tempo para um job completo.
 
 WSL2 Ubuntu existe e estava Running. O Python padrão /usr/bin/python3 não encontrou Torch; nenhuma instalação foi feita, e outros venvs não foram pesquisados exaustivamente. Relatório wsl-rx7800xt-inventory.json. Preparação estática W4A16 e compilação final no notebook permanecem pendentes; não há artefato QNN funcional para publicar.
+
+## Seguimento experimental
+
+A falta da extensão original foi contornada somente em microteste isolado com FWHT puroPyTorch, referência densa CPU/RX e backendTorch. Resultado e limitações: rx7800xt-fwht-followup-20261026.md. Isso não constitui quantização completa ou pacoteQNN.
