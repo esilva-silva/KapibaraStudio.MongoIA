@@ -257,9 +257,9 @@ def validate_interfaces(components, genai, expected_window=64, expected_head_siz
 def tokenizer_byte_parity(directory, source, required=False):
     """Optionally require the original tokenizer files byte-for-byte, independently of ID parity.
 
-    config.json/generation_config.json describe the derived model and are deliberately
-    not compared against the source model. Optional tokenizer files are required only
-    when they are present in the original snapshot.
+    config.json describes the derived model and is not compared against the source.
+    generation_config.json and tokenizer auxiliaries follow export_gpu.TOKEN_FILES:
+    require byte parity when they are present in the original snapshot.
     """
     report = {"required": required, "checked": False, "passed": True, "files": [],
               "optional_not_present_in_source": []}
@@ -267,7 +267,7 @@ def tokenizer_byte_parity(directory, source, required=False):
         return report
     directory, source = Path(directory).resolve(), Path(source).resolve()
     mandatory = ("tokenizer.json", "tokenizer_config.json")
-    optional = ("merges.txt", "vocab.json", "added_tokens.json", "special_tokens_map.json", "chat_template.jinja")
+    optional = ("vocab.json", "merges.txt", "generation_config.json", "special_tokens_map.json", "added_tokens.json", "chat_template.jinja")
     selected = list(mandatory)
     for name in optional:
         if (source / name).is_file():

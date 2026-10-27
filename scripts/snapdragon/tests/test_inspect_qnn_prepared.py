@@ -198,7 +198,7 @@ class TokenizerByteParityTests(unittest.TestCase):
         self.assertFalse(result["checked"])
 
     def test_strict_compares_required_and_all_auxiliaries_that_exist_in_source(self):
-        auxiliaries = ("merges.txt", "vocab.json", "added_tokens.json", "special_tokens_map.json", "chat_template.jinja")
+        auxiliaries = ("vocab.json", "merges.txt", "generation_config.json", "special_tokens_map.json", "added_tokens.json", "chat_template.jinja")
         for name in auxiliaries:
             for directory in (self.source, self.artifact):
                 (directory / name).write_bytes(("original-" + name).encode())
@@ -206,7 +206,7 @@ class TokenizerByteParityTests(unittest.TestCase):
         self.assertTrue(result["passed"])
         self.assertTrue(result["required"])
         self.assertTrue(result["checked"])
-        self.assertEqual(len(result["files"]), 7)
+        self.assertEqual(len(result["files"]), 8)
         self.assertTrue(all(entry["source_sha256"] == entry["artifact_sha256"] for entry in result["files"]))
 
     def test_single_changed_byte_fails_even_when_sizes_stay_identical(self):
@@ -223,7 +223,7 @@ class TokenizerByteParityTests(unittest.TestCase):
                 (self.artifact / name).write_bytes(original)
 
     def test_missing_auxiliary_present_in_source_fails(self):
-        for name in ("merges.txt", "vocab.json", "added_tokens.json", "special_tokens_map.json", "chat_template.jinja"):
+        for name in ("vocab.json", "merges.txt", "generation_config.json", "special_tokens_map.json", "added_tokens.json", "chat_template.jinja"):
             with self.subTest(name=name):
                 (self.source / name).write_bytes(b"original auxiliary")
                 result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
@@ -232,6 +232,27 @@ class TokenizerByteParityTests(unittest.TestCase):
                 self.assertIsNone(entry["artifact_sha256"])
                 self.assertIn("artifact_error", entry)
                 (self.source / name).unlink()
+
+    def test_generation_config_one_changed_byte_fails_without_modifying_artifact(self):
+        original = b'{"eos_token_id":151643}\n'
+        changed = b'{"eos_token_id":151644}\n'
+        (self.source / "generation_config.json").write_bytes(original)
+        artifact_file = self.artifact / "generation_config.json"
+        artifact_file.write_bytes(changed)
+        result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
+        entry = next(entry for entry in result["files"] if entry["path"] == "generation_config.json")
+        self.assertFalse(result["passed"])
+        self.assertFalse(entry["matches"])
+        self.assertEqual(entry["source_bytes"], entry["artifact_bytes"])
+        self.assertNotEqual(entry["source_sha256"], entry["artifact_sha256"])
+        self.assertEqual(artifact_file.read_bytes(), changed)
+
+    def test_generation_config_is_optional_when_absent_from_source(self):
+        (self.artifact / "generation_config.json").write_bytes(b'{"derived":true}\n')
+        result = inspector.tokenizer_byte_parity(self.artifact, self.source, required=True)
+        self.assertTrue(result["passed"])
+        self.assertIn("generation_config.json", result["optional_not_present_in_source"])
+        self.assertNotIn("generation_config.json", [entry["path"] for entry in result["files"]])
 
     def test_each_mandatory_file_is_required_in_both_source_and_artifact(self):
         for directory in (self.source, self.artifact):
