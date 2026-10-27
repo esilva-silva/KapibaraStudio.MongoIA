@@ -200,11 +200,22 @@ def validate_expected_window(genai, expected_window=64):
     return expected_window
 
 
-def validate_interfaces(components, genai, expected_window=64):
+def validate_expected_head_size(genai, expected_head_size=64):
+    """Keep the Nano default explicit; Small artifacts must be requested with head size128."""
+    if type(expected_head_size) is not int or expected_head_size not in (64, 128):
+        raise ValueError("Expected head size must be 64 or 128")
+    actual = genai["model"]["decoder"]["head_size"]
+    if type(actual) is not int or actual != expected_head_size:
+        raise ValueError(f"GenAI head size mismatch: requested {expected_head_size}, artifact {actual}")
+    return expected_head_size
+
+
+def validate_interfaces(components, genai, expected_window=64, expected_head_size=64):
     window = validate_expected_window(genai, expected_window)
+    head_size = validate_expected_head_size(genai, expected_head_size)
     failures = []
     decoder = genai["model"]["decoder"]
-    layers, heads, head_size = decoder["num_hidden_layers"], decoder["num_key_value_heads"], decoder["head_size"]
+    layers, heads = decoder["num_hidden_layers"], decoder["num_key_value_heads"]
     hidden, vocab = decoder["hidden_size"], genai["model"]["vocab_size"]
     embedding_out = components["embeddings"]["outputs"]
     head_in = components["lm_head"]["inputs"]
@@ -304,12 +315,12 @@ def tokenizer_parity(directory, source, sample_directory):
             "passed": not mismatch and not corpus_mismatch}
 
 
-def inspect(directory, source, samples, expected_window=64, require_original_tokenizer=False):
+def inspect(directory, source, samples, expected_window=64, require_original_tokenizer=False, expected_head_size=64):
     started = time.monotonic()
     directory, source, samples = Path(directory).resolve(), Path(source).resolve(), Path(samples).resolve()
     report = {"schema": "qnn-prepared-artifact-validation-v1", "artifact_directory": str(directory),
               "scope": "structural, numeric and tokenizer audit only", "inference_executed": False, "qualified": False,
-              "expected_window": expected_window,
+              "expected_window": expected_window, "expected_head_size": expected_head_size,
               "versions": {name: importlib.metadata.version(name) for name in ("onnx", "numpy", "tokenizers")},
               "components": {}, "failures": [], "limitations": ["No generation, HTP compilation, device profiling or quality measurement.",
                   "Symbolic KV sequence dimensions do not independently prove runtime capacity2048."]}
@@ -330,7 +341,8 @@ def inspect(directory, source, samples, expected_window=64, require_original_tok
                     "window_size": decoder["sliding_window"]["window_size"], "kv_heads": decoder["num_key_value_heads"], "head_size": decoder["head_size"]}
         report["genai"] = expected
         validate_expected_window(genai, expected_window)
-        if expected != {"type": "decoder-pipeline", "context_length": 2048, "window_size": expected_window, "kv_heads": 2, "head_size": 64}:
+        validate_expected_head_size(genai, expected_head_size)
+        if expected != {"type": "decoder-pipeline", "context_length": 2048, "window_size": expected_window, "kv_heads": 2, "head_size": expected_head_size}:
             raise ValueError("GenAI pipeline/context/window/KV metadata mismatch")
         if genai["search"]["max_length"] != 2048 or genai["search"]["past_present_share_buffer"] is not True:
             raise ValueError("Expected max_length2048 and shared past/present buffer")
@@ -351,7 +363,7 @@ def inspect(directory, source, samples, expected_window=64, require_original_tok
             except Exception as exc:
                 report["failures"].append(name + ": " + type(exc).__name__ + ": " + str(exc))
         if set(report["components"]) == set(COMPONENTS):
-            report["failures"].extend(validate_interfaces(report["components"], genai, expected_window))
+            report["failures"].extend(validate_interfaces(report["components"], genai, expected_window, expected_head_size))
         report["tokenizer"] = tokenizer_parity(directory, source, samples)
         if not report["tokenizer"]["passed"]:
             report["failures"].append("Tokenizer or stored corpus IDs differ")
@@ -376,12 +388,14 @@ def main(argv=None):
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--expected-window", type=int, choices=(32, 64), default=64,
                         help="Explicit expected prefill window; metadata and context boundaries must match")
+    parser.add_argument("--expected-head-size", type=int, choices=(64, 128), default=64,
+                        help="Expected KV head dimension: Nano64 (default), Small128")
     parser.add_argument("--require-original-tokenizer", action="store_true",
                         help="Require source tokenizer bytes and all tokenizer auxiliaries present in the source snapshot")
     args = parser.parse_args(argv)
     if args.out.resolve().is_relative_to(args.artifact_dir.resolve()):
         parser.error("Report must be outside the read-only artifact directory")
-    report = inspect(args.artifact_dir, args.source, args.samples, args.expected_window, args.require_original_tokenizer)
+    report = inspect(args.artifact_dir, args.source, args.samples, args.expected_window, args.require_original_tokenizer, args.expected_head_size)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"passed": report["passed"], "transfer_ready": report["transfer_ready"], "components": list(report["components"]),

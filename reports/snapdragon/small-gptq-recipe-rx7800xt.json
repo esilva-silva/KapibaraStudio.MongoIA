@@ -1,0 +1,78 @@
+{
+  "input_model": {
+    "type": "HfModel",
+    "model_path": "C:\\IA\\models\\KapiPublishedSnapshots\\KapiCoder-Mongo-Small\\4ba57bc1f56a5b3cbe486dd314321ce4cdb2cae6"
+  },
+  "systems": {},
+  "data_configs": [
+    {
+      "name": "wikitext2_train_joined",
+      "type": "HuggingfaceContainer",
+      "load_dataset_config": {
+        "data_name": "json",
+        "data_files": "C:\\IA\\models\\KapiSnapdragonArtifacts\\small-qnn-prepare-rx7800xt-v1\\calibration.jsonl",
+        "split": "train"
+      },
+      "pre_process_data_config": {
+        "strategy": "join",
+        "add_special_tokens": false,
+        "max_seq_len": 2048,
+        "max_samples": 128,
+        "type": "text_generation_huggingface_pre_process",
+        "model_name": "C:\\IA\\models\\KapiPublishedSnapshots\\KapiCoder-Mongo-Small\\4ba57bc1f56a5b3cbe486dd314321ce4cdb2cae6",
+        "text_cols": [
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "wikitext2_train_act",
+      "type": "HuggingfaceContainer",
+      "load_dataset_config": {
+        "data_name": "json",
+        "data_files": "C:\\IA\\models\\KapiSnapdragonArtifacts\\small-qnn-prepare-rx7800xt-v1\\calibration.jsonl",
+        "split": "train"
+      },
+      "pre_process_data_config": {
+        "strategy": "line-by-line",
+        "add_special_tokens": true,
+        "max_samples": 256,
+        "max_seq_len": 2048,
+        "type": "text_generation_huggingface_pre_process",
+        "model_name": "C:\\IA\\models\\KapiPublishedSnapshots\\KapiCoder-Mongo-Small\\4ba57bc1f56a5b3cbe486dd314321ce4cdb2cae6",
+        "text_cols": [
+          "text"
+        ]
+      }
+    }
+  ],
+  "passes": {
+    "cs": {
+      "type": "CaptureSplitInfo",
+      "num_splits": 1,
+      "unique_embeds_lm_head_splits": true
+    },
+    "g": {
+      "type": "GptqModel",
+      "bits": 4,
+      "sym": true,
+      "group_size": -1,
+      "lm_head": true,
+      "rotation": "hadamard",
+      "device": "cuda",
+      "data_config": "wikitext2_train_joined",
+      "dynamic": {
+        "+:.*lm_head*": {
+          "bits": 8,
+          "sym": true,
+          "group_size": 32,
+          "desc_act": false
+        }
+      }
+    }
+  },
+  "log_severity_level": 1,
+  "output_dir": "C:\\IA\\models\\KapiSnapdragonArtifacts\\small-qnn-prepare-rx7800xt-v1\\gptq-output-v1",
+  "cache_dir": "C:\\IA\\models\\KapiSnapdragonArtifacts\\small-qnn-prepare-rx7800xt-v1\\gptq-cache-v1",
+  "no_artifacts": false
+}
