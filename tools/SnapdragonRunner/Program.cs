@@ -10,6 +10,9 @@ for (int i = 0; i < args.Length; i += 2) {
     options[args[i][2..]] = args[i + 1];
 }
 if (options.GetValueOrDefault("backend") == "dml-smoke") return GpuProbe.Run(options["model"], options["out"]);
+if (options.GetValueOrDefault("backend") == "dml-prefill-probe") return DmlPrefill.Run(options);
+// Dispose after all model objects to release native GenAI resources at shutdown.
+using OgaHandle ogaHandle = new OgaHandle();
 var backend = options.GetValueOrDefault("backend", "dml");
 var requestedProvider = backend == "cpu" ? "CPUExecutionProvider" : "DmlExecutionProvider";
 var rows = new List<object>();
