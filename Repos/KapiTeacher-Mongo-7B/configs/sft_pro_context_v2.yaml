@@ -1,0 +1,66 @@
+version: sft-v2d/1
+run:
+  name: sft_pro_context_v2
+  seed: 20261015
+  stage: sft
+  stage_a_cpt: skip
+model:
+  path: C:/IA/models/KapibaraStudio.MongoIA/BaseRepos/Qwen2.5-Coder-7B
+  quant: nf4
+  init_adapter: C:/IA/models/KapibaraStudio.MongoIA/Repos/KapiTeacher-Mongo-7B/adapters/sft_v2d/final
+  attn: sdpa
+lora:
+  r: 64
+  alpha: 128
+  dropout: 0.05
+  targets:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+data:
+  corpus_dir: data/teacher/pro_context_v2
+  micro_tokens: 4096
+  max_train_tokens: null
+optim:
+  name: paged_adamw_8bit
+  lr: 5.0e-05
+  min_lr_ratio: 0.1
+  betas:
+  - 0.9
+  - 0.95
+  weight_decay: 0.0
+  warmup_ratio: 0.03
+  grad_clip: 1.0
+  tokens_per_step: 49152
+loss:
+  ce_chunk: 1024
+memory:
+  max_vram_fraction: 0.94
+  vram_reserve_gb: 1.6
+  gradient_checkpointing: true
+checkpoint:
+  dir: Repos/KapiTeacher-Mongo-7B/checkpoints
+  every_minutes: 30
+  every_pct_steps: 5
+  every_steps: null
+  keep: 3
+eval:
+  every_pct_steps: 10
+  every_steps: null
+  val_loss: true
+  gen_examples: 100
+  final_gen_examples: 200
+  generic_gen_examples: 50
+  final_generic_gen_examples: 100
+  max_new_tokens: 96
+budget:
+  hours: 16
+paths:
+  reports_dir: Repos/KapiTeacher-Mongo-7B/reports
+  adapters_dir: Repos/KapiTeacher-Mongo-7B/adapters
+  gates: configs/gates.yaml
+  contract_golden: data/contracts/editor-context-v1.golden

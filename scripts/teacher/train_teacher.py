@@ -316,6 +316,7 @@ def main() -> int:
     ap.add_argument("--max-steps", type=int, help="para apos N passos totais (smoke); nao altera o cosseno")
     ap.add_argument("--total-steps", type=int, help="substitui o total de passos do cosseno (corte do job; registrado no manifest)")
     ap.add_argument("--no-eval", action="store_true")
+    ap.add_argument("--eval-before", action="store_true", help="avalia o adapter inicial no mesmo val antes do primeiro passo")
     ap.add_argument("--dry-run", action="store_true", help="so o plano: passos, tokens e horas estimadas (sem GPU)")
     ap.add_argument("--tok-s", type=float, default=330.0, help="tok/s assumido no --dry-run")
     ap.add_argument("--verify-corpus", action="store_true", help="recalcula sha256 de todos os shards no inicio")
@@ -554,6 +555,9 @@ def main() -> int:
         heartbeat({"phase": "start"})
 
         try:
+            if args.eval_before and not args.no_eval and state["step"] == 0:
+                run_eval()
+                heartbeat({"phase": "post-baseline-eval"})
             while state["step"] < total_steps_stop:
                 step = state["step"]
                 lr = lr_at(step, total_steps, o)

@@ -265,7 +265,7 @@ _COLL_RE = [re.compile(r"\bdb\.([A-Za-z_]\w*)\.(?:find|aggregate|count|distinct|
 
 
 def record_kind(rec: dict) -> str:
-    if "snippet_id" in rec and "instruction" in rec:
+    if ("snippet_id" in rec or rec.get("type") == "chat") and "instruction" in rec:
         return "chat"
     if "prefix" in rec and ("middle" in rec or "completion" in rec):
         return "fim"
