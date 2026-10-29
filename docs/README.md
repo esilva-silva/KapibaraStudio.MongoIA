@@ -1,5 +1,8 @@
 # KapiCoder-Mongo — plano de treinamento
 
+> **Atualização de andamento — 28/10/2026:** o usuário informou que a validação de hardware dos modelos Nano e Small foi concluída com sucesso nos notebooks e ambientes ARM, x86, GPU e CPU adequados. Este registro não inclui a matriz detalhada nem medições; as descrições e pendências históricas abaixo devem ser lidas nesse contexto. Isso não estende o aceite aos demais modelos ou a recursos específicos não mencionados.
+
+
 Plano completo para treinar a família de modelos locais (ONNX) do **Kapibara Studio**: autocomplete contextual de MongoDB, chat curto e um agente local com raciocínio (thinking) e as ferramentas da IDE — oferecido no painel **Agente IA** ao lado do Claude CLI —, usando como professor o **Qwen2.5-Coder-7B Base** (escolhido no bake-off de 2026-10-09: o 14B não coube no QLoRA local; o DeepSeek-Coder 6.7B base fica só como referência).
 
 > Elaborado em 08/10/2026 por um orquestrador e cinco agentes especialistas (seleção de modelos; professor + dados; agente/tools; treino + avaliação; ONNX/NPU + integração), a partir do pipeline v1 (`C:\IA\models\SlopStudio.MongoAI-Compact`) e do código atual da IDE (`F:\source\esilva-silva\EsilvaSoft.KapibaraStudio`, somente leitura). Cada documento marca o que é **fato verificado** e o que é **hipótese/proposta**.

@@ -1,5 +1,8 @@
 # Fase 07 · Exportação e quantização ONNX (CPU, DirectML, CUDA, NPU/QNN)
 
+> **Atualização de andamento — 28/10/2026:** o usuário informou que a validação de hardware dos modelos Nano e Small foi concluída com sucesso nos notebooks e ambientes ARM, x86, GPU e CPU adequados. Este registro não inclui a matriz detalhada nem medições; as descrições e pendências históricas abaixo devem ser lidas nesse contexto. Isso não estende o aceite aos demais modelos ou a recursos específicos não mencionados.
+
+
 **Revisão 2026-10-08b — troca do professor:** o T2 exportado é o **KapiTeacher-Mongo-14B** (DML INT4 ~8,5–9 GB + KV ~192 KiB/token) ou **7B** (~5 GB), ambos `qwen2` (Qwen2.5-Coder, Apache-2.0) pelo builder do ORT GenAI e servidos pelo `QwenCoderModelAdapter`; removidos o caminho DeepSeek/`LlamaForCausalLM` e o `slopcoder_manifest.json` para o T2; `kapibarastudio-model.json` do T2 com `architecture: qwen2` e `parameters: 14B` (ou 7B); pacotes Apache-2.0 sem Anexo A da licença DeepSeek (atribuição e aviso de modificação mantidos).
 
 > Plano KapiCoder-Mongo. Entradas vindas de [Fase 05](fase-05-treinamento.md) (checkpoints mesclados) e [Fase 06](fase-06-avaliacao-benchmarks.md) (gates de qualidade); saída consumida pela [Fase 08](fase-08-integracao-kapibara.md).

@@ -1,5 +1,8 @@
 # Fase 08 · Integração no Kapibara Studio, homologação e release
 
+> **Atualização de andamento — 28/10/2026:** o usuário informou que a validação de hardware dos modelos Nano e Small foi concluída com sucesso nos notebooks e ambientes ARM, x86, GPU e CPU adequados. Este registro não inclui a matriz detalhada nem medições; as descrições e pendências históricas abaixo devem ser lidas nesse contexto. Isso não estende o aceite aos demais modelos ou a recursos específicos não mencionados.
+
+
 **Revisão 2026-10-08b — troca do professor:** o T2 (KapiTeacher-Mongo-14B, ou 7B) é `qwen2` e usa o `QwenCoderModelAdapter` existente — nenhum trabalho de `DeepSeekCoderModelAdapter`/`LlamaKapiCoderModelAdapter` é necessário para ele; o teste Explicit do T2 passa a usar `SLOP_QWEN_MODEL` (`SLOP_DEEPSEEK_MODEL` fica só como regressão do caminho DeepSeek já existente na IDE); pacotes Apache-2.0, sem obrigações da licença DeepSeek (Anexo A); estimativa de esforço inalterada (≈ 8–11 semanas), com um risco novo de VRAM/TTFT do T2 14B.
 
 > Plano KapiCoder-Mongo. Consome os pacotes da [Fase 07](fase-07-exportacao-onnx.md) e os gates da [Fase 06](fase-06-avaliacao-benchmarks.md); contratos de prompt e de ferramentas vêm das Fases [03](fase-03-dataset-autocomplete-validacao.md) e [04](fase-04-dataset-agente-tools.md).

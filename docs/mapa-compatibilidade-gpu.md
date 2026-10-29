@@ -1,5 +1,8 @@
 # Mapa de compatibilidade de GPU — qual variante de autocomplete para cada placa
 
+> **Atualização de andamento — 28/10/2026:** o usuário informou que a validação de hardware dos modelos Nano e Small foi concluída com sucesso nos notebooks e ambientes ARM, x86, GPU e CPU adequados. Este registro não inclui a matriz detalhada nem medições; as descrições e pendências históricas abaixo devem ser lidas nesse contexto. Isso não estende o aceite aos demais modelos ou a recursos específicos não mencionados.
+
+
 Data: 2026-10-26 (fase 2 de medição: `reports/hwmap/phase2_measurements.md`; curva VRAM × contexto: `reports/hwmap/vram_curve.md`; **decisões D1–D5 consolidadas em §9**, YAML schema 2) · Escopo: Windows 11/10, T0 Nano (0,5B) e T1 Small (1,5B), pacotes ONNX v3 (GenAI 0.15.2 = IDE; DirectML fp16/int4, CPU int4/int8).
 Tabela de decisão legível por máquina: `configs/gpu_compat.yaml` · detector: `scripts/hwmap/detect_gpus.py` · roteiro de homologação: `docs/roteiro-homologacao-hardware.md` · seleção de adaptador na IDE: `docs/prs/pr-5-selecao-de-adaptador-dml.md`.
 Contexto: `docs/fase-07-exportacao-onnx.md` (§2.3, §5), `reports/export/onnx_export_t0_t1.md`, `reports/export/prefix_cache_ttft.md`.

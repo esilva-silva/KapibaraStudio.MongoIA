@@ -1,6 +1,6 @@
 # KapiCoder-Mongo — resumo executivo (26/10/2026)
 
-T0 e T1 v3 possuem avaliacao sintetica e pacotes ONNX locais. A correcao de EOS pertence a IDE; nao serao geradas variantes eosfix. Qualidade real, latencia nativa em sessao e selecao efetiva de GPU continuam exigindo homologacao propria.
+T0 e T1 v3 possuem avaliação sintética e pacotes ONNX publicados. Em 28/10/2026, o usuário informou que concluiu com sucesso a validação de hardware de Nano e Small nos notebooks e ambientes ARM, x86, GPU e CPU apropriados. Os detalhes e medições dessa validação não foram fornecidos neste registro. Qualidade com exemplos reais permanece uma questão independente. A correção de EOS pertence à IDE; não serão geradas variantes eosfix.
 
 ## 1. Estado e fontes
 
@@ -9,7 +9,7 @@ T0 e T1 v3 possuem avaliacao sintetica e pacotes ONNX locais. A correcao de EOS 
 | Treino | T0/T1 sft_v3 executados; uma semente | `Repos/*/reports/sft_v3/run_manifest.json` |
 | Avaliacao | GO v3 preservado; a meta ideal T0 nao foi atingida | `reports/student/v3_decision_t0.json`, `v3_decision_t1.json` |
 | Exportacao | Pacotes v3 locais; evidencia proxy separada da IDE | `reports/export/`, `scripts/export/README.md` |
-| Hardware | D1–D5 documentadas; latencias ruidosas precisam nova sessao ociosa | `docs/mapa-compatibilidade-gpu.md`, `reports/hwmap/phase2_measurements.md` |
+| Hardware | Nano e Small validados nos ambientes adequados, conforme informado pelo usuário em 28/10/2026; detalhes e medições não fornecidos | Relato do usuário; medições históricas em `reports/hwmap/phase2_measurements.md` |
 | IDE PR1 | Aceite de catalogo/paridade existente | IDE: `docs/phases/phase-07b-kapilab/aceite-pr-1.md` |
 | IDE PR2 | Contrato local-agent-qwen3-v1 existente | IDE: `docs/architecture/local-agent-qwen3-v1.md`, ADR-072 |
 | IDE PR3 | Host/catalogo/replay implementados; sucesso Atlas e paridade externa pendentes | IDE: `docs/phases/phase-07b-kapilab/aceite-pr-3.md` |
@@ -42,7 +42,7 @@ Tudo acima e sintetico. A correcao historica do guard v1/v1 e a falta de deconta
 - Cache CPU e opt-in e exige homologacao declarada no pacote. A prova inicial de cauda de um token divergiu; a IDE passou a reprocessar no minimo 32 tokens. Prompts curtos fazem prefill completo. Paridade sintetica nao basta para aprovar qualidade/TTFT em sessao.
 - Gate CPU exige hit real >=95%, com hit/miss/mistura reportados. Sem essa evidencia o gate continua nao avaliado; nao promover pelo prototipo Python.
 - GenAI 0.16/0.17 sao candidatos a avaliacao; selecao efetiva de GPU exige prova por contadores. Nenhuma mudanca de versao e aprovada apenas por aceitar device_id.
-- Gates/rounds, segunda semente, chat T1/T2, hardware indisponivel, contato/model-index/nome no card e upload continuam como decisoes posteriores. Nenhum treino/upload nesta rodada.
+- Gates/rounds, segunda semente, chat T1/T2, detalhes da validação de hardware, contato/model-index/nome no card e eventuais novos uploads continuam como decisoes posteriores. Nenhum treino/upload nesta rodada.
 
 ## 5. Rastreabilidade e proximos passos
 
